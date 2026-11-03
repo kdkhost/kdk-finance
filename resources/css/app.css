@@ -1,0 +1,17 @@
+/* ============================================================================
+ * SISTEMA FINANCEIRO MULTIMOEDAS & GESTÃO DE INFRAESTRUTURA
+ * ============================================================================
+ * Desenvolvedor : George Marcelo de Oliveira Pimentel
+ * Empresa       : KDKHost Soluções (CNPJ: 33.986.975/0001-90)
+ * Contato       : contato@kdkhost.com.br | https://kdkhost.com.br
+ * Função        : Responsável Técnico / Engenheiro de Software Full-Stack
+ * ============================================================================
+ */
+
+@import '@fontsource-variable/inter/index.css';
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'admin-lte/dist/css/adminlte.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import 'toastr/build/toastr.min.css';
+@import 'sweetalert2/dist/sweetalert2.min.css';
+@import './theme.css';

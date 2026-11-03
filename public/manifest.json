@@ -1,0 +1,57 @@
+{
+  "name": "KDK Finance — Multimoedas",
+  "short_name": "KDK Finance",
+  "description": "Conciliação de faturas OVHcloud em EUR e USD com cotação, spread e tributos em tempo real.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0a2540",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["finance", "business", "productivity"],
+  "author": "George Marcelo de Oliveira Pimentel — KDKHost Soluções",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Painel",
+      "url": "/?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Faturas",
+      "short_name": "Faturas",
+      "url": "/faturas",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nova fatura",
+      "short_name": "Nova",
+      "url": "/faturas/nova",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
