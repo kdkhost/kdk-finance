@@ -51,3 +51,13 @@ Schedule::command('licenses:sync-prices')
     ->dailyAt('05:10')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+| Painel da LicenseBoy: o valor recorrente do cliente só existe dentro do
+| painel. A leitura diária mantém o custo real das licenças (que prevalece
+| sobre o preço da loja) e sinaliza divergências.
+*/
+Schedule::command('licenses:sync-panel')
+    ->dailyAt('05:25')
+    ->withoutOverlapping()
+    ->onOneServer();

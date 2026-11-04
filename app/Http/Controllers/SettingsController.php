@@ -15,6 +15,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
 use App\Services\ExchangeRateService;
+use App\Services\LicenseBoyPanelService;
 use App\Services\OvhService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -35,11 +36,15 @@ class SettingsController extends Controller
             'rates' => $exchange->rates(),
             'pair' => $exchange->pair('EUR', 'USD'),
             'ovhConfigured' => $ovh->isConfigured(),
+            'licenseboyConfigured' => app(LicenseBoyPanelService::class)->isConfigured(),
+            'licenseboySyncedAt' => AppSetting::get('licenseboy_panel_synced_at'),
+            'licenseboyEmail' => (string) AppSetting::get('licenseboy_panel_email', ''),
             'masked' => [
                 'ovh_application_key' => AppSetting::mask((string) AppSetting::get('ovh_application_key', '')),
                 'ovh_application_secret' => AppSetting::mask((string) AppSetting::get('ovh_application_secret', '')),
                 'ovh_consumer_key' => AppSetting::mask((string) AppSetting::get('ovh_consumer_key', '')),
                 'ovh_v2_bearer_token' => AppSetting::mask((string) AppSetting::get('ovh_v2_bearer_token', '')),
+                'licenseboy_panel_password' => AppSetting::mask((string) AppSetting::get('licenseboy_panel_password', '')),
             ],
         ]);
     }
@@ -118,6 +123,45 @@ class SettingsController extends Controller
             ->with('success', $filled > 0
                 ? $filled.' credencial(is) atualizada(s) e gravada(s) criptografada(s).'
                 : 'Endpoint atualizado. Campos em branco foram preservados.');
+    }
+
+    public function updateLicenseBoy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'licenseboy_panel_email' => ['nullable', 'email', 'max:190'],
+            'licenseboy_panel_password' => ['nullable', 'string', 'max:255'],
+            'clear_licenseboy_credentials' => ['nullable', 'boolean'],
+        ], [], [
+            'licenseboy_panel_email' => 'e-mail do painel',
+            'licenseboy_panel_password' => 'senha do painel',
+        ]);
+
+        if ($request->boolean('clear_licenseboy_credentials')) {
+            AppSetting::set('licenseboy_panel_email', '', 'licenseboy');
+            AppSetting::set('licenseboy_panel_password', '', 'licenseboy', true);
+            AppSetting::set('licenseboy_panel_synced_at', '', 'licenseboy');
+
+            return redirect()
+                ->route('settings.index', ['tab' => 'licenseboy'])
+                ->with('success', 'Credenciais do painel da LicenseBoy removidas do banco de dados.');
+        }
+
+        $email = trim((string) ($data['licenseboy_panel_email'] ?? ''));
+        $password = (string) ($data['licenseboy_panel_password'] ?? '');
+
+        if ($email !== '') {
+            AppSetting::set('licenseboy_panel_email', $email, 'licenseboy');
+        }
+
+        if ($password !== '') {
+            AppSetting::set('licenseboy_panel_password', $password, 'licenseboy', true);
+        }
+
+        return redirect()
+            ->route('settings.index', ['tab' => 'licenseboy'])
+            ->with('success', ($email !== '' || $password !== '')
+                ? 'Credenciais do painel atualizadas e gravadas criptografadas. Use "Sincronizar painel" em Licenças.'
+                : 'Campos em branco foram preservados.');
     }
 
     public function testOvh(OvhService $ovh): JsonResponse

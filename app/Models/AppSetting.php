@@ -48,6 +48,10 @@ class AppSetting extends Model
                 return $setting->value;
             }
 
+            if ($setting->value === null || $setting->value === '') {
+                return $default;
+            }
+
             try {
                 return Crypt::decryptString((string) $setting->value);
             } catch (DecryptException $exception) {

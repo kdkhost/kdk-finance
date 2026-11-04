@@ -89,39 +89,48 @@
                         <span class="badge text-bg-light border">{{ $services->count() }}</span>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 infra-services-table">
                             <thead>
                                 <tr>
                                     <th>Serviço</th>
-                                    <th>Tipo</th>
-                                    <th>Estado</th>
-                                    <th class="text-end">Mensal (EUR)</th>
+                                    <th class="d-none d-md-table-cell">Tipo</th>
+                                    <th class="d-none d-md-table-cell">Estado</th>
+                                    <th class="d-none d-sm-table-cell text-end">Mensal (EUR)</th>
                                     <th class="text-end">Mensal (BRL)</th>
-                                    <th>Renovação</th>
+                                    <th class="d-none d-md-table-cell">Renovação</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($services as $row)
                                     @php $service = $row['service']; @endphp
                                     <tr>
-                                        <td>
+                                        <td class="infra-service-cell">
                                             <span class="cell-title d-block">{{ $service->label() }}</span>
                                             <span class="cell-sub mono">{{ $service->name }}</span>
                                             @if ($service->last_bill_id)
                                                 <span class="cell-sub d-block">Última fatura: {{ $service->last_bill_id }}</span>
                                             @endif
+
+                                            <div class="service-mobile-meta d-md-none">
+                                                <span>
+                                                    <span class="badge text-bg-light border">{{ $service->typeLabel() }}</span>
+                                                    <span class="{{ $service->state === 'ok' || $service->state === 'active' ? 'badge-status badge-status--paid' : 'badge-status badge-status--pending' }}">{{ $service->stateLabel() }}</span>
+                                                </span>
+                                                <span><i class="bi bi-calendar3 me-1"></i>{{ $service->renewalLabel() }}</span>
+                                                <span class="d-sm-none fw-semibold text-body">{{ $service->priceLabel('EUR') }}/mês</span>
+                                            </div>
                                         </td>
-                                        <td><span class="badge text-bg-light border">{{ $service->typeLabel() }}</span></td>
-                                        <td>
+                                        <td class="d-none d-md-table-cell"><span class="badge text-bg-light border">{{ $service->typeLabel() }}</span></td>
+                                        <td class="d-none d-md-table-cell">
                                             <span class="{{ $service->state === 'ok' || $service->state === 'active' ? 'badge-status badge-status--paid' : 'badge-status badge-status--pending' }}">
                                                 {{ $service->stateLabel() }}
                                             </span>
                                         </td>
-                                        <td class="text-end tabular">{{ $service->priceLabel('EUR') }}</td>
+                                        <td class="d-none d-sm-table-cell text-end tabular">{{ $service->priceLabel('EUR') }}</td>
                                         <td class="text-end tabular fw-semibold">
                                             {{ $row['monthly_brl'] !== null ? $money($row['monthly_brl']) : '—' }}
                                         </td>
-                                        <td class="tabular">{{ $service->renewalLabel() }}</td>
+                                        <td class="d-none d-md-table-cell tabular">{{ $service->renewalLabel() }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

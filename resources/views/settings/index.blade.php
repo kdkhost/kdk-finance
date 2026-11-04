@@ -44,6 +44,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {{ $activeTab === 'licenseboy' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'licenseboy']) }}">
+                    <i class="bi bi-key me-1"></i> LicenseBoy
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {{ $activeTab === 'rules' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'rules']) }}">
                     <i class="bi bi-sliders me-1"></i> Regras
                 </a>
@@ -402,6 +407,103 @@
                         <div class="d-flex justify-content-between py-1">
                             <span class="text-muted-soft">Sincronização</span>
                             <span class="fw-semibold">A cada 15 min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($activeTab === 'licenseboy' && $user->isDeveloperAdmin())
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header">Painel de cliente da LicenseBoy</div>
+                    <div class="card-body">
+                        <div class="hint-banner mb-3">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <span>
+                                A loja mostra o preço de hoje, mas o painel cobra o valor recorrente do seu contrato — que pode ser maior em serviços antigos.
+                                Ao sincronizar, o valor do painel passa a ser o custo real da licença e a diferença para a loja fica sinalizada.
+                            </span>
+                        </div>
+
+                        <form method="POST" action="{{ route('settings.licenseboy') }}">
+                            @csrf
+                            @method('PUT')
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="licenseboy_panel_email">E-mail do painel</label>
+                                    <input type="email" class="form-control" id="licenseboy_panel_email" name="licenseboy_panel_email" value="{{ old('licenseboy_panel_email', $licenseboyEmail) }}" placeholder="seu@email.com" autocomplete="username">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="licenseboy_panel_password">Senha do painel</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="licenseboy_panel_password" name="licenseboy_panel_password" placeholder="{{ $licenseboyConfigured ? $masked['licenseboy_panel_password'] : 'Senha do painel' }}" autocomplete="new-password">
+                                        <button type="button" class="btn btn-outline-secondary" data-toggle-password="licenseboy_panel_password" aria-label="Mostrar senha"><i class="bi bi-eye"></i></button>
+                                    </div>
+                                    <div class="form-text">Em branco preserva a senha atual. Gravada criptografada no banco.</div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-shield-lock me-1"></i> Salvar credenciais
+                                </button>
+                            </div>
+                        </form>
+
+                        @if ($licenseboyConfigured)
+                            <hr class="my-4">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                                <div>
+                                    <div class="fw-semibold">Sincronizar valores reais</div>
+                                    <div class="text-muted-soft" style="font-size:.8rem;">
+                                        Lê os serviços ativos e grava o valor recorrente de cada licença.
+                                        @if ($licenseboySyncedAt)
+                                            Última leitura: {{ \Illuminate\Support\Carbon::parse($licenseboySyncedAt)->format('d/m/Y H:i') }}.
+                                        @else
+                                            Ainda não sincronizado.
+                                        @endif
+                                    </div>
+                                </div>
+                                <form method="POST" action="{{ route('licenses.panel.sync') }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Sincronizar painel
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('settings.licenseboy') }}" class="mt-4" data-confirm="As credenciais do painel serão removidas do banco. A sincronização para de funcionar até você informar novamente." data-confirm-title="Remover credenciais?" data-confirm-button="Remover" data-confirm-variant="danger">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="clear_licenseboy_credentials" value="1">
+                            <button type="submit" class="btn btn-ghost btn-sm text-danger">
+                                <i class="bi bi-trash3 me-1"></i> Limpar credenciais
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-header">Como ler o preço</div>
+                    <div class="card-body">
+                        <div class="settings-section">
+                            <div class="fw-semibold mb-1">Preço da loja</div>
+                            <p class="text-muted-soft mb-0" style="font-size:.82rem;">Valor público de um pedido novo hoje. É o que aparece em <strong>Preços da loja</strong> e no vínculo do catálogo.</p>
+                        </div>
+                        <div class="settings-section">
+                            <div class="fw-semibold mb-1">Preço do painel</div>
+                            <p class="text-muted-soft mb-0" style="font-size:.82rem;">Valor recorrente do seu contrato. Em serviços antigos ele pode ficar acima da loja; o WHMCS não permite editar esse valor pelo painel do cliente — somente a LicenseBoy altera.</p>
+                        </div>
+                        <div class="settings-section">
+                            <div class="fw-semibold mb-1">Qual vale no sistema</div>
+                            <p class="text-muted-soft mb-0" style="font-size:.82rem;">O painel prevalece: é ele que debita do seu cartão. A loja serve de referência para negociar a redução com o suporte.</p>
                         </div>
                     </div>
                 </div>

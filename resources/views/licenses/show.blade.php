@@ -29,6 +29,10 @@
     @php
         $money = fn ($value) => 'R$ '.number_format((float) $value, 2, ',', '.');
         $amount = fn ($value) => $license->currencySymbol().' '.number_format((float) $value, 2, ',', '.');
+        $billing = fn ($value) => $license->billingCurrencySymbol().' '.number_format((float) $value, 2, ',', '.');
+        $panelDiff = $license->panelDifference();
+        $panelPct = $license->panelDivergencePercent();
+        $extraMonthly = $license->monthlyEquivalent() - $license->storeMonthlyEquivalent();
     @endphp
 
     <div class="row g-3">
@@ -51,7 +55,7 @@
                             <div class="stat-label">Custo mensal</div>
                             <div class="amount-hero mt-1">{{ $money($monthlyBrl) }}</div>
                             <div class="text-muted-soft mt-1" style="font-size:.74rem;">
-                                {{ $amount($license->monthlyEquivalent()) }} × {{ number_format($rate, 4, ',', '.') }}
+                                {{ $billing($license->monthlyEquivalent()) }} × {{ number_format($rate, 4, ',', '.') }}
                             </div>
                         </div>
                     </div>
@@ -59,11 +63,11 @@
                     <div class="kpi-inline mt-4 pt-3 border-top">
                         <div class="kpi">
                             <div class="kpi-label">Valor do ciclo</div>
-                            <div class="kpi-value">{{ $amount($license->totalOriginal()) }}</div>
+                            <div class="kpi-value">{{ $billing($license->totalOriginal()) }}</div>
                         </div>
                         <div class="kpi">
                             <div class="kpi-label">Ciclo</div>
-                            <div class="kpi-value">{{ $license->cycleLabel() }}</div>
+                            <div class="kpi-value">{{ $license->billingCycleLabel() }}</div>
                         </div>
                         <div class="kpi">
                             <div class="kpi-label">Quantidade</div>
@@ -140,7 +144,7 @@
                 <div class="card-body d-grid gap-2">
                     @if (auth()->user()->canManageFinance())
                         @if ($license->status === \App\Models\LicenseService::STATUS_ACTIVE)
-                            <form method="POST" action="{{ route('licenses.invoice', $license) }}" data-confirm="Gerar fatura de {{ $license->product }} no valor de {{ $amount($license->totalOriginal()) }}? O próximo vencimento avançará um ciclo." data-confirm-button="Gerar fatura">
+                            <form method="POST" action="{{ route('licenses.invoice', $license) }}" data-confirm="Gerar fatura de {{ $license->product }} no valor de {{ $billing($license->totalOriginal()) }}? O próximo vencimento avançará um ciclo." data-confirm-button="Gerar fatura">
                                 @csrf
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="bi bi-receipt me-1"></i> Gerar fatura deste ciclo
@@ -175,12 +179,18 @@
                         <span class="fw-semibold">{{ $license->product }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1" style="font-size:.8rem;">
-                        <span class="text-muted-soft">Valor unitário</span>
+                        <span class="text-muted-soft">Valor na loja</span>
                         <span class="fw-semibold">{{ $amount($license->unit_price) }}</span>
                     </div>
+                    @if ($license->usesPanelPrice())
+                        <div class="d-flex justify-content-between py-1" style="font-size:.8rem;">
+                            <span class="text-muted-soft">Cobrado no painel</span>
+                            <span class="fw-semibold text-danger">{{ $billing($license->billingUnitPrice()) }}</span>
+                        </div>
+                    @endif
                     <div class="d-flex justify-content-between py-1" style="font-size:.8rem;">
-                        <span class="text-muted-soft">Moeda</span>
-                        <span class="fw-semibold">{{ $license->currency }}</span>
+                        <span class="text-muted-soft">Moeda da cobrança</span>
+                        <span class="fw-semibold">{{ $license->billingCurrency() }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1" style="font-size:.8rem;">
                         <span class="text-muted-soft">Renovação automática</span>
@@ -198,6 +208,83 @@
                     <a href="https://licenseboy.com" target="_blank" rel="noopener" class="btn btn-outline-secondary w-100 mt-3">
                         <i class="bi bi-box-arrow-up-right me-1"></i> Abrir LicenseBoy
                     </a>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Painel LicenseBoy</span>
+                    @if ($license->panel_synced_at)
+                        <span class="badge text-bg-light border">Lido {{ $license->panel_synced_at->format('d/m/Y H:i') }}</span>
+                    @else
+                        <span class="badge text-bg-light border">Sem leitura</span>
+                    @endif
+                </div>
+                <div class="card-body" style="font-size:.8rem;">
+                    @if ($license->usesPanelPrice())
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted-soft">Valor no painel</span>
+                            <span class="fw-semibold">{{ $billing($license->billingUnitPrice()) }} / {{ $license->billingCycleLabel() }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted-soft">Total do ciclo</span>
+                            <span class="fw-semibold tabular">{{ $billing($license->totalOriginal()) }}</span>
+                        </div>
+                        @if ($license->catalogItem)
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-muted-soft">Preço na loja</span>
+                                <span class="fw-semibold">{{ $license->catalogItem->priceLabel() }} / {{ $license->catalogItem->cycleLabel() }}</span>
+                            </div>
+                        @endif
+
+                        @if ($panelPct !== null && $panelPct > 0)
+                            <div class="hint-banner mt-2" style="font-size:.74rem;">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <div>
+                                    O painel cobra <strong>{{ number_format(abs($panelDiff), 2, ',', '.') }} {{ $license->billingCurrency() }}</strong>
+                                    ({{ number_format($panelPct, 2, ',', '.') }}%) a mais que a loja por unidade.
+                                    @if ($license->billingCurrency() === $license->currency && $extraMonthly > 0)
+                                        Isso representa <strong>{{ $billing($extraMonthly) }}/mês</strong>
+                                        ({{ $billing($extraMonthly * 12) }}/ano) a mais.
+                                    @endif
+                                </div>
+                            </div>
+                        @elseif ($panelPct !== null && $panelPct < 0)
+                            <div class="hint-banner mt-2" style="font-size:.74rem;">
+                                <i class="bi bi-check2-circle"></i>
+                                <div>
+                                    O painel cobra <strong>{{ number_format(abs($panelDiff), 2, ',', '.') }} {{ $license->billingCurrency() }}</strong>
+                                    ({{ number_format(abs($panelPct), 2, ',', '.') }}%) a menos que a loja por unidade.
+                                </div>
+                            </div>
+                        @elseif ($panelPct === 0.0)
+                            <div class="text-muted-soft mt-2" style="font-size:.74rem;">O valor do painel é igual ao preço da loja.</div>
+                        @endif
+                    @else
+                        <p class="text-muted-soft mb-2">
+                            Nenhum valor do painel registrado. A cobrança usa o preço da loja. Sincronize com a conta da LicenseBoy
+                            ou informe o valor manualmente.
+                        </p>
+                        @if (auth()->user()->canManageFinance())
+                            <form method="POST" action="{{ route('licenses.panel.sync') }}">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Sincronizar painel
+                                </button>
+                            </form>
+                        @endif
+                    @endif
+
+                    <p class="text-muted-soft mt-3 mb-0" style="font-size:.74rem;">
+                        O painel de cliente da LicenseBoy não permite editar o valor recorrente — somente o suporte altera.
+                        Este sistema registra o valor real cobrado e o usa nas faturas.
+                    </p>
+
+                    @if (auth()->user()->canManageFinance())
+                        <a href="{{ route('licenses.edit', $license) }}" class="btn btn-outline-secondary w-100 mt-2">
+                            <i class="bi bi-pencil me-1"></i> Ajustar valor do painel
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -227,10 +314,14 @@
                             <span class="fw-semibold">{{ $license->catalogItem->synced_at?->format('d/m/Y H:i') ?? '—' }}</span>
                         </div>
 
-                        @if ((float) $license->catalogItem->price !== (float) $license->unit_price)
+                        @if ((float) $license->catalogItem->price !== (float) $license->unit_price && ! $license->usesPanelPrice())
                             <div class="hint-banner mt-2" style="font-size:.74rem;">
                                 <i class="bi bi-arrow-repeat"></i>
                                 <div>O valor salvo difere do catálogo. A próxima sincronização de preços ajusta automaticamente.</div>
+                            </div>
+                        @elseif ($license->usesPanelPrice())
+                            <div class="text-muted-soft mt-2" style="font-size:.74rem;">
+                                O preço da loja é mantido como referência; a cobrança usa o valor real do painel.
                             </div>
                         @endif
 

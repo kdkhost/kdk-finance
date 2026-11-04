@@ -18,6 +18,7 @@ use App\Models\Invoice;
 use App\Models\LicenseCatalogItem;
 use App\Models\LicenseService;
 use App\Services\ExchangeRateService;
+use App\Services\LicenseBoyPanelService;
 use App\Services\LicenseBoyPriceService;
 use App\Services\TaxCalculationService;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +34,7 @@ class LicenseController extends Controller
         $rates = $exchange->rates();
 
         $licenses = LicenseService::query()
-            ->with('lastInvoice')
+            ->with(['lastInvoice', 'catalogItem'])
             ->withCount('invoices')
             ->orderByRaw("CASE status WHEN 'active' THEN 0 WHEN 'expired' THEN 1 ELSE 2 END")
             ->orderBy('next_due_date')
@@ -42,12 +43,14 @@ class LicenseController extends Controller
 
         $rows = $licenses->map(function (LicenseService $license) use ($rates): array {
             $rate = $this->rateFor($license, $rates);
+            $storeRate = $this->rateFor($license, $rates, $license->currency);
 
             return [
                 'license' => $license,
                 'rate' => $rate,
                 'monthly_brl' => $license->monthlyBrl($rate),
                 'yearly_brl' => round($license->monthlyBrl($rate) * 12, 2),
+                'store_monthly_brl' => round($license->storeMonthlyEquivalent() * $storeRate, 2),
             ];
         });
 
@@ -57,19 +60,54 @@ class LicenseController extends Controller
             ->sortBy(fn (LicenseService $license) => $license->next_due_date?->timestamp)
             ->first();
 
+        $divergent = $licenses->filter(fn (LicenseService $license): bool => ($license->panelDivergencePercent() ?? 0) > 0);
+
         return view('licenses.index', [
             'rows' => $rows,
             'rates' => $rates,
+            'panel' => [
+                'configured' => app(LicenseBoyPanelService::class)->isConfigured(),
+                'synced_at' => AppSetting::get('licenseboy_panel_synced_at'),
+            ],
             'totals' => [
                 'active' => $active->count(),
                 'monthly_brl' => round($rows->sum('monthly_brl'), 2),
+                'store_monthly_brl' => round($rows->sum('store_monthly_brl'), 2),
+                'divergence_brl' => round($rows->sum('monthly_brl') - $rows->sum('store_monthly_brl'), 2),
                 'yearly_brl' => round($rows->sum('yearly_brl'), 2),
                 'due_soon' => $licenses->filter(fn (LicenseService $license) => $license->isDueSoon())->count(),
                 'invoices' => $licenses->sum('invoices_count'),
                 'next_due' => $nextDue?->next_due_date,
                 'next_due_name' => $nextDue?->name,
+                'divergent' => $divergent->count(),
             ],
         ]);
+    }
+
+    public function syncPanel(LicenseBoyPanelService $panel): RedirectResponse
+    {
+        if (! $panel->isConfigured()) {
+            return redirect()
+                ->route('settings.index', ['tab' => 'licenseboy'])
+                ->with('warning', 'Informe o e-mail e a senha do painel da LicenseBoy para sincronizar os valores reais.');
+        }
+
+        try {
+            $services = $panel->services();
+            $result = $panel->apply($services);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Não foi possível ler o painel da LicenseBoy: '.$exception->getMessage());
+        }
+
+        $message = sprintf('%d serviços lidos no painel · %d licenças com o valor real atualizado.', count($services), $result['updated']);
+
+        if ($result['unmatched'] !== []) {
+            return back()->with('warning', $message.' Sem correspondência: '.implode(', ', $result['unmatched']).'.');
+        }
+
+        return back()->with('success', $message);
     }
 
     public function create(Request $request): View
@@ -233,7 +271,7 @@ class LicenseController extends Controller
             return back()->with('warning', 'Somente licenças ativas podem gerar faturas.');
         }
 
-        if (! in_array($license->currency, ['EUR', 'USD'], true)) {
+        if (! in_array($license->billingCurrency(), ['EUR', 'USD'], true)) {
             return back()->with('warning', 'A fatura só pode ser gerada em EUR ou USD.');
         }
 
@@ -248,20 +286,20 @@ class LicenseController extends Controller
         $invoice = Invoice::query()->create([
             'external_reference' => $this->reference($license),
             'description' => mb_substr('Licença '.$license->product.' · '.$license->name, 0, 255),
-            'currency' => $license->currency,
+            'currency' => $license->billingCurrency(),
             'amount_original' => $amount,
             'due_date' => $dueDate,
             'status' => Invoice::STATUS_PENDING,
             'license_service_id' => $license->id,
         ]);
 
-        $rate = $exchange->rate($license->currency);
+        $rate = $exchange->rate($license->billingCurrency());
         $tax->applyToInvoice($invoice, $rate);
 
         $license->last_invoice_id = $invoice->id;
 
-        if ($license->billing_cycle !== LicenseService::CYCLE_LIFETIME) {
-            $license->next_due_date = $dueDate->copy()->addMonthsNoOverflow($license->cycleMonths());
+        if ($license->billingCycle() !== LicenseService::CYCLE_LIFETIME) {
+            $license->next_due_date = $dueDate->copy()->addMonthsNoOverflow($license->billingCycleMonths());
         }
 
         $license->save();
@@ -285,6 +323,9 @@ class LicenseController extends Controller
             'license_key' => ['nullable', 'string', 'max:500'],
             'quantity' => ['required', 'integer', 'min:1', 'max:1000'],
             'unit_price' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'panel_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'panel_currency' => ['nullable', Rule::in(['USD', 'EUR'])],
+            'panel_billing_cycle' => ['nullable', Rule::in(array_keys(LicenseService::cycles()))],
             'currency' => ['required', Rule::in(['USD', 'EUR'])],
             'billing_cycle' => ['required', Rule::in(array_keys(LicenseService::cycles()))],
             'next_due_date' => ['nullable', 'date'],
@@ -300,6 +341,9 @@ class LicenseController extends Controller
             'license_key' => 'chave da licença',
             'quantity' => 'quantidade',
             'unit_price' => 'valor unitário',
+            'panel_price' => 'valor cobrado no painel',
+            'panel_currency' => 'moeda do painel',
+            'panel_billing_cycle' => 'ciclo do painel',
             'currency' => 'moeda',
             'billing_cycle' => 'ciclo de cobrança',
             'next_due_date' => 'próximo vencimento',
@@ -385,9 +429,11 @@ class LicenseController extends Controller
     /**
      * @param  array<string, array{rate: float}>  $rates
      */
-    private function rateFor(LicenseService $license, array $rates): float
+    private function rateFor(LicenseService $license, array $rates, ?string $currency = null): float
     {
-        return (float) ($rates[$license->currency]['rate'] ?? 0);
+        $currency ??= $license->billingCurrency();
+
+        return (float) ($rates[$currency]['rate'] ?? 0);
     }
 
     private function reference(LicenseService $license): string

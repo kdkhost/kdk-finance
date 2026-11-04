@@ -213,6 +213,37 @@ document.addEventListener('click', (event) => {
 });
 
 /* ---------------------------------------------------------------------------
+ * Cabeçalho fixo — sombra suave quando o conteúdo passa por baixo
+ * ------------------------------------------------------------------------- */
+const appHeader = document.querySelector('.app-header');
+
+if (appHeader) {
+    const appMain = document.querySelector('.app-main');
+    let queued = false;
+
+    const paintHeader = () => {
+        const offset = Math.max(window.scrollY, appMain?.scrollTop || 0);
+        appHeader.classList.toggle('is-stuck', offset > 4);
+    };
+
+    const onScroll = () => {
+        if (queued) {
+            return;
+        }
+
+        queued = true;
+        requestAnimationFrame(() => {
+            queued = false;
+            paintHeader();
+        });
+    };
+
+    paintHeader();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    appMain?.addEventListener('scroll', onScroll, { passive: true });
+}
+
+/* ---------------------------------------------------------------------------
  * Componentes Bootstrap
  * ------------------------------------------------------------------------- */
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {

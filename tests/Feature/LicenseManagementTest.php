@@ -185,6 +185,43 @@ class LicenseManagementTest extends TestCase
         $this->assertSame(1, $license->invoices()->count());
     }
 
+    public function test_panel_price_prevails_over_the_store_price_in_invoices(): void
+    {
+        $license = $this->license([
+            'unit_price' => 3.99,
+            'panel_price' => 5.00,
+            'panel_currency' => 'USD',
+            'panel_billing_cycle' => LicenseService::CYCLE_MONTHLY,
+            'next_due_date' => '2026-11-27',
+        ]);
+
+        $this->assertTrue($license->usesPanelPrice());
+        $this->assertEqualsWithDelta(5.00, $license->billingUnitPrice(), 0.001);
+        $this->assertEqualsWithDelta(5.00, $license->totalOriginal(), 0.001);
+
+        $this->actingAs($this->user())
+            ->post(route('licenses.invoice', $license))
+            ->assertRedirect();
+
+        $invoice = Invoice::query()->firstOrFail();
+
+        $this->assertEqualsWithDelta(5.00, (float) $invoice->amount_original, 0.001);
+        $this->assertSame('USD', $invoice->currency);
+    }
+
+    public function test_panel_cycle_defines_the_monthly_equivalent(): void
+    {
+        $license = $this->license([
+            'billing_cycle' => LicenseService::CYCLE_MONTHLY,
+            'panel_price' => 60.00,
+            'panel_currency' => 'USD',
+            'panel_billing_cycle' => LicenseService::CYCLE_ANNUAL,
+        ]);
+
+        $this->assertSame(LicenseService::CYCLE_ANNUAL, $license->billingCycle());
+        $this->assertEqualsWithDelta(5.00, $license->monthlyEquivalent(), 0.001);
+    }
+
     public function test_lifetime_license_does_not_advance_the_due_date(): void
     {
         $license = $this->license(['billing_cycle' => LicenseService::CYCLE_LIFETIME]);

@@ -63,32 +63,37 @@
             <span class="text-muted-soft" style="font-size:.76rem;">{{ $activeDevelopers }} desenvolvedor(es) ativo(s)</span>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 users-table">
                 <thead>
                     <tr>
                         <th>Usuário</th>
-                        <th>Perfil</th>
-                        <th>Situação</th>
-                        <th>Criado em</th>
+                        <th class="d-none d-md-table-cell">Perfil</th>
+                        <th class="d-none d-md-table-cell">Situação</th>
+                        <th class="d-none d-md-table-cell">Criado em</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($users as $user)
                         <tr>
-                            <td>
+                            <td class="user-name-cell">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="avatar">{{ $user->initials() }}</span>
                                     <div>
                                         <span class="cell-title d-block">{{ $user->name }}</span>
                                         <span class="cell-sub">{{ $user->email }}</span>
+                                        <span class="user-mobile-meta d-md-none">
+                                            <span class="badge {{ $roleBadge[$user->role] ?? 'text-bg-secondary' }}">{{ $user->roleLabel() }}</span>
+                                            <span class="badge {{ $user->is_active ? 'text-bg-success' : 'text-bg-danger' }}">{{ $user->is_active ? 'Ativo' : 'Inativo' }}</span>
+                                            <span>{{ $user->created_at?->format('d/m/Y') }}</span>
+                                        </span>
                                     </div>
                                 </div>
                             </td>
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 <span class="badge {{ $roleBadge[$user->role] ?? 'text-bg-secondary' }}">{{ $user->roleLabel() }}</span>
                             </td>
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 @if ($user->is_active)
                                     <span class="badge text-bg-success">Ativo</span>
                                 @else
@@ -98,7 +103,7 @@
                                     <span class="badge text-bg-light border ms-1">Você</span>
                                 @endif
                             </td>
-                            <td class="tabular text-muted-soft">{{ $user->created_at?->format('d/m/Y') }}</td>
+                            <td class="d-none d-md-table-cell tabular text-muted-soft">{{ $user->created_at?->format('d/m/Y') }}</td>
                             <td class="text-end">
                                 <button type="button" class="btn btn-ghost btn-sm" data-bs-toggle="modal" data-bs-target="#user-edit-{{ $user->id }}">
                                     <i class="bi bi-pencil me-1"></i> Editar

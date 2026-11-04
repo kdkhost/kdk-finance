@@ -148,6 +148,50 @@
                                 @error('billing_cycle')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
+                            <div class="col-12">
+                                <div class="border-top pt-3 mt-1">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                        <div>
+                                            <div class="fw-semibold">Valor real cobrado no painel LicenseBoy</div>
+                                            <div class="text-muted-soft" style="font-size:.76rem;">
+                                                O painel de cliente não permite alterar o valor recorrente. Registre aqui o valor que a LicenseBoy
+                                                realmente cobra — ele prevalece sobre o preço da loja nos cálculos e nas faturas.
+                                            </div>
+                                        </div>
+                                        @if ($license->panel_synced_at)
+                                            <span class="badge text-bg-light border">Lido em {{ $license->panel_synced_at->format('d/m/Y H:i') }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label" for="panel_price">Valor cobrado no painel</label>
+                                <input type="number" step="0.01" min="0" max="999999.99" class="form-control @error('panel_price') is-invalid @enderror" id="panel_price" name="panel_price" value="{{ old('panel_price', $license->panel_price) }}" placeholder="Opcional">
+                                <div class="form-text">Em branco = usa o valor da loja ({{ $license->currencySymbol() }} {{ number_format((float) $license->unit_price, 2, ',', '.') }}).</div>
+                                @error('panel_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="panel_currency">Moeda do painel</label>
+                                <select class="form-select @error('panel_currency') is-invalid @enderror" id="panel_currency" name="panel_currency">
+                                    <option value="">Mesma da licença ({{ $license->currency }})</option>
+                                    @foreach (['USD', 'EUR'] as $currency)
+                                        <option value="{{ $currency }}" @selected(old('panel_currency', $license->panel_currency) === $currency)>{{ $currency }}</option>
+                                    @endforeach
+                                </select>
+                                @error('panel_currency')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label" for="panel_billing_cycle">Ciclo no painel</label>
+                                <select class="form-select @error('panel_billing_cycle') is-invalid @enderror" id="panel_billing_cycle" name="panel_billing_cycle">
+                                    <option value="">Mesmo da licença ({{ $license->cycleLabel() }})</option>
+                                    @foreach (\App\Models\LicenseService::cycles() as $key => $label)
+                                        <option value="{{ $key }}" @selected(old('panel_billing_cycle', $license->panel_billing_cycle) === $key)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('panel_billing_cycle')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
                             <div class="col-md-5">
                                 <label class="form-label" for="next_due_date">Próximo vencimento</label>
                                 <input type="date" class="form-control @error('next_due_date') is-invalid @enderror" id="next_due_date" name="next_due_date" value="{{ old('next_due_date', $license->next_due_date?->format('Y-m-d')) }}">
@@ -183,6 +227,7 @@
                             <li>Anual: valor ÷ 12</li>
                             <li>Vitalícia: sem custo recorrente</li>
                         </ul>
+                        <p class="text-muted-soft mb-3">Quando o valor do painel está preenchido, ele substitui o preço da loja e o ciclo do painel define a divisão mensal.</p>
                         <p class="text-muted-soft mb-0">A geração de fatura aplica spread, IOF, ICMS e demais tributos configurados, com o câmbio do dia.</p>
                     </div>
                 </div>

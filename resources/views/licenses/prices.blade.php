@@ -112,23 +112,35 @@
                     </a>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 prices-table">
                         <thead>
                             <tr>
                                 <th>Produto</th>
                                 <th class="text-end">Preço</th>
-                                <th>Ciclo</th>
-                                <th class="text-end">Setup</th>
-                                <th>Disponibilidade</th>
+                                <th class="d-none d-md-table-cell">Ciclo</th>
+                                <th class="text-end d-none d-lg-table-cell">Setup</th>
+                                <th class="d-none d-md-table-cell">Disponibilidade</th>
                                 <th class="text-end">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($group['items'] as $item)
                                 <tr>
-                                    <td>
+                                    <td class="price-product-cell">
                                         <a href="{{ $item->url ?: 'https://licenseboy.com/panel/store/'.$group['category'] }}" target="_blank" rel="noopener" class="cell-title d-block">{{ $item->name }}</a>
                                         <span class="cell-sub mono" style="font-size:.7rem;">{{ $item->slug }}</span>
+                                        <div class="price-mobile-meta d-md-none">
+                                            <span>{{ $item->priceLabel() }}</span>
+                                            <span class="badge text-bg-light border">{{ $item->cycleLabel() }}</span>
+                                            @if ($item->isAvailable())
+                                                <span class="badge text-bg-success">{{ $item->availabilityLabel() }}</span>
+                                            @else
+                                                <span class="badge text-bg-danger">{{ $item->availabilityLabel() }}</span>
+                                            @endif
+                                            @if ($item->setup_fee !== null && (float) $item->setup_fee > 0)
+                                                <span>Setup {{ $item->currencySymbol() }} {{ number_format((float) $item->setup_fee, 2, ',', '.') }}</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="text-end tabular">
                                         <span class="fw-semibold">{{ $item->priceLabel() }}</span>
@@ -137,8 +149,8 @@
                                         @endif
                                         <span class="cell-sub d-block" style="font-size:.68rem;">{{ $item->currency }}</span>
                                     </td>
-                                    <td><span class="badge text-bg-light border">{{ $item->cycleLabel() }}</span></td>
-                                    <td class="text-end tabular">
+                                    <td class="d-none d-md-table-cell"><span class="badge text-bg-light border">{{ $item->cycleLabel() }}</span></td>
+                                    <td class="text-end tabular d-none d-lg-table-cell">
                                         @if ($item->setup_fee === null)
                                             —
                                         @elseif ((float) $item->setup_fee <= 0)
@@ -147,7 +159,7 @@
                                             {{ $item->currencySymbol() }} {{ number_format((float) $item->setup_fee, 2, ',', '.') }}
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="d-none d-md-table-cell">
                                         @if ($item->isAvailable())
                                             <span class="badge text-bg-success">{{ $item->availabilityLabel() }}</span>
                                         @else
@@ -157,7 +169,7 @@
                                     <td class="text-end">
                                         @if (auth()->user()->canManageFinance())
                                             <a href="{{ route('licenses.create', ['catalogo' => $item->id]) }}" class="btn btn-ghost btn-sm" title="Cadastrar licença com este preço">
-                                                <i class="bi bi-plus-circle me-1"></i> Usar este preço
+                                                <i class="bi bi-plus-circle me-1"></i><span class="d-none d-sm-inline">Usar este preço</span>
                                             </a>
                                         @else
                                             <span class="text-muted-soft" style="font-size:.74rem;">Somente consulta</span>

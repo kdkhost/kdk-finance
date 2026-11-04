@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.4.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.5.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -38,6 +38,7 @@ marca o resultado como desatualizado.
 - CRUD de faturas com prévia do cálculo em tempo real, pagamento, cancelamento, reabertura, recálculo e bloqueio de cotação.
 - CRUD de conversões EUR↔USD com cotação ao vivo, spread, IOF, tarifa fixa, margem de segurança, taxa efetiva, custo real e conferência da fatura do cartão.
 - CRUD de licenças LicenseBoy (cPanel, CloudLinux, LiteSpeed e demais produtos), com custo mensal em BRL, renovações, chave criptografada e geração de fatura em um clique.
+- Sincronização com o painel de cliente da LicenseBoy: valor realmente cobrado, moeda, ciclo, vencimento e situação de cada serviço ativo, com o valor do painel prevalecendo sobre o preço da loja.
 - Catálogo de preços em tempo real da loja LicenseBoy (37 produtos nas 8 categorias públicas), com sincronização diária e licenças vinculadas que acompanham o preço da loja.
 - Central de cron com CRUD de agendamentos, presets, fuso horário, execução manual, histórico de saídas e sinal de vida do agendador — apenas uma linha no cron da hospedagem.
 - Importação automática de todo o histórico de faturas da OVHcloud e sincronização agendada a cada 15 minutos.
@@ -205,6 +206,28 @@ setup, estoque e o selo "a partir de":
 - categorias que falharem na leitura são preservadas como estavam — só produtos de
   categorias lidas com sucesso podem ser removidos.
 
+#### Painel de cliente (valor realmente cobrado)
+
+A loja nem sempre cobra o mesmo valor que o painel de cliente — promoções antigas e
+reajustes ficam só no painel. Como a área do cliente da LicenseBoy **não permite
+alterar o valor recorrente** (somente o suporte altera), o sistema lê a cobrança real
+e a registra:
+
+- **Configurações → LicenseBoy** guarda o e-mail em texto e a senha criptografada
+  (`Crypt::encryptString`) em `app_settings`; há botão para sincronizar na hora e
+  para apagar as credenciais;
+- **Atualizar painel** na tela da licença ou `php artisan licenses:sync-panel`; o
+  agendador roda a leitura diariamente às 05:25, sem sobreposição;
+- cada serviço ativo é vinculado pelo nome e, se necessário, pelo produto — quando
+  existe um serviço ativo e um cancelado com o mesmo nome, o ativo prevalece;
+  empates sem serviço ativo são ignorados para não usar o preço errado;
+- o **valor, a moeda e o ciclo do painel prevalecem** no cálculo mensal, na geração
+  de faturas e nos indicadores em BRL; o preço da loja continua visível apenas como
+  referência;
+- a tela da licença mostra a divergência em percentual e o custo extra por mês e por
+  ano; se o suporte reajustar a cobrança, os campos **Valor/Moeda/Ciclo do painel**
+  no formulário permitem registrar o novo valor manualmente.
+
 ### Conversões EUR ↔ USD
 
 O servidor da OVH é cobrado em euro, mas o cartão da conta internacional é em
@@ -261,7 +284,8 @@ um sinal de vida: se o agendador não rodar por 3 minutos, o status fica
 ### Agendador
 
 O `schedule:run` dispara a sincronização da OVH a cada 15 minutos, a central de
-cron a cada minuto e o catálogo de preços da LicenseBoy diariamente às 05:10.
+cron a cada minuto, o catálogo de preços da LicenseBoy diariamente às 05:10 e o
+painel de cliente da LicenseBoy diariamente às 05:25.
 Em produção, adicione ao cron exatamente a linha única acima.
 
 ### Filas
@@ -311,10 +335,13 @@ serviços/IPs do painel, itens individuais de fatura, CRUD de licenças com
 criptografia e geração de fatura, central de cron (permissões, validação,
 execução manual, agendamento por minuto e heartbeat), catálogo de preços da
 LicenseBoy (sincronização, remoção de itens, falha por categoria, permissões,
-prefill e vínculo que prevalece sobre o formulário) e conversões EUR↔USD (cálculo
+prefill e vínculo que prevalece sobre o formulário), conversões EUR↔USD (cálculo
 completo, totais adulterados ignorados, permissões, calibração, recálculo, endpoint
-de cotação, cotações direta/cruzada/última conhecida e cache de 5 minutos).
-São 63 testes e 270 asserções.
+de cotação, cotações direta/cruzada/última conhecida e cache de 5 minutos) e painel
+de cliente da LicenseBoy (preço decimal, valor do painel usado na fatura,
+credenciais criptografadas, permissões, empate de produtos ignorado, precedência
+sobre a loja e ciclo definindo o equivalente mensal).
+São 70 testes e 310 asserções.
 
 ---
 
@@ -322,13 +349,13 @@ São 63 testes e 270 asserções.
 
 ```
 app/
-├── Console/Commands/          # SyncInvoicesCommand, RunDueCronsCommand e SyncLicensePricesCommand
+├── Console/Commands/          # SyncInvoicesCommand, RunDueCronsCommand, SyncLicensePricesCommand e SyncLicensePanelCommand
 ├── Events/InvoiceAmountUpdatedEvent.php
 ├── Http/Controllers/          # Dashboard, Faturas, Infraestrutura, Licenças, Conversões, Crons, Configurações, Usuários, Perfil, Notificações
 ├── Http/Middleware/           # Assinatura do desenvolvedor e controle de perfil
 ├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, LicenseService, LicenseCatalogItem, CurrencyConversion, CronJob, CronJobRun, User
 ├── Notifications/             # Variação cambial
-└── Services/                  # ExchangeRate, TaxCalculation, CurrencyConversion, Ovh, OvhInventory, Dashboard, CronRunner, LicenseBoyPrice
+└── Services/                  # ExchangeRate, TaxCalculation, CurrencyConversion, Ovh, OvhInventory, Dashboard, CronRunner, LicenseBoyPrice, LicenseBoyPanel
 
 resources/
 ├── css/theme.css              # Tokens claro/escuro e componentes

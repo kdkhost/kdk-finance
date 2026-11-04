@@ -46,6 +46,13 @@ class LicenseService extends Model
         'notes',
         'last_invoice_id',
         'license_catalog_item_id',
+        'panel_service_id',
+        'panel_price',
+        'panel_currency',
+        'panel_billing_cycle',
+        'panel_next_due_date',
+        'panel_status',
+        'panel_synced_at',
     ];
 
     protected function casts(): array
@@ -53,7 +60,10 @@ class LicenseService extends Model
         return [
             'quantity' => 'integer',
             'unit_price' => 'decimal:2',
+            'panel_price' => 'decimal:2',
             'next_due_date' => 'date',
+            'panel_next_due_date' => 'date',
+            'panel_synced_at' => 'datetime',
             'auto_renew' => 'boolean',
             'license_key' => 'encrypted',
         ];
@@ -147,13 +157,43 @@ class LicenseService extends Model
 
     public function cycleMonths(): int
     {
-        return match ($this->billing_cycle) {
+        return self::monthsForCycle($this->billing_cycle);
+    }
+
+    /**
+     * Meses de um ciclo informado, incluindo o ciclo lido do painel.
+     */
+    public static function monthsForCycle(?string $cycle): int
+    {
+        return match ($cycle) {
             self::CYCLE_QUARTERLY => 3,
             self::CYCLE_SEMIANNUAL => 6,
             self::CYCLE_ANNUAL => 12,
             self::CYCLE_LIFETIME => 0,
             default => 1,
         };
+    }
+
+    /**
+     * Ciclo que define a cobrança: o do painel quando há valor do painel.
+     */
+    public function billingCycle(): string
+    {
+        if ($this->usesPanelPrice() && $this->panel_billing_cycle) {
+            return $this->panel_billing_cycle;
+        }
+
+        return $this->billing_cycle;
+    }
+
+    public function billingCycleMonths(): int
+    {
+        return self::monthsForCycle($this->billingCycle());
+    }
+
+    public function billingCycleLabel(): string
+    {
+        return self::cycles()[$this->billingCycle()] ?? $this->billingCycle();
     }
 
     public function cycleLabel(): string
@@ -180,9 +220,77 @@ class LicenseService extends Model
         return config('finance.currencies.'.$this->currency.'.symbol', $this->currency);
     }
 
+    public function billingCurrencySymbol(): string
+    {
+        return config('finance.currencies.'.$this->billingCurrency().'.symbol', $this->billingCurrency());
+    }
+
+    /**
+     * Preço realmente cobrado: o painel da LicenseBoy prevalece sobre a loja.
+     */
+    public function billingUnitPrice(): float
+    {
+        $panel = $this->panel_price;
+
+        if ($panel !== null && (float) $panel > 0) {
+            return (float) $panel;
+        }
+
+        return (float) $this->unit_price;
+    }
+
+    public function usesPanelPrice(): bool
+    {
+        return $this->panel_price !== null && (float) $this->panel_price > 0;
+    }
+
+    public function billingCurrency(): string
+    {
+        return $this->panel_currency ?: $this->currency;
+    }
+
+    /**
+     * Diferença percentual entre o valor do painel e o preço atual da loja.
+     * Positivo = o painel cobra mais caro que a loja.
+     */
+    public function panelDivergencePercent(): ?float
+    {
+        if (! $this->usesPanelPrice() || ! $this->catalogItem) {
+            return null;
+        }
+
+        $store = (float) $this->catalogItem->price;
+
+        if ($store <= 0) {
+            return null;
+        }
+
+        return round((($this->billingUnitPrice() - $store) / $store) * 100, 2);
+    }
+
+    public function panelDifference(): ?float
+    {
+        if (! $this->usesPanelPrice() || ! $this->catalogItem) {
+            return null;
+        }
+
+        return round($this->billingUnitPrice() - (float) $this->catalogItem->price, 2);
+    }
+
     public function totalOriginal(): float
     {
-        return round((float) $this->unit_price * max(1, (int) $this->quantity), 2);
+        return round($this->billingUnitPrice() * max(1, (int) $this->quantity), 2);
+    }
+
+    public function storeMonthlyEquivalent(): float
+    {
+        $months = $this->cycleMonths();
+
+        if ($months === 0) {
+            return 0.0;
+        }
+
+        return round(((float) $this->unit_price * max(1, (int) $this->quantity)) / $months, 2);
     }
 
     /**
@@ -190,7 +298,7 @@ class LicenseService extends Model
      */
     public function monthlyEquivalent(): float
     {
-        $months = $this->cycleMonths();
+        $months = $this->billingCycleMonths();
 
         if ($months === 0) {
             return 0.0;

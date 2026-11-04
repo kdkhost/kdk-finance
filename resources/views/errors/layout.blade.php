@@ -19,7 +19,7 @@
     @include('partials.favicon')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-body-tertiary">
+<body>
     <main class="error-page">
         <div class="error-card card">
             <div class="card-body p-4 p-md-5">
@@ -46,7 +46,7 @@
                 <hr class="my-4">
                 <div class="text-muted-soft" style="font-size:.72rem;line-height:1.7;">
                     {{ config('finance.developer.company') }} · CNPJ {{ config('finance.developer.cnpj') }}<br>
-                    Desenvolvido por {{ config('finance.developer.name') }} · v1.4.0
+                    Desenvolvido por {{ config('finance.developer.name') }} · v1.5.0
                 </div>
             </div>
         </div>

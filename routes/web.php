@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/licencas/nova', [LicenseController::class, 'create'])->name('licenses.create');
         Route::post('/licencas', [LicenseController::class, 'store'])->name('licenses.store');
         Route::post('/licencas/precos/atualizar', [LicenseController::class, 'syncPrices'])->name('licenses.prices.sync');
+        Route::post('/licencas/painel/atualizar', [LicenseController::class, 'syncPanel'])->name('licenses.panel.sync');
     });
 
     Route::get('/licencas/{license}', [LicenseController::class, 'show'])->name('licenses.show');
@@ -146,6 +147,7 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::put('/configuracoes/ovh', [SettingsController::class, 'updateOvh'])->name('settings.ovh');
         Route::post('/configuracoes/ovh/testar', [SettingsController::class, 'testOvh'])->name('settings.ovh.test');
+        Route::put('/configuracoes/licenseboy', [SettingsController::class, 'updateLicenseBoy'])->name('settings.licenseboy');
         Route::post('/configuracoes/cotacoes/atualizar', [SettingsController::class, 'refreshRates'])->name('settings.rates.refresh');
         Route::put('/configuracoes/regras', [SettingsController::class, 'updateOperational'])->name('settings.rules');
 

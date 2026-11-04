@@ -5,6 +5,32 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.5.0] - 2026-11-04
+
+### Adicionado
+
+- **Sincronização com o painel de cliente da LicenseBoy** (`licenses:sync-panel`): lê os serviços ativos, o valor recorrente, a moeda, o ciclo, o próximo vencimento e a situação diretamente da área do cliente, com login por token CSRF e cookies de sessão.
+- Credenciais do painel LicenseBoy gravadas em `app_settings` (e-mail em texto, senha criptografada com `Crypt::encryptString`), configuráveis em **Configurações → LicenseBoy**, com botão de sincronização manual e opção de apagar as credenciais.
+- O **valor do painel passa a prevalecer** sobre o preço da loja no cálculo mensal, nas faturas geradas e nos indicadores em BRL; a loja continua exibida apenas como referência.
+- Campos **Valor no painel**, **Moeda do painel** e **Ciclo do painel** no formulário da licença, para ajuste manual quando o suporte da LicenseBoy alterar a cobrança recorrente (o painel do cliente não permite editar esse valor).
+- Cartão **Painel LicenseBoy** na tela da licença com valor cobrado, ciclo, total do ciclo, preço da loja, divergência em percentual e o custo extra por mês e por ano.
+- Agendamento diário da sincronização do painel às 05:25, sem sobreposição e em um único servidor.
+- 7 novos testes de feature para o painel: leitura de preço decimal (7.99 e 1.80 sem virar 799/180), gravação e uso do valor do painel na fatura, credenciais criptografadas e removíveis, permissão de consulta, empate de produtos ignorado, prevalência do painel sobre a loja e ciclo do painel definindo o equivalente mensal. São 70 testes e 310 asserções no total.
+
+### Corrigido
+
+- Preços do painel como `7.99` eram interpretados como `799`; agora ponto sozinho é decimal e vírgula segue o padrão brasileiro (`1.234,56`).
+- Ciclo **Mensal** do painel não era reconhecido e ficava vazio; a leitura passou a considerar “mensal”, “mês” e “mes”.
+- Licenças com serviços antigos cancelados no painel não eram vinculadas; o vínculo agora prioriza o serviço ativo quando o nome ou o produto se repete.
+- Segredos apagados em `app_settings` não geram mais aviso de descriptografia e voltam ao valor padrão.
+
+### Alterado
+
+- **Cabeçalho fixo** em todas as telas do painel: fica preso ao topo (`position: sticky`), acima do conteúdo (`z-index` corrigido sobre a regra da AdminLTE) e ganha sombra suave ao rolar.
+- Tema escuro padronizado em todas as páginas: fundo da página mais profundo que os cartões, tabelas, modais, menus, campos e seletores com as mesmas cores, sem painéis claros residuais.
+- Tabelas de licenças, serviços (infraestrutura e painel), usuários e catálogo de preços reorganizadas no mobile: colunas secundárias ocultas por breakpoint e informações essenciais reunidas sob o nome, sem rolagem horizontal nem barra interna.
+- README documenta a sincronização do painel, a precedência de preços, o agendamento e as tabelas responsivas.
+
 ## [1.4.0] - 2026-11-04
 
 ### Adicionado
@@ -187,6 +213,7 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.5.0]: https://kdkhost.com.br/
 [1.4.0]: https://kdkhost.com.br/
 [1.3.1]: https://kdkhost.com.br/
 [1.3.0]: https://kdkhost.com.br/
