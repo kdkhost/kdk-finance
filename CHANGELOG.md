@@ -5,6 +5,34 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.3.0] - 2026-11-04
+
+### Adicionado
+
+- Tabela `license_catalog_items`: catálogo local dos produtos públicos da loja da LicenseBoy com nome, slug, categoria, preço, moeda, ciclo, setup, estoque, URL e data da última leitura.
+- Coluna `license_catalog_item_id` em `license_services`, vinculando cada licença ao produto correspondente da loja.
+- `LicenseBoyPriceService`: leitura das oito categorias públicas da loja (`control-panel-licenses`, `shared-cloudlinux-licenses`, `shared-litespeed-licenses`, `whmcs-license`, `shared-licenses`, `bundles`, `server-config-and-management` e `reseller-packages`), interpretação dos cartões via DOMDocument/DOMXPath e atualização idempotente por `provider + slug`.
+- Preços com selo "a partir de", setup fee, estoque ("0 Available") e ciclo; categorias que falharem na leitura são preservadas e só produtos de categorias lidas com sucesso podem ser removidos.
+- Reaplicação automática do preço, moeda e ciclo do catálogo em todas as licenças vinculadas a cada sincronização.
+- Página **Preços LicenseBoy** (`/licencas/precos`) com totais, última sincronização, licenças vinculadas, produtos esgotados, tabelas por categoria, link externo e botão **Atualizar preços** com confirmação.
+- Ação "Usar este preço": abre o cadastro de licença com produto, identificação, valor, moeda e ciclo preenchidos a partir do item do catálogo (`?catalogo={id}`).
+- Campo **Preço de referência** no formulário de licença, com agrupamento por categoria; ao vincular, o valor fica somente leitura e o catálogo prevalece sobre valores manipulados no formulário.
+- Cartão **Catálogo LicenseBoy** na página da licença, com produto da loja, preço, disponibilidade, última leitura e aviso quando o valor salvo difere do catálogo.
+- Comando `licenses:sync-prices`, agendado diariamente às 05:10 com `withoutOverlapping` e `onOneServer`, que sincroniza o catálogo e aplica os preços às licenças vinculadas.
+- Link **Preços da loja** na página de licenças.
+- 8 novos testes de feature para o catálogo (criação/atualização, remoção, falha por categoria, permissões, prefill, vínculo e comando). São 48 testes e 207 asserções no total.
+
+### Alterado
+
+- Textos de licenças passam a explicar que os preços vêm do catálogo público e que o vínculo acompanha a loja.
+- README documenta o catálogo, a sincronização diária e o comando manual.
+- Versão do sistema atualizada para 1.3.0 em telas, PWA e documentação.
+
+### Observações
+
+- A LicenseBoy usa WHMCS e não fornece API de consulta; a leitura é feita nas páginas públicas das categorias, sem credenciais e sem qualquer escrita na loja.
+- Nenhum preço é gravado no `.env`: o catálogo fica no banco e a última leitura é registrada em `app_settings`.
+
 ## [1.2.0] - 2026-11-04
 
 ### Adicionado
@@ -118,6 +146,7 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.3.0]: https://kdkhost.com.br/
 [1.2.0]: https://kdkhost.com.br/
 [1.1.0]: https://kdkhost.com.br/
 [1.0.0]: https://kdkhost.com.br/

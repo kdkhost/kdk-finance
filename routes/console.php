@@ -42,3 +42,12 @@ Schedule::command('cron:run-due')
     ->everyMinute()
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+| Tabela de preços da LicenseBoy: a loja pública não oferece API, então o
+| catálogo é lido diariamente e as licenças vinculadas recebem o valor atual.
+*/
+Schedule::command('licenses:sync-prices')
+    ->dailyAt('05:10')
+    ->withoutOverlapping()
+    ->onOneServer();

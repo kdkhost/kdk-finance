@@ -13,14 +13,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\Invoice;
+use App\Models\LicenseCatalogItem;
 use App\Models\LicenseService;
 use App\Services\ExchangeRateService;
+use App\Services\LicenseBoyPriceService;
 use App\Services\TaxCalculationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class LicenseController extends Controller
 {
@@ -68,18 +72,29 @@ class LicenseController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $license = new LicenseService([
+            'provider' => LicenseBoyPriceService::PROVIDER,
+            'currency' => 'USD',
+            'billing_cycle' => LicenseService::CYCLE_MONTHLY,
+            'status' => LicenseService::STATUS_ACTIVE,
+            'quantity' => 1,
+            'auto_renew' => true,
+            'next_due_date' => now()->addMonthNoOverflow(),
+        ]);
+
+        $selected = $this->catalogItemFromRequest($request);
+
+        if ($selected) {
+            $license->fill($this->catalogAttributes($selected));
+        }
+
         return view('licenses.form', [
-            'license' => new LicenseService([
-                'provider' => 'LicenseBoy',
-                'currency' => 'USD',
-                'billing_cycle' => LicenseService::CYCLE_MONTHLY,
-                'status' => LicenseService::STATUS_ACTIVE,
-                'quantity' => 1,
-                'auto_renew' => true,
-                'next_due_date' => now()->addMonthNoOverflow(),
-            ]),
+            'license' => $license,
+            'catalogItems' => $this->catalogItems(),
+            'selectedCatalogId' => $selected?->id,
+            'lastSyncedAt' => app(LicenseBoyPriceService::class)->lastSyncedAt(),
             'rates' => app(ExchangeRateService::class)->rates(),
         ]);
     }
@@ -95,13 +110,78 @@ class LicenseController extends Controller
             ->with('success', 'Licença '.$license->product.' cadastrada com sucesso.');
     }
 
+    public function prices(LicenseBoyPriceService $prices, ExchangeRateService $exchange): View
+    {
+        $items = LicenseCatalogItem::query()
+            ->where('provider', LicenseBoyPriceService::PROVIDER)
+            ->orderBy('name')
+            ->get();
+
+        $groups = collect(LicenseBoyPriceService::CATEGORIES)
+            ->map(fn (string $label, string $category): array => [
+                'category' => $category,
+                'label' => $label,
+                'items' => $items->where('category', $category)->values(),
+            ])
+            ->filter(fn (array $group): bool => $group['items']->isNotEmpty())
+            ->values();
+
+        $linked = LicenseService::query()->whereNotNull('license_catalog_item_id')->count();
+        $summary = json_decode((string) AppSetting::get('license_prices_sync_summary'), true);
+
+        return view('licenses.prices', [
+            'groups' => $groups,
+            'total' => $items->count(),
+            'soldOut' => $items->reject(fn (LicenseCatalogItem $item): bool => $item->isAvailable())->count(),
+            'linked' => $linked,
+            'lastSyncedAt' => $prices->lastSyncedAt(),
+            'summary' => is_array($summary) ? $summary : null,
+            'rates' => $exchange->rates(),
+        ]);
+    }
+
+    public function syncPrices(LicenseBoyPriceService $prices): RedirectResponse
+    {
+        try {
+            $result = $prices->sync();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Não foi possível consultar a loja da LicenseBoy: '.$exception->getMessage());
+        }
+
+        $applied = $prices->applyToLicenses();
+
+        if (count($result['failed']) === count(LicenseBoyPriceService::CATEGORIES)) {
+            return back()->with('warning', 'A loja da LicenseBoy não respondeu. Nenhum preço foi alterado.');
+        }
+
+        $message = sprintf(
+            '%d produtos no catálogo · %d novos · %d atualizados · %d removidos · %d licenças com preço atualizado.',
+            $result['total'],
+            $result['created'],
+            $result['updated'],
+            $result['removed'],
+            $applied,
+        );
+
+        if ($result['failed'] !== []) {
+            return back()->with('warning', $message.' Falhas: '.implode(', ', array_keys($result['failed'])).'.');
+        }
+
+        return back()->with('success', $message);
+    }
+
     public function show(LicenseService $license, ExchangeRateService $exchange): View
     {
         $rates = $exchange->rates();
         $rate = $this->rateFor($license, $rates);
 
         return view('licenses.show', [
-            'license' => $license->load(['invoices' => fn ($query) => $query->orderByDesc('due_date')]),
+            'license' => $license->load([
+                'catalogItem',
+                'invoices' => fn ($query) => $query->orderByDesc('due_date'),
+            ]),
             'rate' => $rate,
             'monthlyBrl' => $license->monthlyBrl($rate),
             'rates' => $rates,
@@ -112,6 +192,9 @@ class LicenseController extends Controller
     {
         return view('licenses.form', [
             'license' => $license,
+            'catalogItems' => $this->catalogItems(),
+            'selectedCatalogId' => $license->license_catalog_item_id,
+            'lastSyncedAt' => app(LicenseBoyPriceService::class)->lastSyncedAt(),
             'rates' => $exchange->rates(),
         ]);
     }
@@ -194,6 +277,7 @@ class LicenseController extends Controller
     private function validated(Request $request): array
     {
         $data = $request->validate([
+            'license_catalog_item_id' => ['nullable', 'integer', 'exists:license_catalog_items,id'],
             'provider' => ['required', 'string', 'max:80'],
             'product' => ['required', 'string', 'max:80'],
             'name' => ['required', 'string', 'max:150'],
@@ -208,6 +292,7 @@ class LicenseController extends Controller
             'auto_renew' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ], [], [
+            'license_catalog_item_id' => 'preço do catálogo',
             'provider' => 'fornecedor',
             'product' => 'produto',
             'name' => 'identificação',
@@ -223,7 +308,78 @@ class LicenseController extends Controller
 
         $data['auto_renew'] = $request->boolean('auto_renew');
 
+        $catalog = $this->catalogItem($data['license_catalog_item_id'] ?? null);
+
+        if ($catalog) {
+            // O catálogo é a fonte da verdade do preço: sobrescreve o que veio do formulário.
+            $data = array_merge($data, $this->catalogAttributes($catalog, withName: false));
+        } else {
+            $data['license_catalog_item_id'] = null;
+        }
+
         return $data;
+    }
+
+    /**
+     * Catálogo agrupado na mesma ordem da loja da LicenseBoy.
+     *
+     * @return \Illuminate\Support\Collection<int, array{category: string, label: string, items: \Illuminate\Support\Collection<int, LicenseCatalogItem>}>
+     */
+    private function catalogItems()
+    {
+        $items = LicenseCatalogItem::query()
+            ->where('provider', LicenseBoyPriceService::PROVIDER)
+            ->orderBy('name')
+            ->get();
+
+        return collect(LicenseBoyPriceService::CATEGORIES)
+            ->map(fn (string $label, string $category): array => [
+                'category' => $category,
+                'label' => $label,
+                'items' => $items->where('category', $category)->values(),
+            ])
+            ->filter(fn (array $group): bool => $group['items']->isNotEmpty())
+            ->values();
+    }
+
+    private function catalogItemFromRequest(Request $request): ?LicenseCatalogItem
+    {
+        return $this->catalogItem($request->input('catalogo')) ?? $this->catalogItem($request->old('license_catalog_item_id'));
+    }
+
+    private function catalogItem(mixed $id): ?LicenseCatalogItem
+    {
+        if (! is_numeric($id)) {
+            return null;
+        }
+
+        return LicenseCatalogItem::query()
+            ->where('provider', LicenseBoyPriceService::PROVIDER)
+            ->find((int) $id);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function catalogAttributes(LicenseCatalogItem $item, bool $withName = true): array
+    {
+        $attributes = [
+            'license_catalog_item_id' => $item->id,
+            'provider' => $item->provider,
+            'product' => $item->productLabel(),
+            'unit_price' => number_format((float) $item->price, 2, '.', ''),
+            'currency' => $item->currency,
+        ];
+
+        if ($item->billing_cycle && array_key_exists($item->billing_cycle, LicenseService::cycles())) {
+            $attributes['billing_cycle'] = $item->billing_cycle;
+        }
+
+        if ($withName) {
+            $attributes['name'] = mb_substr($item->name, 0, 150);
+        }
+
+        return $attributes;
     }
 
     /**

@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.2.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.3.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -32,6 +32,7 @@ se a API falhar, o sistema reaproveita a última cotação válida — marcada c
 - Itens individuais de cada fatura importada (descrição, domínio, quantidade, valor unitário, total e período).
 - CRUD de faturas com prévia do cálculo em tempo real, pagamento, cancelamento, reabertura, recálculo e bloqueio de cotação.
 - CRUD de licenças LicenseBoy (cPanel, CloudLinux, LiteSpeed e demais produtos), com custo mensal em BRL, renovações, chave criptografada e geração de fatura em um clique.
+- Catálogo de preços em tempo real da loja LicenseBoy (37 produtos nas 8 categorias públicas), com sincronização diária e licenças vinculadas que acompanham o preço da loja.
 - Central de cron com CRUD de agendamentos, presets, fuso horário, execução manual, histórico de saídas e sinal de vida do agendador — apenas uma linha no cron da hospedagem.
 - Importação automática de todo o histórico de faturas da OVHcloud e sincronização agendada a cada 15 minutos.
 - Atualização em tempo real do dashboard via Laravel Reverb (WebSocket).
@@ -170,8 +171,8 @@ mesmos valores e a página de cada fatura exibe a tabela **Itens da fatura**.
 
 ### Licenças LicenseBoy
 
-As licenças são compradas da **LicenseBoy**, que não publica API de consulta.
-Por isso o controle é local, em **Licenças** (menu Operação):
+As licenças são compradas da **LicenseBoy**, que vende pelo WHMCS e não publica API
+de consulta. O controle fica em **Licenças** (menu Operação):
 
 - cadastro por produto (cPanel, DirectAdmin, Plesk, CloudLinux, LiteSpeed,
   Virtualizor, Imunify360, KernelCare, Softaculous, JetBackup, CXS, OSM, SitePad,
@@ -182,6 +183,21 @@ Por isso o controle é local, em **Licenças** (menu Operação):
 - geração de fatura em um clique: cria a fatura em USD/EUR, aplica spread, IOF,
   ICMS e demais tributos, vincula à licença e avança o próximo vencimento em um
   ciclo (licenças vitalícias não avançam).
+
+#### Catálogo de preços da loja
+
+**Preços da loja** (`/licencas/precos`) lê as oito categorias públicas da loja da
+LicenseBoy e mantém um catálogo local de 37 produtos com preço, moeda, ciclo,
+setup, estoque e o selo "a partir de":
+
+- Painéis de controle, CloudLinux, LiteSpeed, WHMCS, Addons e extensões, Bundles,
+  Configuração e gestão e Revenda;
+- **Atualizar preços** no painel ou `php artisan licenses:sync-prices`; o agendador
+  também roda diariamente às 05:10;
+- ao vincular uma licença a um item do catálogo, o preço, a moeda e o ciclo passam
+  a seguir a loja e são reaplicados a cada sincronização;
+- categorias que falharem na leitura são preservadas como estavam — só produtos de
+  categorias lidas com sucesso podem ser removidos.
 
 ### Central de cron
 
@@ -201,8 +217,9 @@ um sinal de vida: se o agendador não rodar por 3 minutos, o status fica
 
 ### Agendador
 
-O `schedule:run` dispara a sincronização da OVH a cada 15 minutos e a central de
-cron a cada minuto. Em produção, adicione ao cron exatamente a linha única acima.
+O `schedule:run` dispara a sincronização da OVH a cada 15 minutos, a central de
+cron a cada minuto e o catálogo de preços da LicenseBoy diariamente às 05:10.
+Em produção, adicione ao cron exatamente a linha única acima.
 
 ### Filas
 
@@ -248,8 +265,10 @@ php artisan test
 Cobertura atual: cálculo tributário, criptografia de configurações, autenticação,
 fluxo de faturas, exportação CSV, sincronização com a AwesomeAPI, página de
 serviços/IPs do painel, itens individuais de fatura, CRUD de licenças com
-criptografia e geração de fatura, além da central de cron (permissões, validação,
-execução manual, agendamento por minuto e heartbeat). São 40 testes e 173 asserções.
+criptografia e geração de fatura, central de cron (permissões, validação,
+execução manual, agendamento por minuto e heartbeat) e catálogo de preços da
+LicenseBoy (sincronização, remoção de itens, falha por categoria, permissões,
+prefill e vínculo que prevalece sobre o formulário). São 48 testes e 207 asserções.
 
 ---
 
@@ -257,13 +276,13 @@ execução manual, agendamento por minuto e heartbeat). São 40 testes e 173 ass
 
 ```
 app/
-├── Console/Commands/          # SyncInvoicesCommand e RunDueCronsCommand
+├── Console/Commands/          # SyncInvoicesCommand, RunDueCronsCommand e SyncLicensePricesCommand
 ├── Events/InvoiceAmountUpdatedEvent.php
 ├── Http/Controllers/          # Dashboard, Faturas, Infraestrutura, Licenças, Crons, Configurações, Usuários, Perfil, Notificações
 ├── Http/Middleware/           # Assinatura do desenvolvedor e controle de perfil
-├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, LicenseService, CronJob, CronJobRun, User
+├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, LicenseService, LicenseCatalogItem, CronJob, CronJobRun, User
 ├── Notifications/             # Variação cambial
-└── Services/                  # ExchangeRate, TaxCalculation, Ovh, OvhInventory, Dashboard, CronRunner
+└── Services/                  # ExchangeRate, TaxCalculation, Ovh, OvhInventory, Dashboard, CronRunner, LicenseBoyPrice
 
 resources/
 ├── css/theme.css              # Tokens claro/escuro e componentes

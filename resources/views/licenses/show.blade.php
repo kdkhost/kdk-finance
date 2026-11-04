@@ -202,6 +202,53 @@
             </div>
 
             <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Catálogo LicenseBoy</span>
+                    @if ($license->catalogItem)
+                        <span class="badge text-bg-light border">Vinculado</span>
+                    @endif
+                </div>
+                <div class="card-body" style="font-size:.8rem;">
+                    @if ($license->catalogItem)
+                        <div class="d-flex justify-content-between gap-3 py-1">
+                            <span class="text-muted-soft">Produto na loja</span>
+                            <span class="fw-semibold text-end">{{ $license->catalogItem->name }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted-soft">Preço da loja</span>
+                            <span class="fw-semibold">{{ $license->catalogItem->priceLabel() }} / {{ $license->catalogItem->cycleLabel() }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted-soft">Disponibilidade</span>
+                            <span class="fw-semibold">{{ $license->catalogItem->availabilityLabel() }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted-soft">Última leitura</span>
+                            <span class="fw-semibold">{{ $license->catalogItem->synced_at?->format('d/m/Y H:i') ?? '—' }}</span>
+                        </div>
+
+                        @if ((float) $license->catalogItem->price !== (float) $license->unit_price)
+                            <div class="hint-banner mt-2" style="font-size:.74rem;">
+                                <i class="bi bi-arrow-repeat"></i>
+                                <div>O valor salvo difere do catálogo. A próxima sincronização de preços ajusta automaticamente.</div>
+                            </div>
+                        @endif
+
+                        <a href="{{ route('licenses.prices') }}" class="btn btn-outline-secondary w-100 mt-3">
+                            <i class="bi bi-tags me-1"></i> Ver catálogo de preços
+                        </a>
+                    @else
+                        <p class="text-muted-soft mb-2">Esta licença usa um preço manual e não acompanha a loja.</p>
+                        @if (auth()->user()->canManageFinance())
+                            <a href="{{ route('licenses.edit', $license) }}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-link-45deg me-1"></i> Vincular ao catálogo
+                            </a>
+                        @endif
+                    @endif
+                </div>
+            </div>
+
+            <div class="card mt-3">
                 <div class="card-header">Cotação aplicada</div>
                 <div class="card-body" style="font-size:.8rem;">
                     <div class="d-flex justify-content-between py-1">

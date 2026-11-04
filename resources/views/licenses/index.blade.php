@@ -15,11 +15,16 @@
 @section('subtitle', 'Serviços contratados da LicenseBoy com valores individuais, renovação e faturas vinculadas.')
 
 @section('actions')
-    @if (auth()->user()->canManageFinance())
-        <a href="{{ route('licenses.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nova licença
+    <div class="d-flex gap-2">
+        <a href="{{ route('licenses.prices') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-tags me-1"></i> Preços da loja
         </a>
-    @endif
+        @if (auth()->user()->canManageFinance())
+            <a href="{{ route('licenses.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nova licença
+            </a>
+        @endif
+    </div>
 @endsection
 
 @section('content')
@@ -34,7 +39,7 @@
                 <div class="empty-state">
                     <div class="icon"><i class="bi bi-key"></i></div>
                     <h3>Nenhuma licença cadastrada</h3>
-                    <p>A LicenseBoy não publica uma API de consulta. Cadastre cada serviço contratado para controlar valores e gerar as faturas aqui no sistema.</p>
+                    <p>Cadastre cada serviço contratado para controlar valores e gerar as faturas aqui no sistema. O catálogo com os preços atuais da loja está disponível em “Preços da loja”.</p>
                     @if (auth()->user()->canManageFinance())
                         <a href="{{ route('licenses.create') }}" class="btn btn-primary btn-sm">Cadastrar primeira licença</a>
                     @endif
@@ -184,7 +189,8 @@
         <div class="hint-banner mt-3">
             <i class="bi bi-info-circle"></i>
             <div>
-                A LicenseBoy não oferece API pública de consulta; por isso o cadastro é manual. Ao gerar a fatura,
+                Os preços vêm do catálogo público da LicenseBoy — atualize em “Preços da loja” e vincule cada
+                licença ao produto correspondente para receber os valores das novas sincronizações. Ao gerar a fatura,
                 o sistema aplica spread, IOF, ICMS e demais tributos pela cotação atual e vincula o documento à licença.
             </div>
         </div>

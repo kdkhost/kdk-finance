@@ -33,6 +33,42 @@
                     <div class="card-header">Identificação</div>
                     <div class="card-body">
                         <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="license_catalog_item_id">Preço de referência</label>
+                                <select class="form-select @error('license_catalog_item_id') is-invalid @enderror" id="license_catalog_item_id" name="license_catalog_item_id">
+                                    <option value="">— Preço manual (sem vínculo com a loja) —</option>
+                                    @foreach ($catalogItems as $group)
+                                        <optgroup label="{{ $group['label'] }}">
+                                            @foreach ($group['items'] as $item)
+                                                <option
+                                                    value="{{ $item->id }}"
+                                                    data-product="{{ $item->productLabel() }}"
+                                                    data-name="{{ $item->name }}"
+                                                    data-price="{{ number_format((float) $item->price, 2, '.', '') }}"
+                                                    data-currency="{{ $item->currency }}"
+                                                    data-cycle="{{ $item->billing_cycle }}"
+                                                    @selected((string) old('license_catalog_item_id', $selectedCatalogId) === (string) $item->id)
+                                                >{{ $item->name }} · {{ $item->priceLabel() }}/{{ $item->cycleLabel() }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                                @error('license_catalog_item_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <div class="form-text">
+                                    @if ($catalogItems->isEmpty())
+                                        O catálogo está vazio. Rode a sincronização em
+                                        <a href="{{ route('licenses.prices') }}">Preços da loja</a>.
+                                    @else
+                                        Ao vincular, produto, valor, moeda e ciclo passam a seguir a loja da LicenseBoy
+                                        @if ($lastSyncedAt)
+                                            (última leitura em {{ $lastSyncedAt->format('d/m/Y H:i') }})
+                                        @endif
+                                        e são atualizados a cada sincronização. Veja o
+                                        <a href="{{ route('licenses.prices') }}">catálogo completo</a>.
+                                    @endif
+                                </div>
+                            </div>
+
                             <div class="col-md-8">
                                 <label class="form-label" for="name">Identificação da licença</label>
                                 <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $license->name) }}" required maxlength="150" placeholder="Ex.: cPanel · Servidor RJ">
@@ -163,3 +199,56 @@
         </div>
     </form>
 @endsection
+
+@push('scripts')
+<script>
+    (() => {
+        const select = document.getElementById('license_catalog_item_id');
+        if (!select) {
+            return;
+        }
+
+        const product = document.getElementById('product');
+        const name = document.getElementById('name');
+        const price = document.getElementById('unit_price');
+        const currency = document.getElementById('currency');
+        const cycle = document.getElementById('billing_cycle');
+
+        const syncLock = () => {
+            if (!price) {
+                return;
+            }
+
+            const linked = select.value !== '';
+            price.readOnly = linked;
+            price.title = linked ? 'Valor definido pelo catálogo da LicenseBoy' : '';
+        };
+
+        select.addEventListener('change', () => {
+            const option = select.selectedOptions[0];
+
+            if (option && option.value !== '') {
+                if (product && option.dataset.product) {
+                    product.value = option.dataset.product;
+                }
+                if (name && name.value.trim() === '' && option.dataset.name) {
+                    name.value = option.dataset.name;
+                }
+                if (price) {
+                    price.value = option.dataset.price || '';
+                }
+                if (currency && option.dataset.currency) {
+                    currency.value = option.dataset.currency;
+                }
+                if (cycle && option.dataset.cycle) {
+                    cycle.value = option.dataset.cycle;
+                }
+            }
+
+            syncLock();
+        });
+
+        syncLock();
+    })();
+</script>
+@endpush

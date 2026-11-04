@@ -45,6 +45,7 @@ class LicenseService extends Model
         'auto_renew',
         'notes',
         'last_invoice_id',
+        'license_catalog_item_id',
     ];
 
     protected function casts(): array
@@ -107,6 +108,14 @@ class LicenseService extends Model
             'SitePad',
             'WHMReseller',
             'CPNginx',
+            'WHMCS',
+            'SolusVM',
+            'FleetSSL',
+            'MailScanner',
+            'cPGuard',
+            'DA Reseller',
+            'WHM Sonic',
+            'LiteSpeed Web ADC',
             'Outro',
         ];
     }
@@ -119,6 +128,11 @@ class LicenseService extends Model
     public function lastInvoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'last_invoice_id');
+    }
+
+    public function catalogItem(): BelongsTo
+    {
+        return $this->belongsTo(LicenseCatalogItem::class, 'license_catalog_item_id');
     }
 
     public function scopeActive(Builder $query): Builder

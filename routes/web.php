@@ -66,10 +66,12 @@ Route::middleware('auth')->group(function (): void {
     // Licenças (LicenseBoy) — leitura para todos, escrita para gestores
     // ---------------------------------------------------------------------
     Route::get('/licencas', [LicenseController::class, 'index'])->name('licenses.index');
+    Route::get('/licencas/precos', [LicenseController::class, 'prices'])->name('licenses.prices');
 
     Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
         Route::get('/licencas/nova', [LicenseController::class, 'create'])->name('licenses.create');
         Route::post('/licencas', [LicenseController::class, 'store'])->name('licenses.store');
+        Route::post('/licencas/precos/atualizar', [LicenseController::class, 'syncPrices'])->name('licenses.prices.sync');
     });
 
     Route::get('/licencas/{license}', [LicenseController::class, 'show'])->name('licenses.show');
