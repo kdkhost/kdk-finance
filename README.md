@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.6.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.7.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -88,6 +88,29 @@ php artisan serve
 
 Acesse `http://127.0.0.1:8000`.
 
+### Hospedagem compartilhada (cPanel)
+
+O sistema tem instalador web e pacote pronto para cPanel, sem Composer ou Node no
+servidor:
+
+```bash
+npm run build
+php tools/empacotar-cpanel.php
+```
+
+O comando gera `dist/kdk-finance-cpanel-<versão>.zip` e imprime a senha de
+instalação (também gravada em `storage/app/instalar.senha` dentro do pacote).
+Envie o conteúdo para a hospedagem, aponte o Document Root para `public/` e
+acesse `/instalador.php`.
+
+Guia completo: [docs/INSTALACAO-CPANEL.md](docs/INSTALACAO-CPANEL.md) ·
+[docs/INSTALACAO-CPANEL.pdf](docs/INSTALACAO-CPANEL.pdf) (gerado por
+`php tools/gerar-pdf.php`).
+
+Em hospedagem compartilhada o broadcast fica em `log` e o painel se atualiza por
+consulta a cada 60 segundos; o Reverb é usado apenas quando há um processo
+dedicado disponível.
+
 ### Variáveis de ambiente
 
 O `.env` guarda apenas infraestrutura (banco, cache, sessão, fila, Reverb, `APP_KEY`).
@@ -114,9 +137,10 @@ Sem esse arquivo, o seeder gera senhas aleatórias e as imprime no terminal.
 | --- | --- | --- |
 | Desenvolvedor / Administrador | `george@kdkhost.com.br` | Acesso total, credenciais OVH, usuários e regras |
 | Gestor financeiro | `financeiro@kdkhost.com.br` | Câmbio, tributos, faturas e conciliação |
-| Consulta (somente leitura) | `consulta@kdkhost.com.br` | Leitura de painel, faturas e notificações |
+| Consulta (somente leitura) | `consulta@kdkhost.com.br` | Lê painel, faturas, serviços, licenças, conversões, notificações e o próprio perfil; recebe 403 em configurações, usuários, crons e qualquer escrita |
 
-> Troque as senhas no primeiro acesso em **Meu perfil**.
+> Troque as senhas no primeiro acesso em **Meu perfil**. A senha precisa ter 10+
+> caracteres, com maiúscula, minúscula e número.
 
 ---
 

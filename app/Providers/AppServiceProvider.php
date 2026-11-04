@@ -15,7 +15,9 @@ namespace App\Providers;
 
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,5 +38,14 @@ class AppServiceProvider extends ServiceProvider
 
         Carbon::setLocale('pt_BR');
         setlocale(LC_TIME, 'pt_BR.UTF-8', 'pt_BR', 'Portuguese_Brazil');
+
+        // Em produção, nunca expõe stack trace nem caminhos do servidor.
+        if (app()->isProduction() && config('app.debug')) {
+            config(['app.debug' => false]);
+            Log::warning('APP_DEBUG estava ligado em produção e foi desativado em tempo de execução.');
+        }
+
+        // Política padrão de senhas: 10 caracteres, maiúscula, minúscula e número.
+        Password::defaults(fn () => Password::min(10)->mixedCase()->numbers());
     }
 }

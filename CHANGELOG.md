@@ -5,6 +5,41 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.7.0] - 2026-11-04
+
+### Adicionado
+
+- **Instalador web para hospedagem compartilhada (cPanel)** em `public/instalador.php`, em português, com verificação de requisitos do PHP, criação do `.env`, migrações, configurações padrão, administrador e usuário de leitura na mesma tela.
+- Proteções do instalador: senha de instalação em `storage/app/instalar.senha`, token CSRF, campo-isca contra robôs, bloqueio de uma hora após dez senhas erradas, trava em `storage/app/installed.lock` e renomeação automática para `instalador.php.instalado` ao concluir. A senha e o contador são apagados no sucesso.
+- **Empacotador para cPanel** (`php tools/empacotar-cpanel.php`) que gera `dist/kdk-finance-cpanel-<versão>.zip` com `vendor/`, build do Vite, instalador e `.htaccess`, criando uma senha de instalação aleatória dentro do pacote. Ficam de fora `.env`, bancos SQLite, logs, testes, credenciais locais e `node_modules`.
+- **Guia de instalação em cPanel** em `docs/INSTALACAO-CPANEL.md` e PDF com a identidade visual do sistema, gerado por `php tools/gerar-pdf.php`. Cobre requisitos, envio, Document Root, banco, instalador, cron, SSL, backup, atualização, perfil somente leitura e solução de problemas.
+- Cabeçalhos de segurança em todas as respostas: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` e `Cache-Control: no-store` para usuários autenticados.
+- **Content Security Policy com nonce por requisição**, aplicada a todos os scripts inline do painel, login, erros e telas de desenvolvimento.
+- Redirecionamento para HTTPS (`FORCE_HTTPS`) e restrição de Host header (`TRUST_HOSTS`) configuráveis, com suporte a proxies confiáveis.
+- Revogação imediata da sessão de usuários desativados, com mensagem em português.
+- Política de senha única de 10+ caracteres com maiúscula, minúscula e número para criação, edição e troca da própria senha.
+- `.htaccess` na raiz do projeto, para quando o Document Root não aponta para `public/`, bloqueando `.env`, `.git`, `vendor/`, `storage/`, `database/`, `config/`, `tests/` e arquivos de projeto.
+- Cabeçalhos de segurança e bloqueio de arquivos ocultos também no `public/.htaccess`.
+- Testes de segurança: cabeçalhos, nonce do CSP, revogação de sessão, matriz de leitura e escrita do perfil Consulta, política de senha, além de testes do gerador de `.env`.
+
+### Alterado
+
+- Consultas MySQL/MariaDB usam *prepared statements* reais (`PDO::ATTR_EMULATE_PREPARES = false`).
+- `APP_DEBUG` é forçado a `false` em produção mesmo que o `.env` esteja incorreto, com registro em log.
+- Notificações Toastr escapam HTML; tentativas de login inválidas e bloqueios são registrados em log.
+- Dicas de senha das telas de login, perfil e usuários atualizadas para a nova política.
+- O Echo só inicializa quando o servidor realmente usa Reverb; em hospedagem compartilhada o painel segue atualizando por consulta a cada 60 segundos, sem erros de WebSocket no console.
+- `.env.example` documenta sessão criptografada, cookie seguro, HTTPS forçado e hosts confiáveis para produção.
+- Versão exibida no rodapé, menu lateral, login e páginas de erro atualizada para 1.7.0.
+
+### Corrigido
+
+- Leitura de valores escapados no `.env` gerado pelo instalador (barras, aspas e cifrões), mantendo a chave da aplicação e senhas intactas.
+
+### Testado
+
+- Suíte completa com 94 testes e 437 asserções passando, incluindo o novo instalador, os cabeçalhos de segurança, o perfil somente leitura e o empacotamento para cPanel.
+
 ## [1.6.0] - 2026-11-04
 
 ### Adicionado

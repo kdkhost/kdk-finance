@@ -12,7 +12,10 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
 const appKey = import.meta.env.VITE_REVERB_APP_KEY;
-const enabled = Boolean(appKey);
+// Só conecta quando o servidor realmente usa Reverb. Em hospedagem
+// compartilhada o broadcast fica em "log" e o painel atualiza por polling.
+const runtimeBroadcaster = document.body?.dataset.broadcast;
+const enabled = Boolean(appKey) && runtimeBroadcaster === 'reverb';
 
 if (enabled) {
     window.Pusher = Pusher;

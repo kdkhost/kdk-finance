@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -45,6 +46,11 @@ class LoginController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
 
+            Log::warning('Login bloqueado por excesso de tentativas.', [
+                'email' => $credentials['email'],
+                'ip' => $request->ip(),
+            ]);
+
             throw ValidationException::withMessages([
                 'email' => 'Muitas tentativas de acesso. Tente novamente em '.$seconds.' segundos.',
             ]);
@@ -52,6 +58,11 @@ class LoginController extends Controller
 
         if (! Auth::attempt($credentials + ['is_active' => true], $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey, 60);
+
+            Log::warning('Tentativa de acesso inválida.', [
+                'email' => $credentials['email'],
+                'ip' => $request->ip(),
+            ]);
 
             throw ValidationException::withMessages([
                 'email' => 'Credenciais inválidas ou usuário inativo.',

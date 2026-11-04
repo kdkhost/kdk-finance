@@ -246,7 +246,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     (() => {
         const select = document.getElementById('license_catalog_item_id');
         if (!select) {

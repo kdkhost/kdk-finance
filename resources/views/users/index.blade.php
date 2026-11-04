@@ -145,8 +145,8 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="create_password">Senha inicial</label>
-                            <input type="password" class="form-control" id="create_password" name="password" required minlength="8" autocomplete="new-password">
-                            <div class="form-text">Mínimo de 8 caracteres. O usuário pode alterar depois em Meu perfil.</div>
+                            <input type="password" class="form-control" id="create_password" name="password" required minlength="10" autocomplete="new-password">
+                            <div class="form-text">Mínimo de 10 caracteres, com maiúscula, minúscula e número. O usuário pode alterar depois em Meu perfil.</div>
                         </div>
                     </div>
                 </div>
@@ -193,7 +193,8 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="edit_password_{{ $user->id }}">Nova senha (opcional)</label>
-                                <input type="password" class="form-control" id="edit_password_{{ $user->id }}" name="password" minlength="8" autocomplete="new-password" placeholder="Deixe em branco para manter">
+                                <input type="password" class="form-control" id="edit_password_{{ $user->id }}" name="password" minlength="10" autocomplete="new-password" placeholder="Deixe em branco para manter">
+                                <div class="form-text">Mínimo de 10 caracteres, com maiúscula, minúscula e número.</div>
                             </div>
                             <div class="col-12">
                                 <div class="form-check form-switch">

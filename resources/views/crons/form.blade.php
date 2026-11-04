@@ -129,7 +129,7 @@
     </form>
 
     @push('scripts')
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             document.querySelectorAll('.js-cron-preset').forEach(function (button) {
                 button.addEventListener('click', function () {
                     const input = document.getElementById('expression');

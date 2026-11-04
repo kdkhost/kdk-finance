@@ -95,10 +95,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <label class="form-label" for="password">Senha</label>
-                                    <span class="text-muted-soft" style="font-size:.7rem;">Mínimo de 8 caracteres</span>
-                                </div>
+                                <label class="form-label" for="password">Senha</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-lock"></i></span>
                                     <input type="password"
@@ -129,7 +126,7 @@
 
                 <div class="auth-footer">
                     {{ config('finance.developer.company') }} · Desenvolvido por {{ config('finance.developer.name') }}<br>
-                    v1.6.0 · Laravel {{ \Illuminate\Foundation\Application::VERSION }}
+                    v1.7.0 · Laravel {{ \Illuminate\Foundation\Application::VERSION }}
                 </div>
             </div>
         </section>

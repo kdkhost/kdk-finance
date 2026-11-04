@@ -614,7 +614,7 @@
     @endif
 
     @push('scripts')
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             document.getElementById('ovh-test')?.addEventListener('click', async function () {
                 const button = this;
                 const original = button.innerHTML;

@@ -82,17 +82,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="password">Nova senha</label>
-                                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required minlength="8" autocomplete="new-password">
+                                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required minlength="10" autocomplete="new-password">
                                 @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="password_confirmation">Confirmar nova senha</label>
-                                <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required minlength="8" autocomplete="new-password">
+                                <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required minlength="10" autocomplete="new-password">
                             </div>
                         </div>
                         <div class="hint-banner mt-3">
                             <i class="bi bi-shield-lock"></i>
-                            <div>Use no mínimo 8 caracteres. Após a alteração, a sessão atual continua ativa; outros dispositivos precisarão entrar novamente.</div>
+                            <div>Use no mínimo 10 caracteres, com letra maiúscula, letra minúscula e número. Após a alteração, a sessão atual continua ativa; outros dispositivos precisarão entrar novamente.</div>
                         </div>
                         <div class="d-flex justify-content-end mt-3">
                             <button type="submit" class="btn btn-primary" data-confirm="Confirmar a alteração da sua senha de acesso?" data-confirm-button="Alterar senha">

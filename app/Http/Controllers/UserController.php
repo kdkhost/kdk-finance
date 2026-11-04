@@ -17,6 +17,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -35,7 +36,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', 'max:180', 'unique:users,email'],
             'role' => ['required', Rule::in(array_keys(User::roles()))],
-            'password' => ['required', 'string', 'min:8', 'max:100'],
+            'password' => ['required', 'string', 'max:100', Password::defaults()],
         ]);
 
         User::query()->create($data + ['is_active' => true]);
@@ -52,7 +53,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:180', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', Rule::in(array_keys(User::roles()))],
             'is_active' => ['nullable', 'boolean'],
-            'password' => ['nullable', 'string', 'min:8', 'max:100'],
+            'password' => ['nullable', 'string', 'max:100', Password::defaults()],
         ]);
 
         $isSelf = $user->id === $request->user()->id;

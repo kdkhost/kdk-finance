@@ -61,6 +61,8 @@ document.addEventListener('click', (event) => {
 toastr.options = {
     closeButton: true,
     newestOnTop: true,
+    // Mensagens podem conter descrições digitadas pelo usuário: trata como texto.
+    escapeHtml: true,
     progressBar: true,
     positionClass: 'toast-top-right',
     timeOut: 5200,

@@ -85,6 +85,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Segurança
+    |--------------------------------------------------------------------------
+    | force_https  — redireciona o painel para HTTPS (ligado pelo instalador
+    |                quando o endereço informado começa com https://).
+    | trust_hosts  — só aceita requisições para o host do APP_URL, bloqueando
+    |                ataques de Host header. Desligue apenas para acessar por
+    |                um domínio temporário antes do DNS apontar.
+    */
+    'security' => [
+        'force_https' => (bool) env('FORCE_HTTPS', false),
+        'trust_hosts' => (bool) env('TRUST_HOSTS', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tributos padrão (usados apenas quando o banco ainda não foi populado)
     |--------------------------------------------------------------------------
     */

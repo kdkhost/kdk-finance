@@ -1,4 +1,4 @@
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     // Define o tema antes do CSS carregar para não haver piscada em claro/escuro.
     (function () {
         try {

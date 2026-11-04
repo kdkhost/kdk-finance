@@ -206,7 +206,7 @@
     </div>
 
     @push('scripts')
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             document.getElementById('copy-hosting-command')?.addEventListener('click', async function () {
                 try {
                     await navigator.clipboard.writeText(@json($hostingCommand));

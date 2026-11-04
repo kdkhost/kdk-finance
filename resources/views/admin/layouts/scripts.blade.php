@@ -9,7 +9,7 @@
  ============================================================================
 --}}
 @stack('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     // Service Worker — instalação no Windows (Edge/Chrome) e Android.
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
