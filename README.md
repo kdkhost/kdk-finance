@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.7.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.8.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -46,6 +46,8 @@ marca o resultado como desatualizado.
 - Atualização em segundo plano em todas as páginas do painel, sem recarregar e sem piscar nenhum elemento: notificações, totais, cotações e valores das faturas são atualizados a cada 60 segundos e ao voltar para a aba.
 - Relógio em tempo real no cabeçalho com data e hora de São Paulo (`America/Sao_Paulo`), fuso padrão do sistema.
 - Alerta por e-mail, banco e broadcast quando a variação cambial ultrapassa 1%.
+- Painel de segurança completo (HTTPS, HSTS, cabeçalhos, CSP, hosts, proxies, sessão, bloqueio de login e política de senhas) gravado no banco.
+- SMTP completo no painel, com envio de teste e diagnóstico, e tema de e-mail responsivo editável com prévia.
 - Exportação CSV organizada (BOM UTF-8, separador `;`, colunas em ordem alfabética e fórmulas neutralizadas).
 - Perfis de acesso: desenvolvedor/administrador, gestor financeiro e consulta.
 - PWA instalável no Windows e Android, com página offline.
@@ -139,8 +141,33 @@ Sem esse arquivo, o seeder gera senhas aleatórias e as imprime no terminal.
 | Gestor financeiro | `financeiro@kdkhost.com.br` | Câmbio, tributos, faturas e conciliação |
 | Consulta (somente leitura) | `consulta@kdkhost.com.br` | Lê painel, faturas, serviços, licenças, conversões, notificações e o próprio perfil; recebe 403 em configurações, usuários, crons e qualquer escrita |
 
-> Troque as senhas no primeiro acesso em **Meu perfil**. A senha precisa ter 10+
-> caracteres, com maiúscula, minúscula e número.
+> Troque as senhas no primeiro acesso em **Meu perfil**. Por padrão a senha
+> precisa ter 10+ caracteres, com maiúscula, minúscula e número — a política é
+> configurável em **Configurações → Segurança**.
+
+---
+
+## Segurança, SMTP e tema de e-mail
+
+Tudo fica em **Configurações** (abas **Segurança** e **E-mail**) e é gravado em
+`app_settings`, com senhas criptografadas pela `APP_KEY`. Nada exige editar o
+`.env` ou reiniciar o PHP.
+
+- **Conexão e cabeçalhos:** forçar HTTPS (301), HSTS com validade, cabeçalhos de
+  segurança, CSP, opções de frame, `no-store`, hosts aceitos (com curingas como
+  `*.seudominio.com`) e proxies/CDN confiáveis.
+- **Sessão e login:** duração, SameSite, cookie seguro, sessão criptografada,
+  expiração ao fechar o navegador, limite de tentativas e janela de bloqueio.
+  A aba lista as sessões ativas e permite encerrar as demais.
+- **Política de senhas:** tamanho mínimo e exigência de maiúsculas, minúsculas,
+  números e símbolos, aplicada em todas as telas.
+- **SMTP:** ativar envio, servidor, porta, criptografia (TLS/SSL/nenhuma),
+  autenticação, usuário, senha criptografada, tempo limite, remetente,
+  responder para e **envio de teste**. Sem SMTP ativo, os e-mails vão para o log.
+- **Tema dos e-mails:** marca, selo com iniciais, cinco cores, rodapé,
+  assinatura, contatos de suporte e dados da empresa, com **prévia responsiva**
+  na própria tela. O layout compartilhado (`emails.themed`) é usado pelos envios
+  reais, incluindo o alerta de variação cambial.
 
 ---
 

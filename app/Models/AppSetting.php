@@ -68,6 +68,70 @@ class AppSetting extends Model
     }
 
     /**
+     * Lê um grupo inteiro de configurações em uma única consulta, mantendo os
+     * valores criptografados dentro do cache (a descriptografia acontece só na
+     * entrega para a aplicação).
+     *
+     * @param  array<string, mixed>  $defaults
+     * @return array<string, mixed>
+     */
+    public static function group(string $group, array $defaults = []): array
+    {
+        try {
+            $rows = Cache::remember(
+                self::groupCacheKey($group),
+                now()->addHours(24),
+                function () use ($group): array {
+                    return static::query()
+                        ->where('group', $group)
+                        ->get(['key', 'value', 'is_secret'])
+                        ->mapWithKeys(fn (self $setting): array => [
+                            $setting->key => [
+                                'value' => $setting->value,
+                                'is_secret' => (bool) $setting->is_secret,
+                            ],
+                        ])
+                        ->all();
+                }
+            );
+        } catch (\Throwable $exception) {
+            // Banco ainda não migrado (instalador/primeiro boot) ou cache indisponível.
+            return $defaults;
+        }
+
+        $values = $defaults;
+
+        foreach ($rows as $key => $row) {
+            $value = $row['value'];
+
+            if ($value === null) {
+                continue;
+            }
+
+            if ($row['is_secret'] && $value === '') {
+                continue;
+            }
+
+            if ($row['is_secret']) {
+                try {
+                    $value = Crypt::decryptString((string) $value);
+                } catch (DecryptException $exception) {
+                    Log::warning('Não foi possível descriptografar a configuração secreta do grupo.', [
+                        'group' => $group,
+                        'key' => $key,
+                    ]);
+
+                    continue;
+                }
+            }
+
+            $values[$key] = $value;
+        }
+
+        return $values;
+    }
+
+    /**
      * Grava uma configuração, criptografando segredos e invalidando o cache.
      */
     public static function set(string $key, mixed $value, string $group = 'general', bool $isSecret = false): void
@@ -77,6 +141,8 @@ class AppSetting extends Model
         if ($isSecret && $stored !== null && $stored !== '') {
             $stored = Crypt::encryptString($stored);
         }
+
+        $previousGroup = static::query()->where('key', $key)->value('group');
 
         static::query()->updateOrCreate(
             ['key' => $key],
@@ -88,6 +154,11 @@ class AppSetting extends Model
         );
 
         Cache::forget(self::cacheKey($key));
+        Cache::forget(self::groupCacheKey($group));
+
+        if (is_string($previousGroup) && $previousGroup !== '' && $previousGroup !== $group) {
+            Cache::forget(self::groupCacheKey($previousGroup));
+        }
     }
 
     public static function forget(string $key): void
@@ -114,5 +185,10 @@ class AppSetting extends Model
     private static function cacheKey(string $key): string
     {
         return 'app_setting:'.$key;
+    }
+
+    private static function groupCacheKey(string $group): string
+    {
+        return 'app_setting_group:'.$group;
     }
 }

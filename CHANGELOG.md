@@ -5,6 +5,33 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.8.0] - 2026-11-04
+
+### Adicionado
+
+- **Segurança operacional controlada 100% pelo painel**: nova aba *Segurança* em Configurações grava tudo na tabela `app_settings` (grupo `security`), sem `.env` e sem reiniciar o PHP. Cobre HTTPS forçado, HSTS com validade, cabeçalhos de segurança, Content Security Policy, opções de frame, `no-store`, restrição de hosts (com curingas) e proxies confiáveis.
+- **Sessão e login configuráveis no painel**: duração da sessão, SameSite, cookie seguro, sessão criptografada, expiração ao fechar o navegador, limite de tentativas de login e janela de bloqueio. O bloqueio passa a usar exatamente os valores salvos, com registro em log.
+- **Política de senhas configurável**: tamanho mínimo, maiúsculas e minúsculas, números e símbolos, aplicada em criação, edição e troca da própria senha.
+- **Revogação de outras sessões** pela aba Segurança, listando dispositivo, IP, último acesso e a sessão atual.
+- **SMTP completo no painel**: ativar/desativar envio, servidor, porta, criptografia (TLS, SSL ou nenhuma), autenticação, usuário, senha criptografada, tempo limite, remetente, nome, responder para e envio de e-mail de teste. A configuração é aplicada em tempo de execução, sem editar o `.env`.
+- **Tema de e-mail responsivo e editável**: marca, selo com iniciais, cinco cores, rodapé, assinatura, e-mail e site de suporte e dados da empresa, com prévia ao vivo em iframe. Um layout compartilhado (`emails.themed`) e o mailable `ThemedMail` alimentam os envios reais.
+- **Notificação de variação cambial** passou a usar o tema configurado, com tabela de detalhes, botão de ação e pré-cabeçalho.
+- Novo grupo de configurações com cache por grupo em `AppSetting::group()`, descriptografando segredos na leitura e invalidando o cache do grupo ao gravar.
+- Página de erro 400 em português para requisições com host não permitido.
+- Testes do painel de configurações: cache por grupo, abas, senha preservada em branco, SMTP em tempo de execução, envio de teste, prévia, persistência, CSP e cabeçalhos, HSTS só em HTTPS, restrição de hosts, bloqueio de login, política de senha, revogação de sessões, permissão de desenvolvedor e notificação temática.
+
+### Alterado
+
+- Cabeçalhos de segurança, HTTPS e restrição de host deixaram de ler `FORCE_HTTPS` e `TRUST_HOSTS` do `.env` e passaram a ler do banco, com valores padrão seguros quando ainda não há registro.
+- O instalador grava as preferências de segurança e de SMTP em `app_settings` (senha criptografada) em vez de espalhar credenciais pelo `.env`; o `.env` fica apenas com `MAIL_MAILER=log` e o remetente.
+- Sem SMTP ativo, o envio cai para o log em vez de falhar; o diagnóstico na aba E-mail mostra driver, situação, servidor, remetente e último teste.
+- Versão exibida no rodapé, menu lateral, login, páginas de erro, README e instalador atualizada para 1.8.0.
+
+### Testado
+
+- Suíte completa com 111 testes e 527 asserções passando.
+- Abas E-mail e Segurança validadas no navegador: prévia responsiva carregando o tema salvo, envio de teste bloqueado enquanto o SMTP não está configurado, sessões ativas, gravação com Toastr e ausência de rolagem horizontal.
+
 ## [1.7.0] - 2026-11-04
 
 ### Adicionado

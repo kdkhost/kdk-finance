@@ -13,6 +13,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Settings\SecuritySettings;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -23,8 +24,9 @@ class SecurityHeaders
     /**
      * Aplica os cabeçalhos de proteção do navegador e a política de conteúdo.
      *
-     * A CSP usa um nonce por requisição: apenas os scripts da própria aplicação
-     * (arquivos do Vite) e os blocos inline marcados com o nonce executam.
+     * O que enviar é decidido pelo grupo "security" em app_settings. A CSP usa
+     * um nonce por requisição: apenas os scripts da própria aplicação (arquivos
+     * do Vite) e os blocos inline marcados com o nonce executam.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -33,46 +35,53 @@ class SecurityHeaders
 
         $response = $next($request);
 
-        $headers = [
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Frame-Options' => 'SAMEORIGIN',
-            'Referrer-Policy' => 'strict-origin-when-cross-origin',
-            'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()',
-            'X-Permitted-Cross-Domain-Policies' => 'none',
-            'Cross-Origin-Opener-Policy' => 'same-origin',
-            'Cross-Origin-Resource-Policy' => 'same-origin',
-        ];
+        if (SecuritySettings::headersEnabled()) {
+            $frameOptions = SecuritySettings::frameOptions();
 
-        foreach ($headers as $name => $value) {
-            if (! $response->headers->has($name)) {
-                $response->headers->set($name, $value);
+            $headers = [
+                'X-Content-Type-Options' => 'nosniff',
+                'X-Frame-Options' => $frameOptions,
+                'Referrer-Policy' => 'strict-origin-when-cross-origin',
+                'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()',
+                'X-Permitted-Cross-Domain-Policies' => 'none',
+                'Cross-Origin-Opener-Policy' => 'same-origin',
+                'Cross-Origin-Resource-Policy' => 'same-origin',
+            ];
+
+            foreach ($headers as $name => $value) {
+                if (! $response->headers->has($name)) {
+                    $response->headers->set($name, $value);
+                }
+            }
+
+            if (SecuritySettings::cspEnabled()) {
+                $response->headers->set('Content-Security-Policy', implode('; ', [
+                    "default-src 'self'",
+                    "base-uri 'self'",
+                    "form-action 'self'",
+                    'frame-ancestors '.($frameOptions === 'DENY' ? "'none'" : "'self'"),
+                    "frame-src 'self'",
+                    "object-src 'none'",
+                    "img-src 'self' data: blob:",
+                    "font-src 'self' data:",
+                    "style-src 'self' 'unsafe-inline'",
+                    "script-src 'self' 'nonce-{$nonce}'",
+                    "connect-src 'self' ws: wss:",
+                    "manifest-src 'self'",
+                    "worker-src 'self' blob:",
+                ]));
+            }
+
+            if ($request->isSecure() && SecuritySettings::hstsEnabled()) {
+                $response->headers->set(
+                    'Strict-Transport-Security',
+                    'max-age='.(SecuritySettings::hstsMaxAge() * 86400).'; includeSubDomains'
+                );
             }
         }
 
-        $response->headers->set('Content-Security-Policy', implode('; ', [
-            "default-src 'self'",
-            "base-uri 'self'",
-            "form-action 'self'",
-            "frame-ancestors 'self'",
-            "object-src 'none'",
-            "img-src 'self' data: blob:",
-            "font-src 'self' data:",
-            "style-src 'self' 'unsafe-inline'",
-            "script-src 'self' 'nonce-{$nonce}'",
-            "connect-src 'self' ws: wss:",
-            "manifest-src 'self'",
-            "worker-src 'self' blob:",
-        ]));
-
-        if ($request->isSecure()) {
-            $response->headers->set(
-                'Strict-Transport-Security',
-                'max-age=31536000; includeSubDomains'
-            );
-        }
-
         // Dados financeiros não devem ficar em cache de navegador ou proxy.
-        if ($request->user()) {
+        if ($request->user() && SecuritySettings::noStore()) {
             $response->headers->set('Cache-Control', 'no-store, private, max-age=0');
             $response->headers->set('Pragma', 'no-cache');
         }

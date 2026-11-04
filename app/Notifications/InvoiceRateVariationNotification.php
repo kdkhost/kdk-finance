@@ -13,11 +13,11 @@
 
 namespace App\Notifications;
 
+use App\Mail\ThemedMail;
 use App\Models\Invoice;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class InvoiceRateVariationNotification extends Notification
@@ -34,34 +34,42 @@ class InvoiceRateVariationNotification extends Notification
     /**
      * @return array<int, string>
      */
-    public function via(object $notifiable): array
+    public function via($notifiable): array
     {
         return ['mail', 'database', 'broadcast'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable): ThemedMail
     {
         $direction = $this->variationPercent >= 0 ? 'alta' : 'queda';
+        $variation = number_format(abs($this->variationPercent), 2, ',', '.').'%';
 
-        return (new MailMessage)
-            ->subject('Variação cambial de '.number_format(abs($this->variationPercent), 2, ',', '.').'% na fatura '.$this->invoice->external_reference)
-            ->greeting('Olá, '.$notifiable->name)
-            ->line('A fatura "'.$this->invoice->description.'" sofreu '.$direction.' de '.number_format(abs($this->variationPercent), 2, ',', '.').'% após a atualização das cotações.')
-            ->line('Valor anterior: R$ '.number_format($this->previousTotal, 2, ',', '.'))
-            ->line('Valor atualizado: R$ '.number_format($this->newTotal, 2, ',', '.'))
-            ->action('Abrir fatura', route('invoices.show', $this->invoice))
-            ->line('Este alerta foi gerado automaticamente pelo monitoramento de câmbio.');
+        return (new ThemedMail(
+            heading: 'Variação cambial na fatura',
+            intro: 'Olá, '.$notifiable->name.'. A fatura "'.$this->invoice->description.'" sofreu '.$direction.' de '.$variation.' após a atualização das cotações.',
+            details: [
+                'Fatura' => $this->invoice->external_reference,
+                'Variação' => ($this->variationPercent >= 0 ? '+' : '−').$variation,
+                'Valor anterior' => 'R$ '.number_format($this->previousTotal, 2, ',', '.'),
+                'Valor atualizado' => 'R$ '.number_format($this->newTotal, 2, ',', '.'),
+            ],
+            actionText: 'Abrir fatura',
+            actionUrl: route('invoices.show', $this->invoice),
+            footnote: 'Este alerta foi gerado automaticamente pelo monitoramento de câmbio.',
+            preheader: 'A fatura '.$this->invoice->external_reference.' variou '.$variation.'.',
+            subject: 'Variação cambial de '.$variation.' na fatura '.$this->invoice->external_reference,
+        ));
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable): array
     {
         return $this->payload();
     }
 
-    public function toBroadcast(object $notifiable): BroadcastMessage
+    public function toBroadcast($notifiable): BroadcastMessage
     {
         return new BroadcastMessage($this->payload());
     }
@@ -69,8 +77,12 @@ class InvoiceRateVariationNotification extends Notification
     /**
      * @return array<int, PrivateChannel>
      */
-    public function broadcastOn(object $notifiable): array
+    public function broadcastOn($notifiable = null): array
     {
+        if ($notifiable === null) {
+            return [];
+        }
+
         return [new PrivateChannel('App.Models.User.'.$notifiable->id)];
     }
 

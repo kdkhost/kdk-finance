@@ -33,7 +33,7 @@ if (is_file($autoloadFile)) {
     require_once $autoloadFile;
 }
 
-$installerVersion = '1.7.0';
+$installerVersion = '1.8.0';
 
 if (preg_match('/^## \[(\d+\.\d+\.\d+)\]/m', (string) @file_get_contents($basePath.'/CHANGELOG.md'), $versionMatch) === 1) {
     $installerVersion = $versionMatch[1];
@@ -373,16 +373,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $alreadyInstalled && $requirement
                 'QUEUE_CONNECTION' => 'database',
                 'BROADCAST_CONNECTION' => 'log',
                 'FILESYSTEM_DISK' => 'local',
-                'MAIL_MAILER' => $mailEnabled ? 'smtp' : 'log',
-                'MAIL_SCHEME' => $mailEnabled ? ($mailEncryption === 'ssl' ? 'smtps' : 'smtp') : null,
-                'MAIL_HOST' => $mailEnabled ? $mailHost : null,
-                'MAIL_PORT' => $mailEnabled ? $mailPort : null,
-                'MAIL_USERNAME' => $mailEnabled && $mailUser !== '' ? $mailUser : null,
-                'MAIL_PASSWORD' => $mailEnabled && $mailPassword !== '' ? $mailPassword : null,
-                'MAIL_FROM_ADDRESS' => $mailEnabled ? $mailFrom : $adminEmail,
+                // O SMTP real é gravado em app_settings (senha criptografada).
+                // O .env fica apenas com um transporte seguro de fallback.
+                'MAIL_MAILER' => 'log',
+                'MAIL_FROM_ADDRESS' => $mailFrom,
                 'MAIL_FROM_NAME' => 'KDK Finance',
-                'FORCE_HTTPS' => $appScheme === 'https',
-                'TRUST_HOSTS' => true,
                 'FINANCE_VERIFY_SSL' => true,
                 'VITE_APP_NAME' => 'KDK Finance',
             ];
@@ -419,6 +414,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $alreadyInstalled && $requirement
 
             if ($status !== 0) {
                 throw new RuntimeException('Não foi possível gravar as configurações iniciais.');
+            }
+
+            // Segurança operacional e SMTP ficam no banco (painel admin).
+            $installHost = strtolower((string) parse_url($appUrl, PHP_URL_HOST));
+            $installHosts = array_values(array_unique(array_filter([
+                $installHost,
+                $installHost !== '' && str_starts_with($installHost, 'www.') ? substr($installHost, 4) : ($installHost !== '' ? 'www.'.$installHost : null),
+            ])));
+
+            App\Models\AppSetting::set('security_force_https', $isHttps ? '1' : '0', 'security');
+            App\Models\AppSetting::set('security_trust_hosts', '1', 'security');
+            App\Models\AppSetting::set('security_allowed_hosts', implode(', ', $installHosts), 'security');
+            App\Models\AppSetting::set('security_session_encrypt', '1', 'security');
+            App\Models\AppSetting::set('security_session_secure', '1', 'security');
+            App\Models\AppSetting::set('security_session_lifetime', '120', 'security');
+
+            App\Models\AppSetting::set('mail_enabled', $mailEnabled ? '1' : '0', 'mail');
+            App\Models\AppSetting::set('mail_host', $mailEnabled ? strtolower($mailHost) : '', 'mail');
+            App\Models\AppSetting::set('mail_port', $mailEnabled ? $mailPort : '587', 'mail');
+            App\Models\AppSetting::set('mail_encryption', $mailEnabled ? $mailEncryption : 'tls', 'mail');
+            App\Models\AppSetting::set('mail_auth', $mailEnabled && $mailUser !== '' ? '1' : '0', 'mail');
+            App\Models\AppSetting::set('mail_username', $mailEnabled ? $mailUser : '', 'mail');
+            App\Models\AppSetting::set('mail_timeout', '15', 'mail');
+            App\Models\AppSetting::set('mail_from_address', $mailFrom, 'mail');
+            App\Models\AppSetting::set('mail_from_name', 'KDK Finance', 'mail');
+
+            if ($mailEnabled && $mailPassword !== '') {
+                App\Models\AppSetting::set('mail_password', $mailPassword, 'mail', true);
             }
 
             $admin = App\Models\User::query()->create([

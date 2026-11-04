@@ -13,11 +13,13 @@
 
 namespace App\Providers;
 
+use App\Support\Settings\MailSettings;
+use App\Support\Settings\SecuritySettings;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\Rules\Password;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -45,7 +47,24 @@ class AppServiceProvider extends ServiceProvider
             Log::warning('APP_DEBUG estava ligado em produção e foi desativado em tempo de execução.');
         }
 
-        // Política padrão de senhas: 10 caracteres, maiúscula, minúscula e número.
-        Password::defaults(fn () => Password::min(10)->mixedCase()->numbers());
+        // Segurança, sessão, política de senha e SMTP vêm do banco (app_settings).
+        // O .env permanece apenas como último recurso de infraestrutura.
+        try {
+            SecuritySettings::applySessionConfig();
+        } catch (Throwable $exception) {
+            SecuritySettings::logBootFailure($exception);
+        }
+
+        try {
+            SecuritySettings::applyPasswordPolicy();
+        } catch (Throwable $exception) {
+            SecuritySettings::logBootFailure($exception);
+        }
+
+        try {
+            MailSettings::apply();
+        } catch (Throwable $exception) {
+            MailSettings::logBootFailure($exception);
+        }
     }
 }

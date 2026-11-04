@@ -13,6 +13,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Settings\SecuritySettings;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,14 +21,14 @@ use Symfony\Component\HttpFoundation\Response;
 class ForceHttps
 {
     /**
-     * Redireciona todo o painel para HTTPS quando configurado.
+     * Redireciona todo o painel para HTTPS quando a opção está ligada no banco.
      *
      * Fica desligado em desenvolvimento local e em testes, onde não há
-     * certificado válido. Em produção o instalador grava FORCE_HTTPS=true.
+     * certificado válido. O instalador grava a preferência em app_settings.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! config('finance.security.force_https')) {
+        if (! SecuritySettings::forceHttps()) {
             return $next($request);
         }
 

@@ -14,6 +14,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\Settings\SecuritySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,13 +43,16 @@ class LoginController extends Controller
         ]);
 
         $throttleKey = 'login:'.Str::lower($credentials['email']).'|'.$request->ip();
+        $maxAttempts = SecuritySettings::loginMaxAttempts();
+        $decaySeconds = SecuritySettings::loginDecaySeconds();
 
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+        if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($throttleKey);
 
             Log::warning('Login bloqueado por excesso de tentativas.', [
                 'email' => $credentials['email'],
                 'ip' => $request->ip(),
+                'limit' => $maxAttempts,
             ]);
 
             throw ValidationException::withMessages([
@@ -57,7 +61,7 @@ class LoginController extends Controller
         }
 
         if (! Auth::attempt($credentials + ['is_active' => true], $request->boolean('remember'))) {
-            RateLimiter::hit($throttleKey, 60);
+            RateLimiter::hit($throttleKey, $decaySeconds);
 
             Log::warning('Tentativa de acesso inválida.', [
                 'email' => $credentials['email'],

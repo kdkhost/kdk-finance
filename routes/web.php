@@ -27,9 +27,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
-    Route::post('/login', [LoginController::class, 'login'])
-        ->middleware('throttle:10,1')
-        ->name('login.attempt');
+    // O limite de tentativas é lido de app_settings (aba Segurança).
+    Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])
@@ -152,6 +151,15 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/configuracoes/licenseboy', [SettingsController::class, 'updateLicenseBoy'])->name('settings.licenseboy');
         Route::post('/configuracoes/cotacoes/atualizar', [SettingsController::class, 'refreshRates'])->name('settings.rates.refresh');
         Route::put('/configuracoes/regras', [SettingsController::class, 'updateOperational'])->name('settings.rules');
+
+        // Segurança operacional: tudo gravado em app_settings.
+        Route::put('/configuracoes/seguranca', [SettingsController::class, 'updateSecurity'])->name('settings.security');
+        Route::post('/configuracoes/seguranca/sessoes', [SettingsController::class, 'revokeOtherSessions'])->name('settings.sessions.revoke');
+
+        // SMTP, remetente e tema dos e-mails.
+        Route::put('/configuracoes/email', [SettingsController::class, 'updateMail'])->name('settings.mail');
+        Route::post('/configuracoes/email/testar', [SettingsController::class, 'testMail'])->name('settings.mail.test');
+        Route::get('/configuracoes/email/previa', [SettingsController::class, 'previewMail'])->name('settings.mail.preview');
 
         Route::get('/usuarios', [UserController::class, 'index'])->name('users.index');
         Route::post('/usuarios', [UserController::class, 'store'])->name('users.store');

@@ -11,10 +11,12 @@
  * ============================================================================
  */
 
+use App\Http\Middleware\ConfigureTrustedProxies;
 use App\Http\Middleware\DeveloperSignatureMiddleware;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\RestrictHosts;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -28,6 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Proxy/CDN e validação de Host vêm primeiro, ambos configurados no
+        // painel (app_settings), sem depender do .env.
+        $middleware->prepend([
+            ConfigureTrustedProxies::class,
+            RestrictHosts::class,
+        ]);
+
         // Redireciona para HTTPS, assina as respostas e aplica os cabeçalhos
         // de proteção do navegador (CSP com nonce, nosniff, frame, referrer).
         $middleware->append(ForceHttps::class);
@@ -42,20 +51,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserRole::class,
         ]);
-
-        // Opcional: aceitar apenas o host do APP_URL (contra Host header spoofing).
-        if (filter_var(env('TRUST_HOSTS', false), FILTER_VALIDATE_BOOL)) {
-            $middleware->trustHosts(at: function (): array {
-                $host = parse_url((string) env('APP_URL'), PHP_URL_HOST);
-
-                return array_values(array_filter([$host, $host ? 'www.'.$host : null]));
-            });
-        }
-
-        // Opcional: confiar em proxy/CDN (informe os IPs em TRUSTED_PROXIES).
-        if ($proxies = env('TRUSTED_PROXIES')) {
-            $middleware->trustProxies(at: $proxies);
-        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

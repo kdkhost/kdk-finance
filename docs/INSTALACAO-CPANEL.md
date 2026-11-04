@@ -202,8 +202,10 @@ public/instalador.php.instalado
 
 1. No cPanel, instale o AutoSSL para o domínio.
 2. Confirme que `https://financeiro.seudominio.com` abre sem aviso.
-3. O `.env` já foi gravado com `FORCE_HTTPS=true` e
-   `TRUST_HOSTS=true` quando a URL informada era `https`.
+3. O instalador já gravou **Forçar HTTPS** e **Restringir hosts** no banco
+   (`app_settings`) quando a URL informada era `https`. Confira em
+   **Configurações → Segurança**, onde também ficam HSTS, cabeçalhos, CSP,
+   sessão, bloqueio de login e política de senhas. Nada disso vem do `.env`.
 
 ### 6.3. Cron do Laravel
 
@@ -286,7 +288,8 @@ com 10+ caracteres, maiúscula, minúscula e número.
 ## 8. Checklist de segurança
 
 - [ ] Document Root aponta para `public/` (ou `.htaccess` da raiz ativo).
-- [ ] `https://` funcionando e `FORCE_HTTPS=true` no `.env`.
+- [ ] `https://` funcionando e **Forçar HTTPS** ativo em
+      Configurações → Segurança.
 - [ ] `APP_DEBUG=false` e `APP_ENV=production`.
 - [ ] `instalador.php` renomeado; `storage/app/instalar.senha` apagada.
 - [ ] `.env` com permissão 640 e fora do alcance da web.
@@ -295,6 +298,8 @@ com 10+ caracteres, maiúscula, minúscula e número.
 - [ ] Backup do banco, de `storage/app/` e do `.env`.
 - [ ] Credenciais OVH/LicenseBoy cadastradas **pelo painel** (ficam
       criptografadas em `app_settings`, nunca no `.env`).
+- [ ] SMTP configurado em **Configurações → E-mail**, com e-mail de teste
+      recebido e tema dos e-mails revisado na prévia.
 - [ ] Usuário somente leitura testado com `403` nas telas administrativas.
 
 ### O que já vem protegido
