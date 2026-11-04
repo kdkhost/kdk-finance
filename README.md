@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.5.4 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.6.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -43,6 +43,8 @@ marca o resultado como desatualizado.
 - Central de cron com CRUD de agendamentos, presets, fuso horário, execução manual, histórico de saídas e sinal de vida do agendador — apenas uma linha no cron da hospedagem.
 - Importação automática de todo o histórico de faturas da OVHcloud e sincronização agendada a cada 15 minutos.
 - Atualização em tempo real do dashboard via Laravel Reverb (WebSocket).
+- Atualização em segundo plano em todas as páginas do painel, sem recarregar e sem piscar nenhum elemento: notificações, totais, cotações e valores das faturas são atualizados a cada 60 segundos e ao voltar para a aba.
+- Relógio em tempo real no cabeçalho com data e hora de São Paulo (`America/Sao_Paulo`), fuso padrão do sistema.
 - Alerta por e-mail, banco e broadcast quando a variação cambial ultrapassa 1%.
 - Exportação CSV organizada (BOM UTF-8, separador `;`, colunas em ordem alfabética e fórmulas neutralizadas).
 - Perfis de acesso: desenvolvedor/administrador, gestor financeiro e consulta.
@@ -315,6 +317,11 @@ php artisan reverb:start
 As credenciais do Reverb ficam no `.env` (infraestrutura) e são expostas ao front-end
 via `VITE_REVERB_*`. Sem o Reverb, o sistema continua funcionando — apenas sem push
 em tempo real; o dashboard cai no carregamento normal.
+
+Independentemente do Reverb, todas as páginas do painel consultam `/painel/ao-vivo` a
+cada 60 segundos e ao voltar para a aba, atualizando apenas os textos que mudaram
+(notificações, totais, cotações e valores das faturas) sem recarregar ou piscar a tela.
+O relógio do cabeçalho segue o fuso `America/Sao_Paulo` (`APP_TIMEZONE`).
 
 ### PWA
 

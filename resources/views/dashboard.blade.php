@@ -84,7 +84,7 @@
                     <span class="stat-label">Vencidas</span>
                     <span class="stat-icon is-red"><i class="bi bi-exclamation-octagon"></i></span>
                 </div>
-                <div class="stat-value mt-2">{{ $money($totals['overdue_total']) }}</div>
+                <div class="stat-value mt-2" data-live="overdue-total">{{ $money($totals['overdue_total']) }}</div>
                 <div class="stat-meta mt-2">
                     {{ $totals['overdue_count'] }} faturas fora do prazo
                     @if ($nextDueDate)
@@ -107,17 +107,17 @@
                             {{ $currency }} <span class="text-muted-soft" style="font-size:.72rem;">{{ config('finance.currencies.'.$currency.'.symbol') }}</span>
                         </span>
                         <span class="text-end">
-                            <span class="rate-value">{{ number_format($rate['rate'], 4, ',', '.') }}</span>
-                            <span class="stat-delta {{ $rate['pct_change'] >= 0 ? 'is-up' : 'is-down' }} ms-1">
+                            <span class="rate-value" data-live="rate-{{ $currency }}">{{ number_format($rate['rate'], 4, ',', '.') }}</span>
+                            <span class="stat-delta {{ $rate['pct_change'] >= 0 ? 'is-up' : 'is-down' }} ms-1" data-live="rate-{{ $currency }}-change">
                                 <i class="bi {{ $rate['pct_change'] >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>
-                                {{ number_format(abs($rate['pct_change']), 2, ',', '.') }}%
+                                <span data-live="rate-{{ $currency }}-pct">{{ number_format(abs($rate['pct_change']), 2, ',', '.') }}%</span>
                             </span>
                         </span>
                     </div>
                 @endforeach
                 <div class="stat-meta mt-2">
                     {{ $rateStale ? 'Última cotação conhecida' : 'AwesomeAPI' }} ·
-                    {{ \Illuminate\Support\Carbon::parse($rates['USD']['updated_at'])->format('H:i') }}
+                    <span data-live="rates-at">{{ \Illuminate\Support\Carbon::parse($rates['USD']['updated_at'])->format('H:i') }}</span>
                 </div>
             </div>
         </div>
@@ -154,7 +154,7 @@
                     <div class="surface-muted p-3 mt-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="text-muted-soft" style="font-size:.74rem;">Tributos em faturas pendentes</span>
-                            <strong class="tabular">{{ $money($totals['taxes_pending']) }}</strong>
+                            <strong class="tabular" data-live="taxes-pending">{{ $money($totals['taxes_pending']) }}</strong>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="text-muted-soft" style="font-size:.74rem;">Spread + IOF + ICMS + outros</span>

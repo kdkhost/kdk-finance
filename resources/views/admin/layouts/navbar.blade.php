@@ -24,7 +24,15 @@
             <li class="nav-item d-none d-md-inline-flex align-items-center me-2">
                 <span class="live-indicator" data-live-indicator>
                     <span class="live-dot"></span>
-                    <span data-live-label>{{ config('broadcasting.default') === 'reverb' ? 'Tempo real pronto' : 'Atualização a cada 15 min' }}</span>
+                    <span data-live-label>{{ config('broadcasting.default') === 'reverb' ? 'Tempo real ativo' : 'Atualiza em segundo plano' }}</span>
+                </span>
+            </li>
+            <li class="nav-item d-inline-flex align-items-center">
+                <span class="live-clock" title="Horário de São Paulo (America/Sao_Paulo)" aria-label="Horário de São Paulo">
+                    <i class="bi bi-clock" aria-hidden="true"></i>
+                    <span class="live-clock-date d-none d-lg-inline" data-live-clock-date>{{ now()->format('d/m/Y') }}</span>
+                    <time class="live-clock-time tabular" data-live-clock-time datetime="{{ now()->toIso8601String() }}">{{ now()->format('H:i:s') }}</time>
+                    <span class="live-clock-zone d-none d-xl-inline">São Paulo</span>
                 </span>
             </li>
         </ul>

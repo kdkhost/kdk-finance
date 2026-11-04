@@ -18,6 +18,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InfrastructureController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\LiveSnapshotController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
@@ -37,6 +38,7 @@ Route::post('/logout', [LoginController::class, 'logout'])
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('/painel/ao-vivo', LiveSnapshotController::class)->name('live.snapshot');
 
     // ---------------------------------------------------------------------
     // Faturas — leitura para todos, escrita para gestores/desenvolvedores

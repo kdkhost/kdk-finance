@@ -128,6 +128,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por George Marcelo</div>
-        <div class="mt-1 opacity-75">v1.5.4 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.6.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

@@ -23,7 +23,7 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="text-muted-soft">{{ config('finance.developer.email') }}</span>
-            <span class="badge text-bg-light border tabular">v1.5.4</span>
+            <span class="badge text-bg-light border tabular">v1.6.0</span>
         </div>
     </div>
 </footer>

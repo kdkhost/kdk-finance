@@ -5,6 +5,25 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.6.0] - 2026-11-04
+
+### Adicionado
+
+- **Atualização em segundo plano em todas as páginas do painel**, sem recarregar a página e sem piscar nenhum elemento: um instantâneo leve (`/painel/ao-vivo`) alimenta notificações não lidas, totais do dashboard, cotações, totais das faturas listadas e a cotação da tela de conversões a cada 60 segundos, além de uma consulta imediata ao voltar para a aba.
+- Os valores só são escritos quando realmente mudam, preservando ícones, classes e o restante do conteúdo de cada célula — a tela permanece estável durante a atualização.
+- **Relógio em tempo real** no cabeçalho com data e hora de **São Paulo** (`America/Sao_Paulo`), atualizado a cada segundo e sincronizado pelo horário do servidor.
+- Indicador do cabeçalho mostra o horário da última atualização recebida.
+
+### Alterado
+
+- `APP_TIMEZONE` documentado e fixado em `America/Sao_Paulo` como padrão do sistema, tanto no `config/app.php` quanto no `.env.example`.
+- O tema claro/escuro salvo no navegador passou a ser aplicado **antes** do CSS carregar, em todas as telas (painel, login e páginas de erro), eliminando a piscada clara ao abrir uma página no tema escuro.
+- Removidos a animação pulsante do indicador e o realce temporário das linhas de fatura, que causavam movimento desnecessário na tela.
+
+### Testado
+
+- 80 testes e 357 asserções passando, incluindo o novo instantâneo, a exigência de autenticação, o fuso padrão e a presença do relógio e do endereço de atualização no HTML do painel.
+
 ## [1.5.4] - 2026-11-04
 
 ### Corrigido

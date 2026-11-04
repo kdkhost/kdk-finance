@@ -635,14 +635,42 @@ select optgroup {
     height: 8px;
     border-radius: 50%;
     background: var(--kdk-teal);
-    box-shadow: 0 0 0 0 var(--kdk-teal-soft);
-    animation: pulse 2.4s infinite;
+    box-shadow: 0 0 0 2px var(--kdk-teal-soft);
 }
 
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(15, 157, 118, 0.45); }
-    70% { box-shadow: 0 0 0 8px rgba(15, 157, 118, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(15, 157, 118, 0); }
+.live-clock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    border: 1px solid var(--kdk-border);
+    background: var(--kdk-card);
+    color: var(--kdk-text);
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.live-clock i {
+    font-size: 0.8rem;
+    color: var(--kdk-teal-600);
+}
+
+.live-clock-date,
+.live-clock-zone {
+    color: var(--kdk-muted);
+    font-weight: 500;
+}
+
+.live-clock-zone {
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.live-clock-time {
+    font-variant-numeric: tabular-nums;
 }
 
 .user-chip {
@@ -819,15 +847,6 @@ select optgroup {
 
 .table-hover > tbody > tr:hover > * {
     background: var(--kdk-card-muted);
-}
-
-.invoice-row.is-highlighted > td {
-    animation: row-flash 2.4s ease;
-}
-
-@keyframes row-flash {
-    0% { background-color: var(--kdk-teal-soft); }
-    100% { background-color: transparent; }
 }
 
 .cell-title {

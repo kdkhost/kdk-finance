@@ -51,8 +51,8 @@
                         quanto sai do cartão.
                     </p>
                     <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                        <span class="currency-chip">EUR → USD · {{ number_format($rate, 6, ',', '.') }}</span>
-                        <span class="currency-chip">1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR</span>
+                        <span class="currency-chip">EUR → USD · <span data-live="conversion-rate">{{ number_format($rate, 6, ',', '.') }}</span></span>
+                        <span class="currency-chip"><span data-live="conversion-inverse">1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR</span></span>
                         <span class="currency-chip">{{ $quote['source'] ?? '—' }} · {{ $quoteAt }}</span>
                     </div>
                     @if (auth()->user()->canManageFinance())
@@ -72,9 +72,9 @@
                             <span class="stat-label">EUR → USD agora</span>
                             <span class="stat-icon"><i class="bi bi-broadcast"></i></span>
                         </div>
-                        <div class="stat-value mt-2">{{ number_format($rate, 6, ',', '.') }}</div>
+                        <div class="stat-value mt-2" data-live="conversion-rate">{{ number_format($rate, 6, ',', '.') }}</div>
                         <div class="stat-meta mt-2">
-                            1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR · {{ $quoteAt }}
+                            <span data-live="conversion-inverse">1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR</span> · {{ $quoteAt }}
                             @if (! empty($quote['stale']))
                                 <span class="d-block text-danger"><i class="bi bi-wifi-off me-1"></i> última cotação conhecida</span>
                             @endif

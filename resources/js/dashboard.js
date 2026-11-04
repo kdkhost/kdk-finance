@@ -179,14 +179,17 @@ document.addEventListener('finance:invoice-updated', (event) => {
 
     if (invoice.id) {
         document.querySelectorAll(`[data-invoice-total="${invoice.id}"]`).forEach((element) => {
-            element.textContent = money.format(invoice.total_brl || 0);
-        });
+            const icon = element.querySelector('i');
+            const value = money.format(invoice.total_brl || 0);
 
-        const row = document.querySelector(`[data-invoice-row="${invoice.id}"]`);
-        if (row) {
-            row.classList.add('is-highlighted');
-            window.setTimeout(() => row.classList.remove('is-highlighted'), 2600);
-        }
+            if (icon && element.firstChild?.nodeType === Node.TEXT_NODE) {
+                if (element.firstChild.textContent !== ` ${value} `) {
+                    element.firstChild.textContent = ` ${value} `;
+                }
+            } else if (element.textContent !== value) {
+                element.textContent = value;
+            }
+        });
     }
 
     if (detail.alert && invoice.description) {

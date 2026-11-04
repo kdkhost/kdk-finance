@@ -20,6 +20,7 @@
     <title>Acesso ao painel · {{ config('app.name') }}</title>
     @include('partials.favicon')
     <link rel="manifest" href="{{ asset('manifest.json') }}">
+    @include('partials.theme-boot')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
@@ -128,7 +129,7 @@
 
                 <div class="auth-footer">
                     {{ config('finance.developer.company') }} · Desenvolvido por {{ config('finance.developer.name') }}<br>
-                    v1.5.4 · Laravel {{ \Illuminate\Foundation\Application::VERSION }}
+                    v1.6.0 · Laravel {{ \Illuminate\Foundation\Application::VERSION }}
                 </div>
             </div>
         </section>

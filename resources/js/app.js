@@ -13,6 +13,7 @@ import 'admin-lte';
 import toastr from 'toastr';
 import Swal from 'sweetalert2';
 import './echo';
+import './live';
 import './dashboard';
 import './invoice-form';
 import './conversion-form';
@@ -30,6 +31,7 @@ const currentTheme = () => document.documentElement.getAttribute('data-bs-theme'
 
 function paintTheme(theme) {
     document.documentElement.setAttribute('data-bs-theme', theme);
+    document.documentElement.style.colorScheme = theme;
     document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
         const icon = button.querySelector('i');
         if (icon) {

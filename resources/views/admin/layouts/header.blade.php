@@ -22,6 +22,7 @@
     <title>@yield('title', 'Painel') · {{ config('app.name') }}</title>
     @include('partials.favicon')
     <link rel="manifest" href="{{ asset('manifest.json') }}">
+    @include('partials.theme-boot')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script>
         window.__financeUser = {!! json_encode([
@@ -31,4 +32,4 @@
         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) !!};
     </script>
 </head>
-<body class="layout-fixed fixed-header sidebar-expand-lg">
+<body class="layout-fixed fixed-header sidebar-expand-lg" data-live-url="{{ route('live.snapshot') }}">

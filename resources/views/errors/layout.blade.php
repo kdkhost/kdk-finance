@@ -17,6 +17,7 @@
     <meta name="theme-color" content="{{ config('finance.pwa.theme_color') }}">
     <title>@yield('title') · {{ config('app.name') }}</title>
     @include('partials.favicon')
+    @include('partials.theme-boot')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
@@ -46,7 +47,7 @@
                 <hr class="my-4">
                 <div class="text-muted-soft" style="font-size:.72rem;line-height:1.7;">
                     {{ config('finance.developer.company') }} · CNPJ {{ config('finance.developer.cnpj') }}<br>
-                    Desenvolvido por {{ config('finance.developer.name') }} · v1.5.4
+                    Desenvolvido por {{ config('finance.developer.name') }} · v1.6.0
                 </div>
             </div>
         </div>
