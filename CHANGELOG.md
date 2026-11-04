@@ -23,6 +23,12 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Suíte completa em PHP 8.3 com SQLite em memória: 118 testes e 549 asserções, incluindo os novos testes de URL limpa.
 - Validação em produção por `curl`: `/public/login` responde `301` para `/login`, `/login` responde `200` e a query string é mantida.
 
+### Produção
+
+- Instalação de `financeiro.kdkhost.com.br` recebeu a configuração de LicenseBoy e OVH validada localmente: credenciais criptografadas em `app_settings` (7 chaves da OVH e 3 da LicenseBoy), 37 itens de catálogo, 5 licenças vinculadas ao painel com preço sincronizado, 6 serviços OVH, 5 blocos de IP, 17 faturas e 121 itens.
+- Parâmetros financeiros alinhados ao ambiente local: IOF de 3,50% em impostos e conversão e spread de 2%.
+- Scripts temporários de importação e o arquivo de carga usado na migração removidos do servidor após a validação.
+
 ## [1.8.0] - 2026-11-04
 
 ### Adicionado
