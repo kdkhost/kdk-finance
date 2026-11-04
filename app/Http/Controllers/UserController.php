@@ -14,6 +14,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\MailTemplateService;
+use App\Support\Settings\MailTheme;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -30,7 +32,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, MailTemplateService $mail): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
@@ -39,7 +41,15 @@ class UserController extends Controller
             'password' => ['required', 'string', 'max:100', Password::defaults()],
         ]);
 
-        User::query()->create($data + ['is_active' => true]);
+        $user = User::query()->create($data + ['is_active' => true]);
+
+        $mail->sendQuietly('welcome', [
+            'marca' => MailTheme::brand(),
+            'usuario' => $user->name,
+            'email' => $user->email,
+            'perfil' => $user->roleLabel(),
+            'link' => route('login'),
+        ], $user->email);
 
         return redirect()
             ->route('users.index')

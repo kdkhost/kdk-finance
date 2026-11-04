@@ -15,9 +15,17 @@
 @section('subtitle', 'Todos os agendamentos do painel rodam a partir de uma única linha na hospedagem.')
 
 @section('actions')
-    <a href="{{ route('crons.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Novo cron
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+        <form method="POST" action="{{ route('crons.restore') }}">
+            @csrf
+            <button type="submit" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Restaurar padrões
+            </button>
+        </form>
+        <a href="{{ route('crons.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Novo cron
+        </a>
+    </div>
 @endsection
 
 @section('content')
@@ -55,6 +63,39 @@
                     <div>O agendador ainda não enviou sinal. Em produção, confira a linha acima no cron da hospedagem; em ambiente local, rode <span class="mono">php artisan schedule:work</span>.</div>
                 </div>
             @endunless
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="page-eyebrow">Ambiente de execução</div>
+                    <p class="text-muted-soft mb-1" style="font-size:.84rem;">
+                        Os agendamentos rodam pelo binário do PHP abaixo. Detectado:
+                        <span class="mono">{{ $environment['binary'] }}</span>@if ($environment['version']) (PHP {{ $environment['version'] }})@endif.
+                    </p>
+                    <div class="cell-sub">
+                        Deixe o campo em branco para detectar automaticamente um PHP 8.2+; preencha quando o
+                        <span class="mono">php</span> do terminal for uma versão antiga.
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('crons.environment') }}" class="d-flex flex-wrap gap-2 align-items-start">
+                    @csrf
+                    <div>
+                        <label class="visually-hidden" for="php_binary">Binário do PHP</label>
+                        <input id="php_binary" name="php_binary" value="{{ old('php_binary', $phpBinarySetting) }}"
+                               class="form-control form-control-sm mono" style="min-width: 280px;"
+                               placeholder="{{ $environment['binary'] }}">
+                        @error('php_binary')
+                            <div class="text-danger mt-1" style="font-size:.76rem;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-check2 me-1"></i> Salvar
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -118,8 +159,14 @@
                 <div class="empty-state">
                     <div class="icon"><i class="bi bi-clock-history"></i></div>
                     <h3>Nenhum cron cadastrado</h3>
-                    <p>Crie agendamentos para comandos Artisan ou comandos do sistema, como backups e limpezas.</p>
-                    <a href="{{ route('crons.create') }}" class="btn btn-primary btn-sm">Cadastrar cron</a>
+                    <p>Restaure os crons padrão do sistema — cotações, faturas OVH, licenças LicenseBoy e alertas de vencimento — ou cadastre um comando próprio.</p>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <form method="POST" action="{{ route('crons.restore') }}">
+                            @csrf
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-arrow-counterclockwise me-1"></i> Restaurar padrões</button>
+                        </form>
+                        <a href="{{ route('crons.create') }}" class="btn btn-outline-secondary btn-sm">Cadastrar cron</a>
+                    </div>
                 </div>
             </div>
         @else

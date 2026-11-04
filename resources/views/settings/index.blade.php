@@ -808,6 +808,19 @@
                         </div>
                     </div>
 
+                    <div class="card mt-3">
+                        <div class="card-header">Alertas automáticos</div>
+                        <div class="card-body">
+                            <label class="form-label" for="mail_alert_recipients">Destinatários dos alertas</label>
+                            <input type="text" class="form-control @error('mail_alert_recipients') is-invalid @enderror" id="mail_alert_recipients" name="mail_alert_recipients" value="{{ old('mail_alert_recipients', $mailSettings['mail_alert_recipients']) }}" placeholder="financeiro@seudominio.com, socio@seudominio.com">
+                            @error('mail_alert_recipients')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="form-text">
+                                Separe por vírgula. Se ficar vazio, os alertas vão para todo desenvolvedor e gestor financeiro ativo.
+                                As mensagens enviadas estão em <a href="{{ route('email-templates.index') }}">Modelos de e-mail</a>.
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end mt-3">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Salvar SMTP e tema</button>
                     </div>
@@ -863,6 +876,22 @@
                                 <div class="form-text">Salve o SMTP ativo, com servidor e remetente, para liberar o teste.</div>
                             @endif
                         </form>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Modelos de e-mail</span>
+                        <span class="badge text-bg-light border">8 modelos</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted-soft mb-3" style="font-size:.8rem;">
+                            Textos de fatura a vencer, vencida, pagamento, licença, falha de cron, boas-vindas e teste.
+                            Todos usam o tema acima e os destinatários dos alertas.
+                        </p>
+                        <a href="{{ route('email-templates.index') }}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-envelope-paper me-1"></i> Gerenciar modelos
+                        </a>
                     </div>
                 </div>
 

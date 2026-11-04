@@ -218,20 +218,57 @@ public/instalador.php.instalado
 Em **Trabalhos Cron**, crie duas tarefas de **1 em 1 minuto**:
 
 ```bash
-/usr/local/bin/php /home/SEU_USUARIO/financeiro/artisan schedule:run >> /dev/null 2>&1
+/usr/local/bin/ea-php82 /home/SEU_USUARIO/financeiro/artisan schedule:run >> /dev/null 2>&1
 ```
 
 ```bash
-/usr/local/bin/php /home/SEU_USUARIO/financeiro/artisan queue:work --stop-when-empty --max-time=55 >> /dev/null 2>&1
+/usr/local/bin/ea-php82 /home/SEU_USUARIO/financeiro/artisan queue:work --stop-when-empty --max-time=55 >> /dev/null 2>&1
 ```
 
 Ajuste o caminho do PHP se o cPanel informar outro (alguns servidores usam
-`/usr/bin/php` ou `/opt/cpanel/ea-php83/root/usr/bin/php`). O `schedule:run`
-executa as sincronizações OVH/LicenseBoy e as tarefas cadastradas na Central de
-cron; o `queue:work` processa e-mails e notificações da fila no banco.
+`/usr/bin/php`, `/opt/cpanel/ea-php82/root/usr/bin/php` ou
+`/opt/alt/php82/usr/bin/php`). Use sempre o CLI 8.2 ou superior: em LiteSpeed o
+`php` do terminal pode ser uma versão antiga. O `schedule:run` dispara o
+`cron:run-due`, que executa as tarefas cadastradas na Central de cron; o
+`queue:work` processa e-mails e notificações da fila no banco.
 
 > As tarefas cadastradas **dentro do painel** (Central de cron) são executadas
 > pelo `schedule:run`. Não é preciso criar um cron no cPanel para cada uma.
+
+### 6.3.1. Crons do sistema
+
+A instalação já cria cinco agendamentos na **Central de cron**:
+
+| Rotina | Comando | Frequência |
+| --- | --- | --- |
+| Atualizar cotações de câmbio | `finance:refresh-rates` | a cada 30 minutos |
+| Sincronizar faturas OVHcloud | `finance:sync-invoices` | a cada 15 minutos |
+| Sincronizar preços das licenças | `licenses:sync-prices` | diariamente, 05:10 |
+| Sincronizar painel LicenseBoy | `licenses:sync-panel` | diariamente, 05:25 |
+| Alertas de vencimento | `finance:notify-alerts` | diariamente, 08:00 |
+
+Fuso de São Paulo em todos. Se a lista estiver vazia (instalação antiga ou
+registros removidos), use **Restaurar padrões** no topo da Central de cron: o
+botão cria os que faltam e realinha os existentes sem duplicar.
+
+O agendador é considerado ativo quando o selo **Agendador · Ativo** aparece no
+topo da Central de cron; ele é atualizado a cada minuto pelo `schedule:run`.
+
+O cartão **Ambiente de execução** mostra e permite fixar o binário do PHP CLI
+usado pelos agendamentos (`app_settings.cron_php_binary`). Em branco, o sistema
+detecta automaticamente um PHP 8.2+ (`/usr/local/bin/ea-php82`,
+`/opt/cpanel/ea-php82/root/usr/bin/php`, `/opt/alt/php82/usr/bin/php`,
+`/usr/bin/php8.2` ou o `PHP_BINDIR`). A linha única de scheduler exibida no
+painel já sai com o caminho absoluto detectado.
+
+### 6.3.2. Modelos de e-mail
+
+Em **Configurações → Modelos de e-mail** (ou pelo menu lateral **Modelos de
+e-mail**) ficam os oito textos transacionais do sistema. Cada modelo tem prévia,
+envio de teste, ativação individual e **Restaurar padrão**. Os destinatários dos
+alertas são definidos em **Configurações → E-mail → Alertas automáticos**; sem
+endereço preenchido, o sistema usa o e-mail de todo desenvolvedor e gestor
+financeiro ativo.
 
 ### 6.4. Backup
 
@@ -303,6 +340,8 @@ com 10+ caracteres, maiúscula, minúscula e número.
 - [ ] `.env` com permissão 640 e fora do alcance da web.
 - [ ] `storage/` e `bootstrap/cache/` graváveis apenas pelo necessário.
 - [ ] Cron de `schedule:run` e `queue:work` ativos.
+- [ ] Central de cron com os cinco crons do sistema e o selo **Agendador · Ativo**.
+- [ ] Modelos de e-mail revisados e um envio de teste recebido.
 - [ ] Backup do banco, de `storage/app/` e do `.env`.
 - [ ] Credenciais OVH/LicenseBoy cadastradas **pelo painel** (ficam
       criptografadas em `app_settings`, nunca no `.env`).

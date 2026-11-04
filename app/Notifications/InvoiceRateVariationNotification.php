@@ -15,6 +15,7 @@ namespace App\Notifications;
 
 use App\Mail\ThemedMail;
 use App\Models\Invoice;
+use App\Services\MailTemplateService;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
@@ -36,29 +37,50 @@ class InvoiceRateVariationNotification extends Notification
      */
     public function via($notifiable): array
     {
-        return ['mail', 'database', 'broadcast'];
+        $channels = ['database', 'broadcast'];
+
+        if (app(MailTemplateService::class)->template('invoice_rate')?->enabled) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
     }
 
     public function toMail($notifiable): ThemedMail
     {
         $direction = $this->variationPercent >= 0 ? 'alta' : 'queda';
         $variation = number_format(abs($this->variationPercent), 2, ',', '.').'%';
+        $payload = app(MailTemplateService::class)->payload('invoice_rate', [
+            'usuario' => (string) $notifiable->name,
+            'descricao' => (string) $this->invoice->description,
+            'fatura' => (string) ($this->invoice->external_reference ?: $this->invoice->description),
+            'direcao' => $direction,
+            'variacao' => $variation,
+            'variacao_sinal' => ($this->variationPercent >= 0 ? '+' : '−').$variation,
+            'valor_anterior' => 'R$ '.number_format($this->previousTotal, 2, ',', '.'),
+            'valor_atual' => 'R$ '.number_format($this->newTotal, 2, ',', '.'),
+            'link' => route('invoices.show', $this->invoice),
+        ]) ?? [
+            'subject' => 'Variação cambial na fatura '.$this->invoice->description,
+            'heading' => 'Variação cambial na fatura',
+            'intro' => 'A fatura '.$this->invoice->description.' variou '.$variation.' e agora totaliza R$ '.number_format($this->newTotal, 2, ',', '.').'.',
+            'details' => [],
+            'action_text' => 'Abrir fatura',
+            'action_url' => route('invoices.show', $this->invoice),
+            'footnote' => '',
+            'preheader' => 'Variação cambial detectada.',
+        ];
 
-        return (new ThemedMail(
-            heading: 'Variação cambial na fatura',
-            intro: 'Olá, '.$notifiable->name.'. A fatura "'.$this->invoice->description.'" sofreu '.$direction.' de '.$variation.' após a atualização das cotações.',
-            details: [
-                'Fatura' => $this->invoice->external_reference,
-                'Variação' => ($this->variationPercent >= 0 ? '+' : '−').$variation,
-                'Valor anterior' => 'R$ '.number_format($this->previousTotal, 2, ',', '.'),
-                'Valor atualizado' => 'R$ '.number_format($this->newTotal, 2, ',', '.'),
-            ],
-            actionText: 'Abrir fatura',
-            actionUrl: route('invoices.show', $this->invoice),
-            footnote: 'Este alerta foi gerado automaticamente pelo monitoramento de câmbio.',
-            preheader: 'A fatura '.$this->invoice->external_reference.' variou '.$variation.'.',
-            subject: 'Variação cambial de '.$variation.' na fatura '.$this->invoice->external_reference,
-        ));
+        return new ThemedMail(
+            heading: $payload['heading'],
+            intro: $payload['intro'],
+            details: $payload['details'],
+            actionText: $payload['action_text'],
+            actionUrl: $payload['action_url'],
+            footnote: $payload['footnote'],
+            preheader: $payload['preheader'],
+            subject: $payload['subject'],
+        );
     }
 
     /**

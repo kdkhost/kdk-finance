@@ -75,6 +75,53 @@ class CronJob extends Model
         ];
     }
 
+    /**
+     * Crons que mantêm o sistema atualizado. São gravados na instalação e
+     * podem ser restaurados pelo botão "Restaurar padrões" da Central de cron.
+     *
+     * @return list<array{name: string, command: string, expression: string, timezone: string, description: string}>
+     */
+    public static function systemDefaults(): array
+    {
+        return [
+            [
+                'name' => 'Atualizar cotações de câmbio',
+                'command' => 'finance:refresh-rates',
+                'expression' => '*/30 * * * *',
+                'timezone' => 'America/Sao_Paulo',
+                'description' => 'Mantém USD e EUR atualizados no cache e grava a última cotação válida.',
+            ],
+            [
+                'name' => 'Sincronizar faturas OVHcloud',
+                'command' => 'finance:sync-invoices',
+                'expression' => '*/15 * * * *',
+                'timezone' => 'America/Sao_Paulo',
+                'description' => 'Importa faturas, itens, serviços e blocos de IP da OVHcloud e recalcula os valores em BRL.',
+            ],
+            [
+                'name' => 'Sincronizar preços das licenças',
+                'command' => 'licenses:sync-prices',
+                'expression' => '10 5 * * *',
+                'timezone' => 'America/Sao_Paulo',
+                'description' => 'Lê a tabela de preços da LicenseBoy e atualiza o catálogo e as licenças vinculadas.',
+            ],
+            [
+                'name' => 'Sincronizar painel LicenseBoy',
+                'command' => 'licenses:sync-panel',
+                'expression' => '25 5 * * *',
+                'timezone' => 'America/Sao_Paulo',
+                'description' => 'Lê o valor realmente cobrado no painel da LicenseBoy e sinaliza divergências.',
+            ],
+            [
+                'name' => 'Alertas de vencimento',
+                'command' => 'finance:notify-alerts',
+                'expression' => '0 8 * * *',
+                'timezone' => 'America/Sao_Paulo',
+                'description' => 'Envia e-mails de faturas a vencer, faturas vencidas e licenças próximas do vencimento.',
+            ],
+        ];
+    }
+
     public function runs(): HasMany
     {
         return $this->hasMany(CronJobRun::class);

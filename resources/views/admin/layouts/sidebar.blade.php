@@ -108,6 +108,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{{ route('email-templates.index') }}" class="nav-link {{ request()->routeIs('email-templates.*') ? 'active' : '' }}">
+                            <i class="bi bi-envelope-paper"></i>
+                            <span>Modelos de e-mail</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                             <i class="bi bi-people"></i>
                             <span>Usuários e acessos</span>
@@ -128,6 +134,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por Marcelo Brad - RJ</div>
-        <div class="mt-1 opacity-75">v1.8.3 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.9.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

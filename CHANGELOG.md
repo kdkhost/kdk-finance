@@ -5,6 +5,36 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.9.0] - 2026-11-04
+
+### Adicionado
+
+- **Modelos transacionais de e-mail editáveis no painel**: oito modelos reais com gatilho definido — teste de envio, variação cambial da fatura, fatura a vencer, fatura vencida, pagamento confirmado, licença a vencer, falha em cron/sincronização e boas-vindas. Cada modelo tem assunto, título, abertura, bloco de detalhes (formato `Rótulo|Valor`), botão, assinatura e chave de ativação, com placeholders `{{ variavel }}` e lista de variáveis disponíveis.
+- **Prévia e teste por modelo**: prévia responsiva com dados de exemplo, dentro do painel e em nova aba; envio de teste isolado para o endereço informado, com registro em log em caso de falha.
+- **Gestão no menu lateral e na aba E-mail**: nova tela *Modelos de e-mail* (`/configuracoes/email/modelos`), acessível pelo menu Sistema e pelo cartão da aba E-mail de Configurações, com ativar/desativar e restaurar padrão de fábrica.
+- **Destinatários dos alertas configuráveis** em Configurações → E-mail (`mail_alert_recipients`). Sem endereço definido, os alertas vão para todo desenvolvedor e gestor financeiro ativo.
+- **Crons do sistema instalados de fábrica**: `finance:refresh-rates` (cotações a cada 30 min), `finance:sync-invoices` (a cada 15 min), `licenses:sync-prices` (05:10), `licenses:sync-panel` (05:25) e `finance:notify-alerts` (08:00), com descrição, fuso de São Paulo e botão **Restaurar padrões** idempotente na Central de cron.
+- **Comando `finance:refresh-rates`**: força a consulta aos provedores de câmbio e renova o cache usado pelo painel.
+- **Comando `finance:notify-alerts`**: envia faturas a vencer (3 dias), faturas vencidas e licenças a vencer (7 dias), com controle de repetição por fatura e por licença para não duplicar avisos.
+- **E-mails ligados aos eventos reais**: pagamento de fatura, criação de usuário, variação cambial acima do limite e falha de cron usam os modelos do painel; alertas sem SMTP são ignorados com registro em log, sem quebrar o fluxo.
+
+### Alterado
+
+- **A Central de cron é a fonte única dos agendamentos de negócio**: o `schedule` do Laravel executa apenas `cron:run-due` a cada minuto; os agendamentos de faturas e licenças que estavam duplicados em `routes/console.php` foram removidos. A hospedagem continua com uma única linha de scheduler.
+- Os modelos padrão entram pela migration `email_templates` e podem ser recriados via seeder; a tela se autocura em instalações antigas que ainda não rodaram o seeder.
+- O sufixo "(última conhecida)" da cotação não se acumula mais quando uma cotação degradada volta a ser reaproveitada.
+- Versão exibida no rodapé, menu lateral, login, páginas de erro, README e instalador atualizada para 1.9.0.
+
+### Corrigido
+
+- **Execução dos crons no cPanel usava o PHP errado**: sob LiteSpeed o `PHP_BINARY` da requisição web é o `lsphp`, que nesta hospedagem caía para PHP 5.6 e fazia todo agendamento terminar com código 255. O executor agora detecta um CLI 8.2+ (`/usr/local/bin/ea-php82`, `/opt/cpanel/ea-php82/root/usr/bin/php`, `/opt/alt/php82/usr/bin/php`, `/usr/bin/php8.2` e o `PHP_BINDIR`), aceita um caminho fixo em **Central de cron → Ambiente de execução** (`app_settings.cron_php_binary`) e só usa o binário atual como último recurso.
+- A linha de scheduler recomendada na Central de cron passou a sair com o caminho absoluto do binário detectado, em vez de um `php` genérico que pode ser outra versão.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **144 testes e 654 asserções**, incluindo migration dos oito modelos, edição com placeholders, prévia com dados reais, ativação/restauração, exigência de SMTP no envio de teste, criação idempotente dos cinco crons, garantia de que o `schedule` só dispara `cron:run-due` e validação do binário PHP do executor.
+- Validação no navegador: Central de cron com os cinco agendamentos ativos, execução manual de `finance:refresh-rates` com código 0, tela de modelos listando os oito registros, edição salva refletida na prévia e restauração confirmada pelo SweetAlert2.
+
 ## [1.8.3] - 2026-11-04
 
 ### Corrigido

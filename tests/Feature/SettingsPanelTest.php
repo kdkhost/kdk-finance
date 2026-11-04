@@ -171,6 +171,27 @@ class SettingsPanelTest extends TestCase
             ->assertSee('suporte.kdkhost.test');
     }
 
+    public function test_alert_recipients_are_saved_and_parsed(): void
+    {
+        $developer = $this->developer();
+
+        $this->actingAs($developer)->put(route('settings.mail'), $this->mailPayload([
+            'mail_alert_recipients' => 'financeiro@kdkhost.test, socio@kdkhost.test',
+        ]));
+
+        $this->assertSame(
+            ['financeiro@kdkhost.test', 'socio@kdkhost.test'],
+            MailSettings::alertRecipients()
+        );
+
+        $this->actingAs($developer)
+            ->get('/configuracoes?tab=mail')
+            ->assertOk()
+            ->assertSee('Alertas automáticos')
+            ->assertSee('mail_alert_recipients', false)
+            ->assertSee(route('email-templates.index'), false);
+    }
+
     public function test_security_options_are_saved_in_app_settings(): void
     {
         $developer = $this->developer();

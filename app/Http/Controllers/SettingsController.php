@@ -13,10 +13,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\ThemedMail;
 use App\Models\AppSetting;
 use App\Services\ExchangeRateService;
 use App\Services\LicenseBoyPanelService;
+use App\Services\MailTemplateService;
 use App\Services\OvhService;
 use App\Support\Settings\MailSettings;
 use App\Support\Settings\MailTheme;
@@ -27,7 +27,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
@@ -360,6 +359,7 @@ class SettingsController extends Controller
             'mail_from_name' => ['nullable', 'string', 'max:120'],
             'mail_reply_to_address' => ['nullable', 'email', 'max:255'],
             'mail_reply_to_name' => ['nullable', 'string', 'max:120'],
+            'mail_alert_recipients' => ['nullable', 'string', 'max:500'],
             'clear_mail_password' => ['nullable', 'boolean'],
             'theme_brand' => ['required', 'string', 'max:80'],
             'theme_logo_enabled' => ['nullable', 'boolean'],
@@ -402,6 +402,7 @@ class SettingsController extends Controller
         AppSetting::set('mail_from_name', trim((string) ($data['mail_from_name'] ?? '')), 'mail');
         AppSetting::set('mail_reply_to_address', strtolower(trim((string) ($data['mail_reply_to_address'] ?? ''))), 'mail');
         AppSetting::set('mail_reply_to_name', trim((string) ($data['mail_reply_to_name'] ?? '')), 'mail');
+        AppSetting::set('mail_alert_recipients', trim((string) ($data['mail_alert_recipients'] ?? '')), 'mail');
 
         if ($request->boolean('clear_mail_password')) {
             AppSetting::set('mail_password', '', 'mail', true);
@@ -435,7 +436,7 @@ class SettingsController extends Controller
     /**
      * Envia uma mensagem real usando exatamente o SMTP salvo no banco.
      */
-    public function testMail(Request $request): RedirectResponse
+    public function testMail(Request $request, MailTemplateService $mailTemplates): RedirectResponse
     {
         $data = $request->validate([
             'test_email' => ['required', 'email', 'max:255'],
@@ -449,23 +450,19 @@ class SettingsController extends Controller
                 ->with('error', 'Salve o SMTP ativo, com servidor e remetente, antes de enviar o teste.');
         }
 
-        MailSettings::apply();
-
         try {
-            Mail::to($data['test_email'])->send(new ThemedMail(
-                heading: 'Teste de envio concluído',
-                intro: 'Se você recebeu esta mensagem, o servidor SMTP configurado no painel está respondendo e o tema dos e-mails está sendo aplicado.',
-                details: [
-                    'Servidor' => MailSettings::host().':'.MailSettings::port(),
-                    'Criptografia' => strtoupper(MailSettings::encryption()),
-                    'Remetente' => MailSettings::fromName().' <'.MailSettings::fromAddress().'>',
-                ],
-                actionText: 'Abrir o painel',
-                actionUrl: route('dashboard'),
-                footnote: 'Mensagem de teste gerada pelo painel de configurações. Nenhum dado financeiro foi incluído.',
-                preheader: 'Teste do SMTP e do tema de e-mails do painel.',
-                subject: 'Teste de e-mail · '.MailTheme::brand(),
-            ));
+            $sent = $mailTemplates->send('test', [
+                'marca' => MailTheme::brand(),
+                'usuario' => (string) ($request->user()->name ?? 'equipe'),
+                'servidor' => MailSettings::host().':'.MailSettings::port(),
+                'criptografia' => strtoupper(MailSettings::encryption()),
+                'remetente' => MailSettings::fromName().' <'.MailSettings::fromAddress().'>',
+                'link' => route('dashboard'),
+            ], $data['test_email'], true);
+
+            if (! $sent) {
+                throw new \RuntimeException('O modelo "Teste de envio" não pôde ser montado.');
+            }
 
             AppSetting::set('mail_last_test_at', now()->toIso8601String(), 'mail');
             AppSetting::set('mail_last_test_status', 'ok', 'mail');
@@ -490,21 +487,19 @@ class SettingsController extends Controller
     /**
      * Prévia isolada do e-mail, usada dentro de um iframe no painel.
      */
-    public function previewMail(): View
+    public function previewMail(MailTemplateService $mailTemplates): View
     {
+        $payload = $mailTemplates->sample('invoice_rate') ?? [];
+
         return view('emails.themed', [
             'theme' => MailTheme::all(),
-            'heading' => 'Sua fatura foi atualizada',
-            'intro' => 'Este é um exemplo de como os alertas do painel chegam na caixa de entrada. O layout se adapta a celulares e clientes de e-mail.',
-            'details' => [
-                'Fatura' => 'OVH-2026-001',
-                'Vencimento' => '15/11/2026',
-                'Valor atualizado' => 'R$ 1.284,90',
-            ],
-            'actionText' => 'Abrir a fatura',
-            'actionUrl' => route('dashboard'),
-            'footnote' => 'Mensagem de exemplo. Ajuste cores, textos e assinatura na aba E-mail.',
-            'preheader' => 'Prévia do tema de e-mail do painel financeiro.',
+            'heading' => $payload['heading'] ?? 'Sua fatura foi atualizada',
+            'intro' => $payload['intro'] ?? 'Este é um exemplo de como os alertas do painel chegam na caixa de entrada.',
+            'details' => $payload['details'] ?? [],
+            'actionText' => $payload['action_text'] ?? null,
+            'actionUrl' => $payload['action_url'] ?? route('dashboard'),
+            'footnote' => $payload['footnote'] ?? 'Mensagem de exemplo. Ajuste cores, textos e assinatura na aba E-mail.',
+            'preheader' => $payload['preheader'] ?? 'Prévia do tema de e-mail do painel financeiro.',
         ]);
     }
 

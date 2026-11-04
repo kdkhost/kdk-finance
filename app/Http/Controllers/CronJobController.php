@@ -25,7 +25,7 @@ use Throwable;
 
 class CronJobController extends Controller
 {
-    public function index(): View
+    public function index(CronRunnerService $runner): View
     {
         $jobs = CronJob::query()
             ->withCount('runs')
@@ -50,7 +50,9 @@ class CronJobController extends Controller
             ],
             'heartbeatAt' => $heartbeatAt,
             'heartbeatOk' => $heartbeatAt !== null && $heartbeatAt->gt(now()->subMinutes(3)),
-            'hostingCommand' => $this->hostingCommand(),
+            'hostingCommand' => $this->hostingCommand($runner),
+            'environment' => $runner->environment(),
+            'phpBinarySetting' => (string) AppSetting::get('cron_php_binary'),
         ]);
     }
 
@@ -79,11 +81,11 @@ class CronJobController extends Controller
             ->with('success', 'Cron "'.$cron->name.'" cadastrado.');
     }
 
-    public function show(CronJob $cron): View
+    public function show(CronJob $cron, CronRunnerService $runner): View
     {
         return view('crons.show', [
             'cron' => $cron->load(['runs' => fn ($query) => $query->orderByDesc('started_at')->limit(30)]),
-            'hostingCommand' => $this->hostingCommand(),
+            'hostingCommand' => $this->hostingCommand($runner),
         ]);
     }
 
@@ -142,6 +144,93 @@ class CronJobController extends Controller
     }
 
     /**
+     * Recoloca na Central de cron todos os agendamentos que mantêm o sistema
+     * atualizado, sem duplicar os já existentes e preservando o que foi
+     * ajustado (frequência editada, descrição, ativação).
+     */
+    public function restoreDefaults(Request $request): RedirectResponse
+    {
+        $created = 0;
+        $updated = 0;
+
+        foreach (CronJob::systemDefaults() as $default) {
+            $cron = CronJob::query()->firstOrNew(['command' => $default['command']]);
+
+            if (! $cron->exists) {
+                $created++;
+                $cron->fill([
+                    'name' => $default['name'],
+                    'type' => CronJob::TYPE_ARTISAN,
+                    'expression' => $default['expression'],
+                    'timezone' => $default['timezone'],
+                    'description' => $default['description'],
+                    'enabled' => true,
+                    'created_by' => $request->user()->id,
+                ]);
+
+                $cron->save();
+
+                continue;
+            }
+
+            $cron->fill([
+                'name' => $default['name'],
+                'type' => CronJob::TYPE_ARTISAN,
+                'expression' => $default['expression'],
+                'timezone' => $default['timezone'],
+                'description' => $default['description'],
+            ])->save();
+
+            $updated++;
+        }
+
+        return redirect()
+            ->route('crons.index')
+            ->with('success', sprintf(
+                'Padrões verificados: %d cron(s) criado(s) e %d atualizado(s). Todos usam o agendador do painel.',
+                $created,
+                $updated
+            ));
+    }
+
+    /**
+     * Define o binário do PHP usado para executar os agendamentos.
+     * Em branco volta para a detecção automática.
+     */
+    public function updateEnvironment(Request $request, CronRunnerService $runner): RedirectResponse
+    {
+        $data = $request->validate([
+            'php_binary' => ['nullable', 'string', 'max:255'],
+        ], [], [
+            'php_binary' => 'binário do PHP',
+        ]);
+
+        $binary = trim((string) ($data['php_binary'] ?? ''));
+
+        if ($binary !== '') {
+            if (! @is_file($binary) || ! @is_executable($binary)) {
+                return back()
+                    ->withErrors(['php_binary' => 'O caminho informado não aponta para um executável válido.'])
+                    ->withInput();
+            }
+
+            $version = $runner->versionOf($binary);
+
+            if ($version === null || version_compare($version, '8.2.0', '<')) {
+                return back()
+                    ->withErrors(['php_binary' => 'O binário informado não executa PHP 8.2 ou superior.'])
+                    ->withInput();
+            }
+        }
+
+        AppSetting::set('cron_php_binary', $binary, 'cron');
+
+        return back()->with('success', $binary === ''
+            ? 'Detecção automática do PHP restabelecida.'
+            : 'Binário do PHP atualizado: '.$binary.'.');
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function validated(Request $request): array
@@ -176,10 +265,12 @@ class CronJobController extends Controller
         return $data;
     }
 
-    private function hostingCommand(): string
+    private function hostingCommand(CronRunnerService $runner): string
     {
         $path = str_replace('"', '', base_path());
+        $binary = $runner->phpBinary();
+        $binary = preg_match('/\s/', $binary) === 1 ? escapeshellarg($binary) : $binary;
 
-        return '* * * * * cd "'.$path.'" && php artisan schedule:run >> /dev/null 2>&1';
+        return '* * * * * cd "'.$path.'" && '.$binary.' artisan schedule:run >> /dev/null 2>&1';
     }
 }

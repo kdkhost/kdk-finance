@@ -46,6 +46,7 @@ final class MailSettings
             'mail_from_name' => 'KDK Finance',
             'mail_reply_to_address' => '',
             'mail_reply_to_name' => '',
+            'mail_alert_recipients' => '',
             'mail_last_test_at' => '',
             'mail_last_test_status' => '',
             'mail_last_test_message' => '',
@@ -120,6 +121,39 @@ final class MailSettings
     public static function replyToName(): string
     {
         return trim((string) self::value('mail_reply_to_name', ''));
+    }
+
+    /**
+     * Destinatários dos alertas automáticos. Quando o campo está vazio, usa
+     * todo desenvolvedor e gestor financeiro ativo.
+     *
+     * @return list<string>
+     */
+    public static function alertRecipients(): array
+    {
+        $raw = (string) self::value('mail_alert_recipients', '');
+        $emails = preg_split('/[\s,;]+/', $raw) ?: [];
+        $emails = array_values(array_unique(array_filter(
+            array_map('trim', $emails),
+            static fn (string $email): bool => filter_var($email, FILTER_VALIDATE_EMAIL) !== false
+        )));
+
+        if ($emails !== []) {
+            return $emails;
+        }
+
+        try {
+            return \App\Models\User::query()
+                ->where('is_active', true)
+                ->whereIn('role', [\App\Models\User::ROLE_DEVELOPER, \App\Models\User::ROLE_FINANCIAL])
+                ->orderBy('id')
+                ->pluck('email')
+                ->filter()
+                ->values()
+                ->all();
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     public static function lastTestAt(): ?string

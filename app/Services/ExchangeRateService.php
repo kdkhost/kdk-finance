@@ -253,7 +253,7 @@ class ExchangeRateService
 
         if (is_array($cached) && (float) ($cached['rate'] ?? 0) > 0) {
             return array_merge($cached, [
-                'source' => ($cached['source'] ?? 'awesomeapi').' (última conhecida)',
+                'source' => $this->staleSource((string) ($cached['source'] ?? 'awesomeapi')),
                 'stale' => true,
                 'error' => $error,
             ]);
@@ -393,6 +393,17 @@ class ExchangeRateService
     }
 
     /**
+     * Evita acumular o sufixo "última conhecida" quando uma cotação já
+     * degradada volta a ser usada.
+     */
+    private function staleSource(string $source): string
+    {
+        $source = (string) preg_replace('/\s*\(última conhecida\)\s*$/u', '', $source);
+
+        return ($source !== '' ? $source : 'awesomeapi').' (última conhecida)';
+    }
+
+    /**
      * @return array{rate: float, pct_change: float, source: string, updated_at: string, stale: bool}
      */
     private function rateValue(float $rate, string $source): array
@@ -437,7 +448,7 @@ class ExchangeRateService
         if (is_array($cached) && $cached !== []) {
             return collect($cached)
                 ->map(fn (array $item): array => array_merge($item, [
-                    'source' => ($item['source'] ?? 'awesomeapi').' (última conhecida)',
+                    'source' => $this->staleSource((string) ($item['source'] ?? 'awesomeapi')),
                     'stale' => true,
                     'error' => $error,
                 ]))

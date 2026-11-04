@@ -17,6 +17,7 @@ use App\Events\InvoiceAmountUpdatedEvent;
 use App\Models\Invoice;
 use App\Services\DashboardService;
 use App\Services\ExchangeRateService;
+use App\Services\MailTemplateService;
 use App\Services\TaxCalculationService;
 use App\Support\CsvExporter;
 use Illuminate\Database\Eloquent\Builder;
@@ -152,7 +153,7 @@ class InvoiceController extends Controller
             ->with('success', 'Fatura atualizada com sucesso.');
     }
 
-    public function pay(Invoice $invoice): RedirectResponse
+    public function pay(Invoice $invoice, MailTemplateService $mail): RedirectResponse
     {
         if ($invoice->status !== Invoice::STATUS_PENDING) {
             return back()->with('warning', 'Somente faturas pendentes podem ser marcadas como pagas.');
@@ -166,6 +167,15 @@ class InvoiceController extends Controller
             'status' => Invoice::STATUS_PAID,
             'paid_at' => now(),
             'rate_locked' => true,
+        ]);
+
+        $mail->sendToAlerts('invoice_paid', [
+            'usuario' => 'equipe financeira',
+            'descricao' => (string) $invoice->description,
+            'fatura' => (string) ($invoice->external_reference ?: $invoice->description),
+            'valor' => 'R$ '.number_format((float) $invoice->total_brl, 2, ',', '.'),
+            'data_pagamento' => now()->format('d/m/Y H:i'),
+            'link' => route('invoices.show', $invoice),
         ]);
 
         return back()->with('success', 'Fatura '.$invoice->external_reference.' marcada como paga e câmbio travado.');

@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CronJobController;
 use App\Http\Controllers\CurrencyConversionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\InfrastructureController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LicenseController;
@@ -114,6 +115,8 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/crons', [CronJobController::class, 'index'])->name('crons.index');
         Route::get('/crons/novo', [CronJobController::class, 'create'])->name('crons.create');
         Route::post('/crons', [CronJobController::class, 'store'])->name('crons.store');
+        Route::post('/crons/restaurar-padroes', [CronJobController::class, 'restoreDefaults'])->name('crons.restore');
+        Route::post('/crons/ambiente', [CronJobController::class, 'updateEnvironment'])->name('crons.environment');
         Route::get('/crons/{cron}', [CronJobController::class, 'show'])->name('crons.show');
         Route::get('/crons/{cron}/editar', [CronJobController::class, 'edit'])->name('crons.edit');
         Route::put('/crons/{cron}', [CronJobController::class, 'update'])->name('crons.update');
@@ -160,6 +163,15 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/configuracoes/email', [SettingsController::class, 'updateMail'])->name('settings.mail');
         Route::post('/configuracoes/email/testar', [SettingsController::class, 'testMail'])->name('settings.mail.test');
         Route::get('/configuracoes/email/previa', [SettingsController::class, 'previewMail'])->name('settings.mail.preview');
+
+        // Modelos transacionais editáveis no painel.
+        Route::get('/configuracoes/email/modelos', [EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::get('/configuracoes/email/modelos/{template}/editar', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
+        Route::put('/configuracoes/email/modelos/{template}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
+        Route::post('/configuracoes/email/modelos/{template}/alternar', [EmailTemplateController::class, 'toggle'])->name('email-templates.toggle');
+        Route::post('/configuracoes/email/modelos/{template}/restaurar', [EmailTemplateController::class, 'restore'])->name('email-templates.restore');
+        Route::post('/configuracoes/email/modelos/{template}/testar', [EmailTemplateController::class, 'test'])->name('email-templates.test');
+        Route::get('/configuracoes/email/modelos/{template}/previa', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
 
         Route::get('/usuarios', [UserController::class, 'index'])->name('users.index');
         Route::post('/usuarios', [UserController::class, 'store'])->name('users.store');
