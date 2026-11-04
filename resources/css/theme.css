@@ -1969,3 +1969,159 @@ select optgroup {
         scroll-behavior: auto !important;
     }
 }
+
+/* ---------------------------------------------------------------------------
+ * Summernote — editor global de texto
+ * ------------------------------------------------------------------------- */
+.note-editor.note-frame {
+    border: 1px solid var(--kdk-border);
+    border-radius: var(--kdk-radius-sm);
+    background: var(--kdk-input-bg);
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.note-editor.note-frame.is-invalid {
+    border-color: var(--kdk-red);
+}
+
+.note-editor .note-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--kdk-surface-muted);
+    border-bottom: 1px solid var(--kdk-border);
+    padding: 6px 8px;
+    gap: 2px;
+}
+
+.note-editor .note-toolbar .note-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--kdk-text);
+    box-shadow: none;
+    padding: 4px 8px;
+}
+
+.note-editor .note-toolbar .note-btn:hover,
+.note-editor .note-toolbar .note-btn:focus {
+    background: var(--kdk-card);
+    border-color: var(--kdk-border);
+    color: var(--kdk-text);
+}
+
+.note-editor .note-toolbar .note-btn.active {
+    background: var(--kdk-teal-soft);
+    border-color: color-mix(in srgb, var(--kdk-teal) 32%, transparent);
+    color: var(--kdk-teal-600);
+}
+
+.note-editor .note-toolbar .note-dropdown-menu,
+.note-editor .note-popover .popover-content,
+.note-editor .note-modal-content {
+    background: var(--kdk-card);
+    border-color: var(--kdk-border);
+    color: var(--kdk-text);
+}
+
+.note-editor .note-toolbar .note-dropdown-item,
+.note-editor .note-dropdown-menu a {
+    color: var(--kdk-text);
+}
+
+.note-editor .note-toolbar .note-dropdown-item:hover,
+.note-editor .note-toolbar .note-dropdown-item:focus {
+    background: var(--kdk-surface-muted);
+    color: var(--kdk-text);
+}
+
+.note-editor .note-editing-area .note-editable {
+    background: var(--kdk-input-bg);
+    color: var(--kdk-text);
+    font-family: inherit;
+    font-size: .9rem;
+    line-height: 1.65;
+    padding: 12px 14px;
+}
+
+.note-editor .note-editing-area .note-editable:focus {
+    outline: none;
+}
+
+.note-editor .note-editing-area .note-placeholder {
+    color: var(--kdk-muted);
+    opacity: .75;
+    padding: 12px 14px;
+    font-size: .9rem;
+}
+
+.note-editor .note-statusbar {
+    background: var(--kdk-surface-muted);
+    border-top: 1px solid var(--kdk-border);
+}
+
+.note-editor .note-resizebar .note-icon-bar {
+    border-top-color: var(--kdk-border-strong);
+}
+
+.note-editor .note-codable {
+    background: var(--kdk-navy-900);
+    color: #e2e8f0;
+    border-radius: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .8rem;
+}
+
+.note-modal-backdrop {
+    background: rgba(4, 10, 18, .55);
+}
+
+.note-modal .note-modal-content {
+    box-shadow: var(--kdk-shadow-lg);
+}
+
+.note-modal .note-modal-header,
+.note-modal .note-modal-footer {
+    border-color: var(--kdk-border);
+    background: var(--kdk-card);
+    color: var(--kdk-text);
+}
+
+.note-modal .note-modal-title,
+.note-modal label,
+.note-modal .note-form-label {
+    color: var(--kdk-text);
+}
+
+.note-modal .note-modal-body input,
+.note-modal .note-modal-body textarea {
+    background: var(--kdk-input-bg);
+    border-color: var(--kdk-border);
+    color: var(--kdk-text);
+}
+
+/* Conteúdo rico já salvo */
+.rich-text > :last-child {
+    margin-bottom: 0;
+}
+
+.rich-text p,
+.rich-text ul,
+.rich-text ol,
+.rich-text blockquote {
+    margin-bottom: .55rem;
+}
+
+.rich-text ul,
+.rich-text ol {
+    padding-left: 1.25rem;
+}
+
+.rich-text a {
+    color: var(--kdk-teal-600);
+}
+
+.rich-text-sm {
+    font-size: .78rem;
+}

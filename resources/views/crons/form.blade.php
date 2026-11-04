@@ -93,7 +93,7 @@
 
                             <div class="col-12">
                                 <label class="form-label" for="description">Descrição</label>
-                                <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="2" maxlength="500" placeholder="Para que serve este agendamento?">{{ old('description', $cron->description) }}</textarea>
+                                <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="2" maxlength="3000" placeholder="Para que serve este agendamento?">{{ old('description', $cron->description) }}</textarea>
                                 @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>

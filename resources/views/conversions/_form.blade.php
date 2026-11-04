@@ -156,7 +156,7 @@
                 <div class="card-header">Observações</div>
                 <div class="card-body">
                     <label class="form-label visually-hidden" for="notes">Observações</label>
-                    <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3" maxlength="500" placeholder="Banco emissor, bandeira, final do cartão, competência...">{{ old('notes', $conversion->notes) }}</textarea>
+                    <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3" maxlength="3000" placeholder="Banco emissor, bandeira, final do cartão, competência...">{{ old('notes', $conversion->notes) }}</textarea>
                     @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="card-footer bg-transparent d-flex justify-content-end gap-2 py-3">

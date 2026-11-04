@@ -296,7 +296,7 @@
                 <div class="card mt-3">
                     <div class="card-header">Observações</div>
                     <div class="card-body">
-                        <p class="mb-0" style="font-size:.84rem; white-space:pre-line;">{{ $conversion->notes }}</p>
+                        {!! \App\Support\RichText::render($conversion->notes, 'rich-text mb-0') !!}
                     </div>
                 </div>
             @endif

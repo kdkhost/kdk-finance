@@ -13,6 +13,7 @@
 
 namespace App\Models;
 
+use App\Support\RichText;
 use App\Support\Settings\MailTemplates;
 use Illuminate\Database\Eloquent\Model;
 
@@ -82,7 +83,7 @@ class EmailTemplate extends Model
                 ? MailTemplates::interpolate($this->action_url, $variables)
                 : null,
             'footnote' => MailTemplates::interpolate($this->footnote, $variables),
-            'preheader' => $intro,
+            'preheader' => RichText::text($intro),
         ];
     }
 

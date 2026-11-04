@@ -17,6 +17,7 @@ use App\Models\AppSetting;
 use App\Models\CronJob;
 use App\Models\CronJobRun;
 use App\Services\CronRunnerService;
+use App\Support\RichText;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -248,7 +249,7 @@ class CronJobController extends Controller
                 },
             ],
             'timezone' => ['required', Rule::in(\DateTimeZone::listIdentifiers())],
-            'description' => ['nullable', 'string', 'max:500'],
+            'description' => ['nullable', 'string', 'max:3000'],
             'enabled' => ['nullable', 'boolean'],
         ], [], [
             'name' => 'nome',
@@ -261,6 +262,7 @@ class CronJobController extends Controller
         $data['enabled'] = $request->boolean('enabled');
         $data['command'] = trim($data['command']);
         $data['expression'] = trim($data['expression']);
+        $data['description'] = RichText::sanitize($data['description'] ?? null);
 
         return $data;
     }

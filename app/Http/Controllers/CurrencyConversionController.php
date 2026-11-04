@@ -15,6 +15,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CurrencyConversion;
 use App\Services\CurrencyConversionService;
+use App\Support\RichText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -170,7 +171,7 @@ class CurrencyConversionController extends Controller
      */
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'description' => ['required', 'string', 'max:150'],
             'from_currency' => ['required', Rule::in(['EUR', 'USD'])],
             'to_currency' => ['required', Rule::in(['EUR', 'USD']), 'different:from_currency'],
@@ -181,7 +182,7 @@ class CurrencyConversionController extends Controller
             'iof_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'fixed_fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'buffer_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'notes' => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string', 'max:3000'],
         ], [], [
             'description' => 'descrição',
             'from_currency' => 'moeda de origem',
@@ -195,6 +196,10 @@ class CurrencyConversionController extends Controller
             'buffer_percent' => 'margem de segurança',
             'notes' => 'observações',
         ]);
+
+        $data['notes'] = RichText::sanitize($data['notes'] ?? null);
+
+        return $data;
     }
 
     private function filtered(Request $request): Builder

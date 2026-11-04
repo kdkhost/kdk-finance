@@ -207,7 +207,7 @@
 
                             <div class="col-12">
                                 <label class="form-label" for="notes">Observações</label>
-                                <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3" maxlength="2000" placeholder="Notas sobre o plano, limite de contas, contato do fornecedor…">{{ old('notes', $license->notes) }}</textarea>
+                                <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3" maxlength="6000" placeholder="Notas sobre o plano, limite de contas, contato do fornecedor…">{{ old('notes', $license->notes) }}</textarea>
                                 @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>

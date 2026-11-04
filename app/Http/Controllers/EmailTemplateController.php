@@ -15,6 +15,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EmailTemplate;
 use App\Services\MailTemplateService;
+use App\Support\RichText;
 use App\Support\Settings\MailSettings;
 use App\Support\Settings\MailTheme;
 use App\Support\Settings\MailTemplates;
@@ -73,11 +74,11 @@ class EmailTemplateController extends Controller
         $data = $request->validate([
             'subject' => ['required', 'string', 'max:200'],
             'heading' => ['required', 'string', 'max:150'],
-            'intro' => ['required', 'string', 'max:1500'],
+            'intro' => ['required', 'string', 'max:5000'],
             'details' => ['nullable', 'string', 'max:2000'],
             'action_text' => ['nullable', 'string', 'max:80'],
             'action_url' => ['nullable', 'string', 'max:255'],
-            'footnote' => ['nullable', 'string', 'max:500'],
+            'footnote' => ['nullable', 'string', 'max:2500'],
             'enabled' => ['nullable', 'boolean'],
         ], [], [
             'subject' => 'assunto',
@@ -92,11 +93,11 @@ class EmailTemplateController extends Controller
         $template->fill([
             'subject' => trim($data['subject']),
             'heading' => trim($data['heading']),
-            'intro' => trim($data['intro']),
+            'intro' => RichText::sanitize($data['intro']) ?? '',
             'details' => EmailTemplate::parseDetails($data['details'] ?? ''),
             'action_text' => trim((string) ($data['action_text'] ?? '')),
             'action_url' => trim((string) ($data['action_url'] ?? '')),
-            'footnote' => trim((string) ($data['footnote'] ?? '')),
+            'footnote' => RichText::sanitize($data['footnote'] ?? null) ?? '',
             'enabled' => $request->boolean('enabled'),
         ])->save();
 

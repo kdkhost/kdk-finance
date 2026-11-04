@@ -18,6 +18,7 @@ use App\Services\ExchangeRateService;
 use App\Services\LicenseBoyPanelService;
 use App\Services\MailTemplateService;
 use App\Services\OvhService;
+use App\Support\RichText;
 use App\Support\Settings\MailSettings;
 use App\Support\Settings\MailTheme;
 use App\Support\Settings\SecuritySettings;
@@ -368,8 +369,8 @@ class SettingsController extends Controller
             'theme_background' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'theme_text' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'theme_muted' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'theme_footer' => ['nullable', 'string', 'max:500'],
-            'theme_signature' => ['nullable', 'string', 'max:255'],
+            'theme_footer' => ['nullable', 'string', 'max:2500'],
+            'theme_signature' => ['nullable', 'string', 'max:1200'],
             'theme_support_email' => ['nullable', 'email', 'max:255'],
             'theme_support_url' => ['nullable', 'url:http,https', 'max:255'],
             'theme_company' => ['nullable', 'string', 'max:255'],
@@ -423,7 +424,13 @@ class SettingsController extends Controller
             'theme_support_url',
             'theme_company',
         ] as $key) {
-            AppSetting::set($key, trim((string) ($data[$key] ?? '')), 'mail_theme');
+            $value = trim((string) ($data[$key] ?? ''));
+
+            if (in_array($key, ['theme_footer', 'theme_signature'], true)) {
+                $value = RichText::sanitize($value) ?? '';
+            }
+
+            AppSetting::set($key, $value, 'mail_theme');
         }
 
         return redirect()

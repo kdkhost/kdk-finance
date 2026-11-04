@@ -17,6 +17,7 @@ import './live';
 import './dashboard';
 import './invoice-form';
 import './conversion-form';
+import './editor';
 
 window.bootstrap = bootstrap;
 window.toastr = toastr;

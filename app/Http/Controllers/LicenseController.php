@@ -21,6 +21,7 @@ use App\Services\ExchangeRateService;
 use App\Services\LicenseBoyPanelService;
 use App\Services\LicenseBoyPriceService;
 use App\Services\TaxCalculationService;
+use App\Support\RichText;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -331,7 +332,7 @@ class LicenseController extends Controller
             'next_due_date' => ['nullable', 'date'],
             'status' => ['required', Rule::in(array_keys(LicenseService::statuses()))],
             'auto_renew' => ['nullable', 'boolean'],
-            'notes' => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:6000'],
         ], [], [
             'license_catalog_item_id' => 'preço do catálogo',
             'provider' => 'fornecedor',
@@ -351,6 +352,7 @@ class LicenseController extends Controller
         ]);
 
         $data['auto_renew'] = $request->boolean('auto_renew');
+        $data['notes'] = RichText::sanitize($data['notes'] ?? null);
 
         $catalog = $this->catalogItem($data['license_catalog_item_id'] ?? null);
 

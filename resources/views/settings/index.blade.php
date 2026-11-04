@@ -376,7 +376,7 @@
 
                             <div class="settings-section">
                                 <label class="form-label" for="ovh_v2_bearer_token">Token Bearer da API v2 (opcional)</label>
-                                <textarea class="form-control mono" id="ovh_v2_bearer_token" name="ovh_v2_bearer_token" rows="3" placeholder="{{ $masked['ovh_v2_bearer_token'] }}"></textarea>
+                                <textarea class="form-control mono" id="ovh_v2_bearer_token" name="ovh_v2_bearer_token" rows="3" data-editor="plain" placeholder="{{ $masked['ovh_v2_bearer_token'] }}"></textarea>
                                 <div class="form-text">
                                     A API v2 (<span class="mono">api.eu.ovhcloud.com/v2</span>) usa OAuth2 e tokens de curta duração, gerados no
                                     <a href="https://api.eu.ovhcloud.com/console/" target="_blank" rel="noopener">console da OVHcloud</a>.
@@ -786,11 +786,11 @@
 
                                 <div class="col-md-6">
                                     <label class="form-label" for="theme_footer">Rodapé</label>
-                                    <textarea class="form-control" id="theme_footer" name="theme_footer" rows="3">{{ old('theme_footer', $mailTheme['theme_footer']) }}</textarea>
+                                    <textarea class="form-control" id="theme_footer" name="theme_footer" rows="3" maxlength="2500">{{ old('theme_footer', $mailTheme['theme_footer']) }}</textarea>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label" for="theme_signature">Assinatura</label>
-                                    <textarea class="form-control" id="theme_signature" name="theme_signature" rows="3">{{ old('theme_signature', $mailTheme['theme_signature']) }}</textarea>
+                                    <textarea class="form-control" id="theme_signature" name="theme_signature" rows="3" maxlength="1200">{{ old('theme_signature', $mailTheme['theme_signature']) }}</textarea>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label" for="theme_support_email">E-mail de suporte</label>
@@ -992,14 +992,14 @@
                                             <label class="form-check-label" for="security_trust_hosts" style="font-size:.84rem;">Aceitar apenas os hosts listados (anti Host header spoofing)</label>
                                         </div>
                                         <label class="form-label mt-3" for="security_allowed_hosts">Hosts permitidos</label>
-                                        <textarea class="form-control mono" id="security_allowed_hosts" name="security_allowed_hosts" rows="2" placeholder="kdkhost.com.br, www.kdkhost.com.br, *.kdkhost.com.br">{{ old('security_allowed_hosts', $securitySettings['security_allowed_hosts']) }}</textarea>
+                                        <textarea class="form-control mono" id="security_allowed_hosts" name="security_allowed_hosts" rows="2" data-editor="plain" placeholder="kdkhost.com.br, www.kdkhost.com.br, *.kdkhost.com.br">{{ old('security_allowed_hosts', $securitySettings['security_allowed_hosts']) }}</textarea>
                                         <div class="form-text">Separe por vírgula ou linha. Aceita curinga <span class="mono">*.dominio.com</span>. Vazio usa o host do APP_URL.</div>
                                     </div>
                                 </div>
 
                                 <div class="col-12">
                                     <label class="form-label" for="security_trusted_proxies">Proxies/CDN confiáveis</label>
-                                    <textarea class="form-control mono" id="security_trusted_proxies" name="security_trusted_proxies" rows="2" placeholder="IP do Cloudflare ou do balanceador">{{ old('security_trusted_proxies', $securitySettings['security_trusted_proxies']) }}</textarea>
+                                    <textarea class="form-control mono" id="security_trusted_proxies" name="security_trusted_proxies" rows="2" data-editor="plain" placeholder="IP do Cloudflare ou do balanceador">{{ old('security_trusted_proxies', $securitySettings['security_trusted_proxies']) }}</textarea>
                                     <div class="form-text">Somente IPs/CIDRs que realmente terminam HTTPS. Vazio ignora cabeçalhos de proxy.</div>
                                 </div>
                             </div>

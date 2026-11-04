@@ -270,6 +270,14 @@ alertas são definidos em **Configurações → E-mail → Alertas automáticos*
 endereço preenchido, o sistema usa o e-mail de todo desenvolvedor e gestor
 financeiro ativo.
 
+Os campos de texto longo — observações de conversões e licenças, descrição de
+cron, abertura/assinatura dos modelos e rodapé/assinatura do tema — abrem com o
+editor **Summernote** (negrito, itálico, listas, links e visualização do HTML). O
+conteúdo é sanitizado antes de ser gravado e exibido; campos técnicos como o
+token OVH, hosts permitidos, proxies confiáveis e o bloco `Rótulo|Valor`
+continuam em texto puro para não corromper valores de máquina. O editor é
+carregado pelo `public/build`; ao atualizar o sistema, envie a pasta inteira.
+
 ### 6.4. Backup
 
 Guarde, no mínimo:

@@ -5,6 +5,31 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.0] - 2026-11-04
+
+### Adicionado
+
+- **Editor de texto rico global (Summernote)**: todo `<textarea>` do painel passa a abrir com barra de ferramentas em português — negrito, itálico, sublinhado, riscado, listas, parágrafo, link, desfazer/refazer e visualização do HTML. A inicialização é automática, inclusive em campos criados depois (modais e seções dinâmicas), sem precisar alterar cada formulário.
+- **Conteúdo rico nas telas e nos e-mails**: observações de conversões e licenças, descrição de cron, abertura e assinatura dos modelos de e-mail e rodapé/assinatura do tema são salvos como HTML e renderizados formatados — antes apareciam com as tags visíveis ou como texto puro.
+- **Sanitização central (`App\Support\RichText`)**: o HTML gravado é reduzido a uma lista segura de tags (parágrafos, listas, negrito, itálico, links `http(s)`/`mailto`/`tel`) tanto na gravação quanto na exibição, removendo scripts, `onerror`, `javascript:` e estilos embutidos. Texto puro continua com quebras de linha preservadas.
+- **Campos técnicos protegidos**: token Bearer da OVH, hosts permitidos, proxies confiáveis e o bloco `Rótulo|Valor` dos modelos de e-mail usam `data-editor="plain"` e continuam como texto puro, para não corromper valores de máquina.
+
+### Alterado
+
+- Limites ampliados para acomodar o HTML do editor: observações de conversão (500 → 3000), observações de licença (2000 → 6000), descrição de cron (500 → 3000), abertura de e-mail (1500 → 5000), assinatura de e-mail (500 → 2500) e rodapé/assinatura do tema (500/255 → 2500/1200).
+- A prévia (preheader) dos e-mails usa o texto sem tags, mantendo a mensagem limpa na caixa de entrada.
+- Versão exibida no rodapé, menu lateral, login, páginas de erro, README e instalador atualizada para 1.10.0.
+
+### Corrigido
+
+- **Barra de ferramentas vazia no Summernote**: o build `summernote-bs5` chama `$.fn.tooltip`, que não existe quando o Bootstrap 5 é carregado por módulos ES (sem os plug-ins jQuery do bundle). O editor agora inicia com `tooltip: false` — os títulos nativos continuam nos botões — e a barra monta normalmente.
+- A barra de ferramentas quebra em várias linhas em telas estreitas, sem estourar a largura da página.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **152 testes e 700 asserções**, incluindo remoção de scripts/atributos perigosos, allowlist de links, preservação de texto puro, gravação sanitizada em conversões/licenças/crons/modelos, renderização do HTML salvo e presença do opt-out nos campos técnicos.
+- Validação no navegador: editor com 18 botões e barra funcional em Conversões, negrito e lista salvos e exibidos na tela de detalhe, prévia de e-mail com HTML formatado, token da OVH permanecendo texto puro, barra quebrando em 340 px sem rolagem horizontal e tema escuro aplicado ao editor.
+
 ## [1.9.0] - 2026-11-04
 
 ### Adicionado

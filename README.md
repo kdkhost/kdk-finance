@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** Marcelo Brad - RJ
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.9.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.10.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -44,6 +44,7 @@ marca o resultado como desatualizado.
 - Catálogo de preços em tempo real da loja LicenseBoy (37 produtos nas 8 categorias públicas), com sincronização diária e licenças vinculadas que acompanham o preço da loja.
 - Central de cron com CRUD de agendamentos, presets, fuso horário, execução manual, histórico de saídas e sinal de vida do agendador — apenas uma linha no cron da hospedagem. Os cinco crons do sistema (cotações, faturas OVH, preços e painel LicenseBoy, alertas de vencimento) são instalados junto com o sistema e podem ser recriados pelo botão **Restaurar padrões**. O ambiente de execução detecta um PHP CLI 8.2+ e permite fixar o binário no painel.
 - Modelos transacionais de e-mail editáveis no painel: fatura a vencer, fatura vencida, pagamento confirmado, licença a vencer, variação cambial, falha de cron, boas-vindas e teste, com variáveis, prévia responsiva, envio de teste, ativar/desativar e restaurar padrão.
+- Editor de texto rico global (Summernote) em todos os campos de texto longo, com formatação, listas e links; o HTML é sanitizado antes de ser gravado e exibido, e campos técnicos (tokens, hosts, proxies e `Rótulo|Valor`) continuam em texto puro.
 - Alertas por e-mail enviados aos destinatários definidos no painel (ou, na ausência deles, a todo desenvolvedor e gestor financeiro ativo), com controle de repetição por fatura e por licença.
 - Importação automática de todo o histórico de faturas da OVHcloud e sincronização agendada a cada 15 minutos.
 - Atualização em tempo real do dashboard via Laravel Reverb (WebSocket).

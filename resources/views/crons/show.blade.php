@@ -192,7 +192,7 @@
                         <span class="fw-semibold">{{ $cron->created_at?->format('d/m/Y H:i') }}</span>
                     </div>
                     @if ($cron->description)
-                        <p class="text-muted-soft mt-2 mb-0" style="font-size:.78rem;">{{ $cron->description }}</p>
+                        {!! \App\Support\RichText::render($cron->description, 'rich-text rich-text-sm text-muted-soft mt-2 mb-0') !!}
                     @endif
                 </div>
             </div>

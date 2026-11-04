@@ -100,7 +100,7 @@
 
                                         @if ($intro !== '')
                                             <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:{{ $text }};padding-bottom:18px;">
-                                                {!! nl2br(e($intro)) !!}
+                                                {!! \App\Support\RichText::email($intro) !!}
                                             </div>
                                         @endif
 
@@ -133,7 +133,7 @@
 
                                         @if ($footnote !== '')
                                             <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:{{ $muted }};padding-top:18px;border-top:1px solid #eef2f7;margin-top:20px;">
-                                                {!! nl2br(e($footnote)) !!}
+                                                {!! \App\Support\RichText::email($footnote) !!}
                                             </div>
                                         @endif
                                     </td>
@@ -147,13 +147,13 @@
                         <td style="padding:22px 10px 6px;text-align:center;">
                             @if (! empty($theme['theme_footer']))
                                 <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:{{ $muted }};padding-bottom:8px;">
-                                    {!! nl2br(e($theme['theme_footer'])) !!}
+                                    {!! \App\Support\RichText::email($theme['theme_footer']) !!}
                                 </div>
                             @endif
 
                             @if (! empty($theme['theme_signature']))
                                 <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:{{ $text }};padding-bottom:8px;">
-                                    {{ $theme['theme_signature'] }}
+                                    {!! \App\Support\RichText::email($theme['theme_signature']) !!}
                                 </div>
                             @endif
 

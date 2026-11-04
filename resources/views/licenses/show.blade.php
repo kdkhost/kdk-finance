@@ -132,7 +132,7 @@
                 <div class="card">
                     <div class="card-header">Observações</div>
                     <div class="card-body">
-                        <p class="mb-0 text-muted-soft" style="font-size:.84rem;white-space:pre-line;">{{ $license->notes }}</p>
+                        {!! \App\Support\RichText::render($license->notes, 'rich-text mb-0 text-muted-soft') !!}
                     </div>
                 </div>
             @endif

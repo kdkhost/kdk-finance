@@ -53,15 +53,15 @@
 
                             <div class="col-12">
                                 <label class="form-label" for="intro">Texto de abertura</label>
-                                <textarea class="form-control @error('intro') is-invalid @enderror" id="intro" name="intro" rows="4" required maxlength="1500">{{ old('intro', $template->intro) }}</textarea>
+                                <textarea class="form-control @error('intro') is-invalid @enderror" id="intro" name="intro" rows="4" required maxlength="5000">{{ old('intro', $template->intro) }}</textarea>
                                 @error('intro')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
                             <div class="col-12">
                                 <label class="form-label" for="details">Bloco de detalhes</label>
-                                <textarea class="form-control mono @error('details') is-invalid @enderror" id="details" name="details" rows="5" maxlength="2000" placeholder="Fatura|{{ \App\Support\Settings\MailTemplates::placeholder('fatura') }}">{{ old('details', $detailsText) }}</textarea>
+                                <textarea class="form-control mono @error('details') is-invalid @enderror" id="details" name="details" rows="5" maxlength="2000" data-editor="plain" placeholder="Fatura|{{ \App\Support\Settings\MailTemplates::placeholder('fatura') }}">{{ old('details', $detailsText) }}</textarea>
                                 @error('details')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                <div class="form-text">Uma linha por item, no formato <span class="mono">Rótulo|Valor</span>. Linhas sem barra vertical são ignoradas.</div>
+                                <div class="form-text">Uma linha por item, no formato <span class="mono">Rótulo|Valor</span>. Linhas sem barra vertical são ignoradas. Este campo é técnico e fica sem editor para não quebrar o formato.</div>
                             </div>
 
                             <div class="col-md-6">
@@ -76,7 +76,7 @@
 
                             <div class="col-12">
                                 <label class="form-label" for="footnote">Assinatura / rodapé</label>
-                                <textarea class="form-control" id="footnote" name="footnote" rows="2" maxlength="500">{{ old('footnote', $template->footnote) }}</textarea>
+                                <textarea class="form-control" id="footnote" name="footnote" rows="2" maxlength="2500">{{ old('footnote', $template->footnote) }}</textarea>
                             </div>
 
                             <div class="col-12">
