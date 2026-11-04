@@ -15,6 +15,7 @@ import Swal from 'sweetalert2';
 import './echo';
 import './dashboard';
 import './invoice-form';
+import './conversion-form';
 
 window.bootstrap = bootstrap;
 window.toastr = toastr;

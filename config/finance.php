@@ -48,13 +48,38 @@ return [
     */
     'exchange' => [
         'api_url' => 'https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL',
+        // Par direto (ex.: /last/EUR-USD) — gratuito e sem chave, igual ao endpoint acima.
+        'pair_api_url' => 'https://economia.awesomeapi.com.br/json/last',
         'timeout' => 12,
         'cache_minutes' => 15,
+        'pair_cache_minutes' => 5,
         // Em produção mantenha true. No WAMP local, sem bundle CA, use false no .env.
         'verify_ssl' => env('FINANCE_VERIFY_SSL', true),
         'default_rates' => [
             'USD' => 5.50,
             'EUR' => 6.00,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Conversão entre moedas e tarifas de cartão internacional
+    |--------------------------------------------------------------------------
+    | Valores usados somente enquanto a tela /configuracoes#conversao ainda
+    | não foi salva. Depois disso, quem manda é a tabela app_settings
+    | (grupo "conversion"), conforme a regra do projeto.
+    */
+    'conversion' => [
+        'spread_percent' => 2.00,
+        // 2026: IOF de 3,5% incide no cartão internacional e no aporte da conta
+        // global. Se a conta em dólar já foi abastecida, deixe 0 para não
+        // contar o imposto duas vezes.
+        'iof_percent' => 0.00,
+        'fixed_fee' => 0.00,
+        'buffer_percent' => 0.00,
+        'fallback_pair_rates' => [
+            'EUR-USD' => 1.0900,
+            'USD-EUR' => 0.9174,
         ],
     ],
 

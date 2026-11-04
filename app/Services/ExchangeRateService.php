@@ -23,6 +23,7 @@ class ExchangeRateService
 {
     private const CACHE_KEY = 'exchange:rates:USD-BRL,EUR-BRL';
     private const LAST_KNOWN_KEY = 'exchange:last-known';
+    private const PAIR_LAST_KNOWN_PREFIX = 'exchange:pair-last-known:';
 
     /**
      * Retorna as cotações USD/BRL e EUR/BRL (cache de 15 minutos).
@@ -59,6 +60,191 @@ class ExchangeRateService
         }
 
         return (float) ($this->rates()[$currency]['rate'] ?? 0.0);
+    }
+
+    /**
+     * Cotação de um par livre (EUR-USD, USD-EUR, EUR-BRL, USD-EUR etc.).
+     *
+     * Usa o par direto da AwesomeAPI (gratuito, sem chave) com cache curto.
+     * Se o par direto falhar, deriva o valor pelo cruzamento com o BRL e,
+     * em último caso, devolve a última cotação conhecida do par.
+     *
+     * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}
+     */
+    public function pair(string $from, string $to, bool $fresh = false): array
+    {
+        $from = strtoupper($from);
+        $to = strtoupper($to);
+
+        if ($from === $to) {
+            return $this->pairPayload($from, $to, 1.0, 0.0, 'identidade', false, null);
+        }
+
+        $cacheKey = 'exchange:pair:'.$from.'-'.$to;
+
+        if ($fresh) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::remember(
+            $cacheKey,
+            now()->addMinutes((int) config('finance.exchange.pair_cache_minutes', 5)),
+            fn (): array => $this->resolvePair($from, $to)
+        );
+    }
+
+    /**
+     * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}
+     */
+    private function resolvePair(string $from, string $to): array
+    {
+        try {
+            return $this->fetchPair($from, $to);
+        } catch (Throwable $exception) {
+            Log::warning('Falha ao consultar o par '.$from.'-'.$to.' na AwesomeAPI.', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            $crossed = $this->crossPair($from, $to);
+
+            if ($crossed !== null) {
+                return $crossed;
+            }
+
+            return $this->lastKnownPair($from, $to, $exception->getMessage());
+        }
+    }
+
+    /**
+     * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}
+     */
+    private function fetchPair(string $from, string $to): array
+    {
+        $response = Http::acceptJson()
+            ->timeout((int) config('finance.exchange.timeout', 12))
+            ->withOptions(['verify' => (bool) config('finance.exchange.verify_ssl', true)])
+            ->get(rtrim((string) config('finance.exchange.pair_api_url'), '/').'/'.$from.'-'.$to);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('AwesomeAPI respondeu HTTP '.$response->status());
+        }
+
+        $payload = $response->json();
+        $node = data_get($payload, $from.$to) ?? data_get($payload, 0) ?? [];
+
+        $rate = (float) data_get($node, 'bid');
+
+        if ($rate <= 0) {
+            throw new \RuntimeException('Cotação inválida para '.$from.'-'.$to);
+        }
+
+        $payloadOut = $this->pairPayload(
+            $from,
+            $to,
+            $rate,
+            (float) data_get($node, 'pctChange', 0),
+            'awesomeapi',
+            false,
+            null
+        );
+
+        $this->rememberPair($from, $to, $payloadOut);
+
+        return $payloadOut;
+    }
+
+    /**
+     * Deriva o par pelas duas pontas em BRL (ex.: EUR-USD = EURBRL / USDBRL).
+     *
+     * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}|null
+     */
+    private function crossPair(string $from, string $to): ?array
+    {
+        try {
+            $rates = $this->rates();
+        } catch (Throwable) {
+            return null;
+        }
+
+        $fromRate = $from === 'BRL' ? 1.0 : (float) ($rates[$from]['rate'] ?? 0.0);
+        $toRate = $to === 'BRL' ? 1.0 : (float) ($rates[$to]['rate'] ?? 0.0);
+
+        if ($fromRate <= 0 || $toRate <= 0) {
+            return null;
+        }
+
+        $payload = $this->pairPayload(
+            $from,
+            $to,
+            $fromRate / $toRate,
+            0.0,
+            'cruzamento BRL',
+            (bool) ($rates[$to]['stale'] ?? false),
+            null
+        );
+
+        $this->rememberPair($from, $to, $payload);
+
+        return $payload;
+    }
+
+    /**
+     * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}
+     */
+    private function pairPayload(string $from, string $to, float $rate, float $pctChange, string $source, bool $stale, ?string $error): array
+    {
+        $rate = round($rate, 6);
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'rate' => $rate,
+            'inverse' => round(1 / $rate, 6),
+            'pct_change' => round($pctChange, 4),
+            'source' => $source,
+            'updated_at' => now()->toIso8601String(),
+            'stale' => $stale,
+            'error' => $error,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function rememberPair(string $from, string $to, array $payload): void
+    {
+        Cache::forever(self::PAIR_LAST_KNOWN_PREFIX.$from.'-'.$to, $payload);
+
+        try {
+            AppSetting::set('last_pair_'.$from.'_'.$to, $payload['rate'], 'exchange');
+            AppSetting::set('last_pair_'.$from.'_'.$to.'_at', $payload['updated_at'], 'exchange');
+        } catch (Throwable $exception) {
+            Log::debug('Não foi possível persistir a última cotação do par.', ['error' => $exception->getMessage()]);
+        }
+    }
+
+    /**
+     * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}
+     */
+    private function lastKnownPair(string $from, string $to, string $error): array
+    {
+        $key = self::PAIR_LAST_KNOWN_PREFIX.$from.'-'.$to;
+        $cached = Cache::get($key);
+
+        if (is_array($cached) && (float) ($cached['rate'] ?? 0) > 0) {
+            return array_merge($cached, [
+                'source' => ($cached['source'] ?? 'awesomeapi').' (última conhecida)',
+                'stale' => true,
+                'error' => $error,
+            ]);
+        }
+
+        $fallback = (float) AppSetting::get(
+            'last_pair_'.$from.'_'.$to,
+            config('finance.conversion.fallback_pair_rates.'.$from.'-'.$to, 1.0)
+        );
+
+        return $this->pairPayload($from, $to, $fallback, 0.0, 'padrão do sistema', true, $error);
     }
 
     /**

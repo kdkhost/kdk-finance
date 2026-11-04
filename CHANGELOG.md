@@ -5,6 +5,33 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.4.0] - 2026-11-04
+
+### Adicionado
+
+- CRUD de **Conversões** (`/conversoes`): calcula quantos dólares são necessários para pagar um valor em euro e o caminho inverso, com histórico das simulações salvas.
+- Cotação direta EUR-USD pela AwesomeAPI (`/json/last/EUR-USD`), sem chave e sem custo, com cache de 5 minutos; se o par direto falhar, o sistema cruza as cotações BRL (EUR-BRL ÷ USD-BRL) e, em último caso, reaproveita a última cotação conhecida marcada como desatualizada.
+- `CurrencyConversionService`: aplica spread, IOF, tarifa fixa e margem de segurança de forma sequencial, arredondando cada etapa em duas casas — a mesma lógica do cálculo tributário das faturas.
+- Tarifas do cartão internacional configuráveis no painel (**Configurações → Conversão e cartão**), gravadas em `app_settings` no grupo `conversion`: spread, IOF, tarifa fixa por operação e margem de segurança.
+- Aviso explícito de que o IOF de 3,5% de 2026 incide **uma única vez** (cartão internacional ou aporte na conta global), com valor padrão 0% para não contar o imposto duas vezes em conta já abastecida.
+- Prévia do cálculo em tempo real no formulário: base, spread, subtotal, IOF, tarifa fixa, margem, total, taxa efetiva, custo percentual e equivalente em BRL.
+- Botão **Atualizar cotação** que busca o par atual sem recarregar a página e informa a origem (AwesomeAPI, cruzamento BRL, última cotação conhecida ou valor informado manualmente) e o horário da leitura.
+- Botão de inversão de moedas que troca EUR↔USD e refaz a cotação automaticamente.
+- Página de detalhe com composição completa, taxa efetiva, custo percentual, referência em BRL, origem e idade da cotação e alerta quando a cotação está desatualizada.
+- **Conferência da fatura do cartão**: informa o valor realmente cobrado, o sistema grava o custo real percentual e mostra a diferença entre o calculado e o cobrado.
+- Recalcular pela cotação atual mantendo os mesmos valores e tarifas, com aviso claro do antes e depois.
+- Lista com filtros por direção (EUR→USD, USD→EUR), busca e somente conferidas, além de totais de conversões salvas, custo médio conferido e equivalente em BRL.
+- Link **Conversões** no menu Operação e atalho **Nova conversão** para gestores financeiros.
+- 15 novos testes de feature: cálculo completo, totais adulterados no POST ignorados, permissões de consulta, calibração, recálculo com nova cotação, endpoint de cotação, padrões configurados, par direto, cruzamento BRL, última cotação, padrão do sistema, cache de 5 minutos e moedas iguais. São 63 testes e 270 asserções no total.
+
+### Alterado
+
+- `ExchangeRateService` ganhou cotação de par direto (`pair()`), com cache próprio, cruzamento via BRL e persistência da última cotação válida em `app_settings`.
+- Tela de configurações recebe a aba **Conversão e cartão**, com as tarifas, a cotação EUR→USD ao vivo e um exemplo do cálculo passo a passo.
+- Tabela de conversões no mobile exibe direção, cobrança, valor de origem e cotação em bloco compacto, sem rolagem horizontal.
+- README documenta o CRUD de conversões, a API gratuita, as tarifas e a conferência da fatura do cartão.
+- Versão do sistema atualizada para 1.4.0 em telas, PWA e documentação.
+
 ## [1.3.1] - 2026-11-04
 
 ### Corrigido
@@ -160,6 +187,7 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.4.0]: https://kdkhost.com.br/
 [1.3.1]: https://kdkhost.com.br/
 [1.3.0]: https://kdkhost.com.br/
 [1.2.0]: https://kdkhost.com.br/

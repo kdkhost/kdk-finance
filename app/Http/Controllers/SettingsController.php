@@ -33,6 +33,7 @@ class SettingsController extends Controller
         return view('settings.index', [
             'settings' => $settings,
             'rates' => $exchange->rates(),
+            'pair' => $exchange->pair('EUR', 'USD'),
             'ovhConfigured' => $ovh->isConfigured(),
             'masked' => [
                 'ovh_application_key' => AppSetting::mask((string) AppSetting::get('ovh_application_key', '')),
@@ -61,8 +62,25 @@ class SettingsController extends Controller
             ->with('success', 'Percentuais atualizados. Recalcule as faturas pendentes para aplicar.');
     }
 
-    public function updateOvh(Request $request): RedirectResponse
+    public function updateConversion(Request $request): RedirectResponse
     {
+        $data = $request->validate([
+            'conversion_spread_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+            'conversion_iof_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+            'conversion_fixed_fee' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'conversion_buffer_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        foreach ($data as $key => $value) {
+            AppSetting::set($key, number_format((float) $value, 3, '.', ''), 'conversion');
+        }
+
+        return redirect()
+            ->route('settings.index', ['tab' => 'conversion'])
+            ->with('success', 'Tarifas de conversão atualizadas. As novas conversões já usam estes valores.');
+    }
+
+    public function updateOvh(Request $request): RedirectResponse    {
         $data = $request->validate([
             'ovh_endpoint' => ['required', Rule::in(['ovh-eu', 'ovh-ca', 'ovh-us'])],
             'ovh_application_key' => ['nullable', 'string', 'max:255'],

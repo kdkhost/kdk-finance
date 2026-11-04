@@ -32,6 +32,11 @@
                 <i class="bi bi-percent me-1"></i> Câmbio e tributos
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {{ $activeTab === 'conversion' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'conversion']) }}">
+                <i class="bi bi-currency-exchange me-1"></i> Conversão e cartão
+            </a>
+        </li>
         @if ($user->isDeveloperAdmin())
             <li class="nav-item">
                 <a class="nav-link {{ $activeTab === 'ovh' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'ovh']) }}">
@@ -122,6 +127,161 @@
                             Fonte: {{ $rates['USD']['source'] }} · atualizado em {{ \Illuminate\Support\Carbon::parse($rates['USD']['updated_at'])->format('d/m/Y H:i') }}.
                             Cache de 15 minutos com fallback para a última cotação conhecida.
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($activeTab === 'conversion')
+        @php
+            $conversionValues = [
+                'conversion_spread_percent' => \App\Models\AppSetting::get('conversion_spread_percent', config('finance.conversion.spread_percent')),
+                'conversion_iof_percent' => \App\Models\AppSetting::get('conversion_iof_percent', config('finance.conversion.iof_percent')),
+                'conversion_fixed_fee' => \App\Models\AppSetting::get('conversion_fixed_fee', config('finance.conversion.fixed_fee')),
+                'conversion_buffer_percent' => \App\Models\AppSetting::get('conversion_buffer_percent', config('finance.conversion.buffer_percent')),
+            ];
+        @endphp
+
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header">Tarifas padrão das conversões</div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ route('settings.conversion') }}">
+                            @csrf
+                            @method('PUT')
+
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="conversion_spread_percent">Spread bancário</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.001" min="0" max="100" class="form-control tabular @error('conversion_spread_percent') is-invalid @enderror" id="conversion_spread_percent" name="conversion_spread_percent" value="{{ old('conversion_spread_percent', $conversionValues['conversion_spread_percent']) }}" required>
+                                        <span class="input-group-text">%</span>
+                                        @error('conversion_spread_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">Margem que o banco aplica sobre a cotação de mercado.</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="conversion_iof_percent">IOF</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.001" min="0" max="100" class="form-control tabular @error('conversion_iof_percent') is-invalid @enderror" id="conversion_iof_percent" name="conversion_iof_percent" value="{{ old('conversion_iof_percent', $conversionValues['conversion_iof_percent']) }}" required>
+                                        <span class="input-group-text">%</span>
+                                        @error('conversion_iof_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">Deixe 0% se o saldo em dólar já foi abastecido com IOF.</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="conversion_fixed_fee">Tarifa fixa por operação</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">US$</span>
+                                        <input type="number" step="0.01" min="0" class="form-control tabular @error('conversion_fixed_fee') is-invalid @enderror" id="conversion_fixed_fee" name="conversion_fixed_fee" value="{{ old('conversion_fixed_fee', $conversionValues['conversion_fixed_fee']) }}" required>
+                                        @error('conversion_fixed_fee')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">Cobrança fixa do banco/cartão, se existir.</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="conversion_buffer_percent">Margem de segurança</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.001" min="0" max="100" class="form-control tabular @error('conversion_buffer_percent') is-invalid @enderror" id="conversion_buffer_percent" name="conversion_buffer_percent" value="{{ old('conversion_buffer_percent', $conversionValues['conversion_buffer_percent']) }}" required>
+                                        <span class="input-group-text">%</span>
+                                        @error('conversion_buffer_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">Folga para absorver oscilações até o pagamento.</div>
+                                </div>
+                            </div>
+
+                            <div class="hint-banner mt-3">
+                                <i class="bi bi-calculator"></i>
+                                <div>
+                                    Fórmula: <span class="mono">valor × cotação</span> + spread; IOF incide sobre a base com spread;
+                                    tarifa fixa entra depois; a margem incide sobre tudo. Cada etapa é arredondada em 2 casas.
+                                </div>
+                            </div>
+
+                            <div class="hint-banner mt-3" style="background: var(--kdk-amber-soft); border-color: color-mix(in srgb, var(--kdk-amber) 28%, transparent);">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <div>
+                                    Em 2026 o IOF de <strong>3,5%</strong> incide no cartão internacional <em>ou</em> no aporte da conta global —
+                                    não nos dois. Se você abastece a conta em dólar e depois converte, o IOF já foi pago no aporte:
+                                    mantenha 0% aqui para não contar duas vezes.
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end mt-3">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Salvar tarifas</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Cotação EUR → USD</span>
+                        <span class="badge {{ ! empty($pair['stale']) ? 'text-bg-warning' : 'text-bg-success' }}">
+                            {{ ! empty($pair['stale']) ? 'Última conhecida' : 'Ao vivo' }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="surface-muted p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="currency-chip">€ EUR → US$ USD</span>
+                                    <div class="text-muted-soft mt-1" style="font-size:.72rem;">1 euro compra</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fs-5 fw-bold tabular">{{ number_format((float) ($pair['rate'] ?? 0), 6, ',', '.') }}</div>
+                                    <span class="text-muted-soft" style="font-size:.72rem;">dólares</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-muted-soft mt-3" style="font-size:.72rem;">
+                            Fonte: {{ $pair['source'] ?? '—' }} · atualizado em
+                            {{ isset($pair['updated_at']) ? \Illuminate\Support\Carbon::parse($pair['updated_at'])->format('d/m/Y H:i') : '—' }}.
+                            Pares diretos da AwesomeAPI (gratuita, sem chave) com cache de 5 minutos e fallback pelo BRL.
+                        </div>
+                        <a href="{{ route('conversions.create') }}" class="btn btn-outline-secondary w-100 mt-3">
+                            <i class="bi bi-plus-lg me-1"></i> Calcular uma conversão
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">Como o sistema calcula</div>
+                    <div class="card-body" style="font-size:.82rem;line-height:1.6;">
+                        <p class="text-muted-soft mb-2">Exemplo com € 100,00 e as tarifas acima:</p>
+                        <table class="breakdown">
+                            <tr>
+                                <td>Valor na cotação de mercado</td>
+                                <td class="value">€ 100 × cotação</td>
+                            </tr>
+                            <tr>
+                                <td>+ Spread</td>
+                                <td class="value">sobre a base</td>
+                            </tr>
+                            <tr>
+                                <td>+ IOF</td>
+                                <td class="value">sobre base + spread</td>
+                            </tr>
+                            <tr>
+                                <td>+ Tarifa fixa</td>
+                                <td class="value">valor por operação</td>
+                            </tr>
+                            <tr>
+                                <td>+ Margem</td>
+                                <td class="value">sobre o subtotal</td>
+                            </tr>
+                            <tr class="total">
+                                <td>Total a pagar</td>
+                                <td class="value">em USD</td>
+                            </tr>
+                        </table>
+                        <p class="text-muted-soft mt-3 mb-0">
+                            Depois do pagamento, use <strong>Conferir fatura</strong> na tela da conversão para comparar
+                            o valor real cobrado e descobrir o custo efetivo do seu cartão.
+                        </p>
                     </div>
                 </div>
             </div>

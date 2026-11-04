@@ -59,11 +59,23 @@
                         <span>Licenças</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ route('conversions.index') }}" class="nav-link {{ request()->routeIs('conversions.*') ? 'active' : '' }}">
+                        <i class="bi bi-currency-exchange"></i>
+                        <span>Conversões</span>
+                    </a>
+                </li>
                 @if ($user->canManageFinance())
                     <li class="nav-item">
                         <a href="{{ route('invoices.create') }}" class="nav-link {{ request()->routeIs('invoices.create') ? 'active' : '' }}">
                             <i class="bi bi-plus-square"></i>
                             <span>Nova fatura</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('conversions.create') }}" class="nav-link {{ request()->routeIs('conversions.create') ? 'active' : '' }}">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <span>Nova conversão</span>
                         </a>
                     </li>
                 @endif
@@ -116,6 +128,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por George Marcelo</div>
-        <div class="mt-1 opacity-75">v1.3.1 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.4.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

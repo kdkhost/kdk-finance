@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.3.1 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.4.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -25,12 +25,18 @@ As cotações vêm da AwesomeAPI (USD-BRL e EUR-BRL), ficam em cache por 15 minu
 se a API falhar, o sistema reaproveita a última cotação válida — marcada como
 "última cotação conhecida" na interface.
 
+O conversor EUR↔USD usa o **par direto** da mesma AwesomeAPI (`/json/last/EUR-USD`),
+sem chave e sem custo, com cache de 5 minutos. Se o par direto falhar, o sistema
+cruza as cotações em BRL; em último caso, reaproveita a última cotação conhecida e
+marca o resultado como desatualizado.
+
 ### Recursos principais
 
 - Dashboard com pendências, pagos no mês, faturas vencidas, composição da carteira e evolução financeira.
 - Inventário completo da OVHcloud no painel: serviços contratados, valores mensais individuais (EUR e BRL) e blocos de IPv4/IPv6 com DNS reverso.
 - Itens individuais de cada fatura importada (descrição, domínio, quantidade, valor unitário, total e período).
 - CRUD de faturas com prévia do cálculo em tempo real, pagamento, cancelamento, reabertura, recálculo e bloqueio de cotação.
+- CRUD de conversões EUR↔USD com cotação ao vivo, spread, IOF, tarifa fixa, margem de segurança, taxa efetiva, custo real e conferência da fatura do cartão.
 - CRUD de licenças LicenseBoy (cPanel, CloudLinux, LiteSpeed e demais produtos), com custo mensal em BRL, renovações, chave criptografada e geração de fatura em um clique.
 - Catálogo de preços em tempo real da loja LicenseBoy (37 produtos nas 8 categorias públicas), com sincronização diária e licenças vinculadas que acompanham o preço da loja.
 - Central de cron com CRUD de agendamentos, presets, fuso horário, execução manual, histórico de saídas e sinal de vida do agendador — apenas uma linha no cron da hospedagem.
@@ -199,6 +205,43 @@ setup, estoque e o selo "a partir de":
 - categorias que falharem na leitura são preservadas como estavam — só produtos de
   categorias lidas com sucesso podem ser removidos.
 
+### Conversões EUR ↔ USD
+
+O servidor da OVH é cobrado em euro, mas o cartão da conta internacional é em
+dólar. **Conversões** (menu Operação) responde quantos dólares são necessários para
+pagar um valor em euro — e o caminho inverso — sem planilha paralela:
+
+```
+base        = valor_origem × cotação do par
+spread      = base × spread%
+subtotal    = base + spread
+iof         = subtotal × iof%
+total       = subtotal + iof + tarifa_fixa
+total       = total + (total × margem%)
+taxa_efetiva = total ÷ valor_origem
+custo_%     = (total ÷ base − 1) × 100
+```
+
+Cada etapa é arredondada em duas casas, exatamente como no cálculo tributário das
+faturas. O resultado mostra base, spread, subtotal, IOF, tarifa fixa, margem, total
+a pagar, taxa efetiva, custo percentual e o equivalente em BRL.
+
+- **Câmbio gratuito:** cotação direta pela AwesomeAPI, sem chave e sem custo. Cache
+  de 5 minutos; se o par direto falhar, o sistema cruza EUR-BRL ÷ USD-BRL e, em
+  último caso, usa a última cotação conhecida (marcada como desatualizada).
+- **Tarifas no painel:** Configurações → **Conversão e cartão** grava spread, IOF,
+  tarifa fixa e margem em `app_settings` (grupo `conversion`). O padrão de IOF é 0%
+  porque os 3,5% de 2026 incidem **uma única vez** — no cartão internacional ou no
+  aporte para a conta global; em conta já abastecida, contar de novo seria imposto
+  em dobro.
+- **Conferência da fatura:** informe o valor realmente cobrado pelo cartão e o
+  sistema grava o custo real percentual, a diferença para o calculado e a data da
+  conferência.
+- **Recalcular** refaz a conta pela cotação atual mantendo valores e tarifas, com
+  aviso do antes e depois.
+- A lista filtra por direção e por conferidas e resume conversões salvas, custo
+  médio conferido e equivalente em BRL.
+
 ### Central de cron
 
 Em **Central de cron** (menu Sistema, exclusivo de desenvolvedor/administrador)
@@ -266,9 +309,12 @@ Cobertura atual: cálculo tributário, criptografia de configurações, autentic
 fluxo de faturas, exportação CSV, sincronização com a AwesomeAPI, página de
 serviços/IPs do painel, itens individuais de fatura, CRUD de licenças com
 criptografia e geração de fatura, central de cron (permissões, validação,
-execução manual, agendamento por minuto e heartbeat) e catálogo de preços da
+execução manual, agendamento por minuto e heartbeat), catálogo de preços da
 LicenseBoy (sincronização, remoção de itens, falha por categoria, permissões,
-prefill e vínculo que prevalece sobre o formulário). São 48 testes e 207 asserções.
+prefill e vínculo que prevalece sobre o formulário) e conversões EUR↔USD (cálculo
+completo, totais adulterados ignorados, permissões, calibração, recálculo, endpoint
+de cotação, cotações direta/cruzada/última conhecida e cache de 5 minutos).
+São 63 testes e 270 asserções.
 
 ---
 
@@ -278,18 +324,18 @@ prefill e vínculo que prevalece sobre o formulário). São 48 testes e 207 asse
 app/
 ├── Console/Commands/          # SyncInvoicesCommand, RunDueCronsCommand e SyncLicensePricesCommand
 ├── Events/InvoiceAmountUpdatedEvent.php
-├── Http/Controllers/          # Dashboard, Faturas, Infraestrutura, Licenças, Crons, Configurações, Usuários, Perfil, Notificações
+├── Http/Controllers/          # Dashboard, Faturas, Infraestrutura, Licenças, Conversões, Crons, Configurações, Usuários, Perfil, Notificações
 ├── Http/Middleware/           # Assinatura do desenvolvedor e controle de perfil
-├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, LicenseService, LicenseCatalogItem, CronJob, CronJobRun, User
+├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, LicenseService, LicenseCatalogItem, CurrencyConversion, CronJob, CronJobRun, User
 ├── Notifications/             # Variação cambial
-└── Services/                  # ExchangeRate, TaxCalculation, Ovh, OvhInventory, Dashboard, CronRunner, LicenseBoyPrice
+└── Services/                  # ExchangeRate, TaxCalculation, CurrencyConversion, Ovh, OvhInventory, Dashboard, CronRunner, LicenseBoyPrice
 
 resources/
 ├── css/theme.css              # Tokens claro/escuro e componentes
-├── js/                        # Bootstrap, Echo, Dashboard, formulário de fatura
+├── js/                        # Bootstrap, Echo, Dashboard, formulário de fatura, formulário de conversão
 └── views/
     ├── admin/layouts/         # AdminLTE 4 modular
-    ├── auth/ errors/ infrastructure/ invoices/ licenses/ crons/ notifications/ profile/ settings/ users/
+    ├── auth/ errors/ infrastructure/ invoices/ licenses/ conversions/ crons/ notifications/ profile/ settings/ users/
     └── partials/
 
 public/                        # manifest.json, sw.js, offline.html, ícones, favicon

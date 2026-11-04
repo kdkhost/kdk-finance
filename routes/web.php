@@ -13,6 +13,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CronJobController;
+use App\Http\Controllers\CurrencyConversionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InfrastructureController;
 use App\Http\Controllers\InvoiceController;
@@ -84,6 +85,27 @@ Route::middleware('auth')->group(function (): void {
     });
 
     // ---------------------------------------------------------------------
+    // Conversões EUR ↔ USD com tarifas de cartão internacional
+    // ---------------------------------------------------------------------
+    Route::get('/conversoes', [CurrencyConversionController::class, 'index'])->name('conversions.index');
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+        Route::get('/conversoes/nova', [CurrencyConversionController::class, 'create'])->name('conversions.create');
+        Route::post('/conversoes', [CurrencyConversionController::class, 'store'])->name('conversions.store');
+        Route::get('/conversoes/cotacao', [CurrencyConversionController::class, 'quote'])->name('conversions.quote');
+    });
+
+    Route::get('/conversoes/{conversion}', [CurrencyConversionController::class, 'show'])->name('conversions.show');
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+        Route::get('/conversoes/{conversion}/editar', [CurrencyConversionController::class, 'edit'])->name('conversions.edit');
+        Route::put('/conversoes/{conversion}', [CurrencyConversionController::class, 'update'])->name('conversions.update');
+        Route::delete('/conversoes/{conversion}', [CurrencyConversionController::class, 'destroy'])->name('conversions.destroy');
+        Route::post('/conversoes/{conversion}/recalcular', [CurrencyConversionController::class, 'recalculate'])->name('conversions.recalculate');
+        Route::post('/conversoes/{conversion}/conferir', [CurrencyConversionController::class, 'calibrate'])->name('conversions.calibrate');
+    });
+
+    // ---------------------------------------------------------------------
     // Central de cron — somente desenvolvedor/administrador
     // ---------------------------------------------------------------------
     Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
@@ -118,6 +140,7 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
         Route::get('/configuracoes', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('/configuracoes/tributos', [SettingsController::class, 'updateTaxes'])->name('settings.taxes');
+        Route::put('/configuracoes/conversao', [SettingsController::class, 'updateConversion'])->name('settings.conversion');
     });
 
     Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
