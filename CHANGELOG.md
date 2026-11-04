@@ -9,11 +9,12 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
-- **Redesenho da página de conversões** (`/conversoes`): o topo agora mostra a cotação ao vivo em destaque, com a taxa inversa, a fonte, o horário da consulta, as tarifas padrão e um atalho para as configurações de conversão.
-- Faixa de resumo com total convertido, quantidade de conversões, spread médio e equivalente em reais, exibida apenas quando há registros.
-- Filtros compactados em uma barra única, sem o cartão pesado anterior.
-- Estado vazio refeito: mensagem centralizada, exemplo real (€ 43,96 → US$ 51,73) e chamada para criar a primeira conversão, em vez de quatro cartões zerados e uma tabela vazia.
-- Tabela oculta quando não há conversões nem filtros, deixando a tela limpa; a tabela continua completa em desktop e mobile quando há dados.
+- **Página de conversões no padrão das demais telas**: cabeçalho, cartões de resumo, cartão de filtros e tabela, com os mesmos componentes usados em Faturas e Licenças.
+- Cartões de resumo com a cotação EUR → USD agora (taxa inversa, horário e fonte), conversões salvas, custo médio conferido e equivalente em reais — exibidos apenas quando há registros.
+- Filtros reorganizados no formato de Faturas (busca, direção, “só conferidas”, botões) com atalhos em etiquetas para todas, conferidas e as tarifas padrão de spread, IOF e margem.
+- Botão **Tarifas** no cabeçalho, levando direto à aba de conversão das configurações.
+- Estado vazio padrão (`.empty-state`) com a cotação atual e uma única chamada para criar a primeira conversão; sem cartões zerados e sem tabela em branco.
+- Removidos os estilos exclusivos da tentativa anterior de layout, deixando a página apenas com os componentes compartilhados do sistema.
 - Layout verificado nos temas claro e escuro e em telas estreitas.
 
 ## [1.5.2] - 2026-11-04

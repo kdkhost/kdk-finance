@@ -16,6 +16,9 @@
 
 @section('actions')
     @if (auth()->user()->canManageFinance())
+        <a href="{{ route('settings.index', ['tab' => 'conversion']) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-sliders me-1"></i> Tarifas
+        </a>
         <a href="{{ route('conversions.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Nova conversão
         </a>
@@ -36,139 +39,128 @@
             : '—';
     @endphp
 
-    <section class="conversion-hero mb-3" aria-label="Cotação atual do par EUR-USD">
-        <div class="conversion-hero-main">
-            <div class="conversion-hero-eyebrow">
-                <i class="bi bi-broadcast"></i> Câmbio agora
-                @if (! empty($quote['stale']))
-                    <span class="conversion-hero-flag"><i class="bi bi-wifi-off"></i> última conhecida</span>
-                @endif
-            </div>
-
-            <div class="conversion-hero-rate">
-                <span class="conversion-hero-value">{{ number_format($rate, 6, ',', '.') }}</span>
-                <span class="conversion-hero-unit">USD por EUR</span>
-            </div>
-
-            <div class="conversion-hero-meta">
-                <span class="conversion-hero-pair">EUR → USD</span>
-                <span>1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR</span>
-                <span class="conversion-hero-sep" aria-hidden="true"></span>
-                <span>{{ $quote['source'] ?? '—' }}</span>
-                <span class="conversion-hero-sep" aria-hidden="true"></span>
-                <span>{{ $quoteAt }}</span>
-            </div>
-        </div>
-
-        <div class="conversion-hero-side">
-            <div class="conversion-hero-side-label">Tarifas padrão</div>
-            <div class="conversion-hero-fees">
-                <span>Spread <strong>{{ number_format((float) ($defaults['spread_percent'] ?? 0), 3, ',', '.') }}%</strong></span>
-                <span>IOF <strong>{{ number_format((float) ($defaults['iof_percent'] ?? 0), 3, ',', '.') }}%</strong></span>
-                <span>Margem <strong>{{ number_format((float) ($defaults['buffer_percent'] ?? 0), 3, ',', '.') }}%</strong></span>
-            </div>
-            @if (auth()->user()->canManageFinance())
-                <a href="{{ route('settings.index', ['tab' => 'conversion']) }}" class="conversion-hero-link">
-                    Ajustar tarifas <i class="bi bi-arrow-up-right"></i>
-                </a>
-            @endif
-        </div>
-    </section>
-
-    @if ($hasConversions)
-        <div class="conversion-summary mb-3">
-            <div class="conversion-summary-item">
-                <span>Conversões salvas</span>
-                <strong>{{ $summary['total'] }}</strong>
-                <small>{{ $summary['calibrated'] }} conferida(s) na fatura</small>
-            </div>
-            <div class="conversion-summary-item">
-                <span>Custo médio conferido</span>
-                <strong>{{ $summary['avg_cost'] !== null ? number_format($summary['avg_cost'], 3, ',', '.').'%' : '—' }}</strong>
-                <small>sobre a cotação de mercado</small>
-            </div>
-            <div class="conversion-summary-item">
-                <span>Equivalente em BRL</span>
-                <strong>R$ {{ number_format($summary['total_brl'], 2, ',', '.') }}</strong>
-                <small>soma das conversões salvas</small>
-            </div>
-        </div>
-    @endif
-
     @if (! $hasConversions && ! $isFiltered)
-        <div class="card conversion-empty">
-            <div class="conversion-empty-mark" aria-hidden="true">
-                <i class="bi bi-currency-exchange"></i>
-            </div>
-            <span class="conversion-empty-eyebrow">Conversões</span>
-            <h2>Quanto de dólar você precisa?</h2>
-            <p>
-                Informe o valor da fatura em euro, a cotação de mercado e — se tiver — a cotação que o
-                PayPal ou o banco mostrou. O sistema aplica spread, IOF e tarifas e devolve o total
-                que vai sair do cartão.
-            </p>
-
-            <div class="conversion-example" aria-label="Exemplo de conversão">
-                <div>
-                    <span>Fatura em euro</span>
-                    <strong>€ 43,96</strong>
+        <div class="card">
+            <div class="card-body">
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-currency-exchange"></i></div>
+                    <h3>Nenhuma conversão salva</h3>
+                    <p>
+                        Informe o valor da fatura em euro, a cotação de mercado e, se tiver, a cotação
+                        que o PayPal ou o banco mostrou. O sistema aplica spread, IOF e tarifas e devolve
+                        quanto sai do cartão.
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        <span class="currency-chip">EUR → USD · {{ number_format($rate, 6, ',', '.') }}</span>
+                        <span class="currency-chip">1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR</span>
+                        <span class="currency-chip">{{ $quote['source'] ?? '—' }} · {{ $quoteAt }}</span>
+                    </div>
+                    @if (auth()->user()->canManageFinance())
+                        <a href="{{ route('conversions.create') }}" class="btn btn-primary btn-sm">Criar primeira conversão</a>
+                    @else
+                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consultar as conversões salvas.</div>
+                    @endif
                 </div>
-                <i class="bi bi-arrow-right" aria-hidden="true"></i>
-                <div>
-                    <span>PayPal a 0,8498</span>
-                    <strong>US$ 51,73</strong>
-                </div>
-            </div>
-
-            @if (auth()->user()->canManageFinance())
-                <a href="{{ route('conversions.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-lg me-1"></i> Criar primeira conversão
-                </a>
-            @else
-                <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consultar as conversões salvas.</div>
-            @endif
-
-            <div class="conversion-empty-note">
-                Depois de salva, a conversão pode ser conferida contra o valor real do cartão
-                e recalculada com o câmbio do dia.
             </div>
         </div>
     @else
         @if ($hasConversions)
-            <div class="card mb-3">
-                <div class="card-body py-3">
-                    <form method="GET" action="{{ route('conversions.index') }}" class="conversions-toolbar">
-                        <div class="conversions-toolbar-search">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input type="search" class="form-control" id="q" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Buscar por descrição ou observação" aria-label="Buscar conversões">
-                            </div>
+            <div class="stat-grid mb-3">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <span class="stat-label">EUR → USD agora</span>
+                            <span class="stat-icon"><i class="bi bi-broadcast"></i></span>
                         </div>
-                        <div class="conversions-toolbar-pair">
-                            <label class="visually-hidden" for="pair">Direção</label>
-                            <select class="form-select" id="pair" name="pair">
-                                <option value="">Todas as direções</option>
-                                @foreach (['EUR-USD', 'USD-EUR'] as $pair)
-                                    <option value="{{ $pair }}" @selected(($filters['pair'] ?? '') === $pair)>
-                                        {{ str_replace('-', ' → ', $pair) }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="stat-value mt-2">{{ number_format($rate, 6, ',', '.') }}</div>
+                        <div class="stat-meta mt-2">
+                            1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR · {{ $quoteAt }}
+                            @if (! empty($quote['stale']))
+                                <span class="d-block text-danger"><i class="bi bi-wifi-off me-1"></i> última cotação conhecida</span>
+                            @endif
                         </div>
-                        <div class="form-check form-switch conversions-toolbar-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="calibrated" name="calibrated" value="1" @checked(! empty($filters['calibrated']))>
-                            <label class="form-check-label" for="calibrated">Só conferidas</label>
+                    </div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <span class="stat-label">Conversões salvas</span>
+                            <span class="stat-icon is-blue"><i class="bi bi-list-check"></i></span>
                         </div>
-                        <button type="submit" class="btn btn-navy">Filtrar</button>
-                        @if ($isFiltered)
-                            <a href="{{ route('conversions.index') }}" class="btn btn-outline-secondary" title="Limpar filtros" aria-label="Limpar filtros">
-                                <i class="bi bi-x-lg"></i>
-                            </a>
-                        @endif
-                    </form>
+                        <div class="stat-value mt-2">{{ $summary['total'] }}</div>
+                        <div class="stat-meta mt-2">{{ $summary['calibrated'] }} conferida(s) na fatura</div>
+                    </div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <span class="stat-label">Custo médio conferido</span>
+                            <span class="stat-icon is-amber"><i class="bi bi-graph-up-arrow"></i></span>
+                        </div>
+                        <div class="stat-value mt-2">{{ $summary['avg_cost'] !== null ? number_format($summary['avg_cost'], 3, ',', '.').'%' : '—' }}</div>
+                        <div class="stat-meta mt-2">sobre a cotação de mercado</div>
+                    </div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <span class="stat-label">Equivalente em BRL</span>
+                            <span class="stat-icon is-red"><i class="bi bi-cash-stack"></i></span>
+                        </div>
+                        <div class="stat-value mt-2">R$ {{ number_format($summary['total_brl'], 2, ',', '.') }}</div>
+                        <div class="stat-meta mt-2">soma das conversões salvas</div>
+                    </div>
                 </div>
             </div>
         @endif
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="GET" action="{{ route('conversions.index') }}" class="row g-2 align-items-end">
+                    <div class="col-lg-4">
+                        <label class="form-label" for="q">Buscar</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="search" class="form-control" id="q" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Descrição ou observação">
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-2">
+                        <label class="form-label" for="pair">Direção</label>
+                        <select class="form-select" id="pair" name="pair">
+                            <option value="">Todas</option>
+                            @foreach (['EUR-USD', 'USD-EUR'] as $pair)
+                                <option value="{{ $pair }}" @selected(($filters['pair'] ?? '') === $pair)>
+                                    {{ str_replace('-', ' → ', $pair) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-lg-2 d-flex align-items-end">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="calibrated" name="calibrated" value="1" @checked(! empty($filters['calibrated']))>
+                            <label class="form-check-label" for="calibrated" style="font-size:.8rem;">Só conferidas</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-navy flex-fill">Filtrar</button>
+                        <a href="{{ route('conversions.index') }}" class="btn btn-outline-secondary" title="Limpar filtros"><i class="bi bi-x-lg"></i></a>
+                    </div>
+                </form>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <a href="{{ route('conversions.index') }}" class="currency-chip text-decoration-none">Todas · {{ $summary['total'] }}</a>
+                    <a href="{{ route('conversions.index', ['calibrated' => 1]) }}" class="currency-chip text-decoration-none">Conferidas · {{ $summary['calibrated'] }}</a>
+                    <span class="currency-chip">
+                        Spread {{ number_format((float) ($defaults['spread_percent'] ?? 0), 3, ',', '.') }}%
+                        · IOF {{ number_format((float) ($defaults['iof_percent'] ?? 0), 3, ',', '.') }}%
+                        · Margem {{ number_format((float) ($defaults['buffer_percent'] ?? 0), 3, ',', '.') }}%
+                    </span>
+                </div>
+            </div>
+        </div>
 
         <div class="card">
             <div class="table-responsive">
