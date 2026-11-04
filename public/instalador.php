@@ -33,7 +33,7 @@ if (is_file($autoloadFile)) {
     require_once $autoloadFile;
 }
 
-$installerVersion = '1.8.0';
+$installerVersion = '1.8.1';
 
 if (preg_match('/^## \[(\d+\.\d+\.\d+)\]/m', (string) @file_get_contents($basePath.'/CHANGELOG.md'), $versionMatch) === 1) {
     $installerVersion = $versionMatch[1];
@@ -192,7 +192,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $alreadyInstalled && $requirement
         file_put_contents($attemptFile, json_encode($attempts), LOCK_EX);
     }
 
-    $appUrl = rtrim(post('app_url'), '/');
+    // A pasta public/ nunca compõe a URL do sistema: se o endereço informado
+    // terminar em /public, ele é removido antes de gravar o APP_URL.
+    $appUrl = preg_replace('#/public/?$#i', '', rtrim(post('app_url'), '/'));
+    $appUrl = is_string($appUrl) ? rtrim($appUrl, '/') : '';
     $appScheme = strtolower((string) parse_url($appUrl, PHP_URL_SCHEME));
     $appHost = (string) parse_url($appUrl, PHP_URL_HOST);
 

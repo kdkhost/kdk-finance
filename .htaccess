@@ -3,7 +3,8 @@
 # ============================================================================
 # Este arquivo só entra em ação quando o document root da hospedagem aponta
 # para a raiz do projeto (em vez de public/). Ele bloqueia o acesso direto a
-# credenciais, código e arquivos internos e encaminha tudo para public/.
+# credenciais, código e arquivos internos, encaminha tudo para public/ e
+# redireciona qualquer endereço com /public para o caminho limpo.
 #
 # Recomendação: no cPanel, aponte o subdomínio/domínio para a pasta public,
 # que é a configuração mais segura.
@@ -15,7 +16,16 @@
     # Bloqueia arquivos e pastas que nunca devem ser públicos.
     RewriteRule ^(?:\.env.*|\.git(?:/.*)?|app|bootstrap|config|database|lang|node_modules|resources|routes|storage|tests|tools|vendor|artisan|composer\.json|composer\.lock|package\.json|package-lock\.json|phpunit\.xml|vite\.config\.js|README\.md|CHANGELOG\.md|LEIA-ME\.txt)(?:/.*)?$ - [F,L,NC]
 
-    # Já está em public/: não reescreve de novo.
+    # A pasta public/ nunca aparece na URL: /public/login vira /login.
+    # THE_REQUEST guarda a requisição original do cliente, então o caminho
+    # interno "public/" usado para entregar a aplicação nunca é redirecionado.
+    RewriteCond %{THE_REQUEST} \s/+public/([^\s?]+)[\s?] [NC]
+    RewriteRule ^ /%1 [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+public/?[\s?] [NC]
+    RewriteRule ^ / [R=301,L]
+
+    # O restante é encaminhado para public/ sem aparecer na URL.
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^(.*)$ public/$1 [L]

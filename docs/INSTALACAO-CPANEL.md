@@ -102,6 +102,12 @@ inacessíveis pela web.
 `public/` e bloqueia `.env`, `.git`, `vendor/`, `storage/` e demais pastas
 internas. Ainda assim, apontar o Document Root para `public/` é preferível.
 
+Em qualquer um dos dois modos a pasta `public` **não aparece na URL**. O
+`.htaccess` responde `301` para `/public/login`, `/public/build/...` e qualquer
+outro endereço com o prefixo, entregando o caminho limpo (`/login`,
+`/build/...`). O mesmo vale para NGINX ou proxy reverso, graças a um middleware
+da aplicação; a query string é preservada.
+
 ### 3.3. Permissões
 
 No Gerenciador de Arquivos:
@@ -288,6 +294,8 @@ com 10+ caracteres, maiúscula, minúscula e número.
 ## 8. Checklist de segurança
 
 - [ ] Document Root aponta para `public/` (ou `.htaccess` da raiz ativo).
+- [ ] `https://financeiro.seudominio.com/public/login` redireciona (`301`)
+      para `https://financeiro.seudominio.com/login`.
 - [ ] `https://` funcionando e **Forçar HTTPS** ativo em
       Configurações → Segurança.
 - [ ] `APP_DEBUG=false` e `APP_ENV=production`.

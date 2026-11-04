@@ -13,6 +13,17 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # A pasta public/ nunca aparece na URL.
+    # THE_REQUEST guarda a requisição original do cliente; assim o caminho
+    # interno usado para entregar a aplicação nunca provoca um laço. Vale
+    # para o Document Root na raiz do projeto ou em public/, inclusive no
+    # LiteSpeed, que não aplica as regras do .htaccess pai em subpastas.
+    RewriteCond %{THE_REQUEST} \s/+public/([^\s?]+)[\s?] [NC]
+    RewriteRule ^ /%1 [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+public/?[\s?] [NC]
+    RewriteRule ^ / [R=301,L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

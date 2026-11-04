@@ -18,6 +18,7 @@ use App\Support\Settings\SecuritySettings;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
 
@@ -45,6 +46,16 @@ class AppServiceProvider extends ServiceProvider
         if (app()->isProduction() && config('app.debug')) {
             config(['app.debug' => false]);
             Log::warning('APP_DEBUG estava ligado em produção e foi desativado em tempo de execução.');
+        }
+
+        // Endereço canônico: a pasta public/ nunca entra na URL gerada, mesmo
+        // que o APP_URL tenha sido preenchido com o caminho por engano.
+        $appUrl = (string) config('app.url');
+        if ($appUrl !== '' && preg_match('#/public/?$#i', $appUrl) === 1) {
+            $cleanUrl = rtrim((string) preg_replace('#/public/?$#i', '', $appUrl), '/');
+            config(['app.url' => $cleanUrl]);
+            URL::forceRootUrl($cleanUrl);
+            Log::notice('APP_URL continha /public e foi normalizado em tempo de execução.');
         }
 
         // Segurança, sessão, política de senha e SMTP vêm do banco (app_settings).

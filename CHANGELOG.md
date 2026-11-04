@@ -5,6 +5,24 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.8.1] - 2026-11-04
+
+### Adicionado
+
+- **URLs sem `/public` em qualquer servidor**: endereços com o prefixo `/public/` respondem com redirecionamento permanente (`301`) para o caminho limpo, preservando o restante do caminho e a query string. A regra existe no `.htaccess` da raiz, no `.htaccess` de `public/` e em um middleware global que cobre NGINX, proxy reverso e o servidor embutido do PHP.
+- Testes de URL limpa: `/public/login` → `/login`, diretório `/public` → raiz, query string preservada, requisições `POST`, cabeçalhos de segurança no redirecionamento e garantia de que nenhuma URL gerada contém `/public/`.
+
+### Alterado
+
+- O instalador remove `/public` do endereço informado antes de gravar o `APP_URL`. Se uma instalação antiga tiver o caminho no `APP_URL`, ele é normalizado em tempo de execução, sem alterar o `.env`.
+- Documentação do cPanel explica o redirecionamento nos dois modos de Document Root, e o checklist inclui o teste do endereço limpo.
+- Versão exibida no rodapé, menu lateral, login, páginas de erro, README e instalador atualizada para 1.8.1.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: 118 testes e 549 asserções, incluindo os novos testes de URL limpa.
+- Validação em produção por `curl`: `/public/login` responde `301` para `/login`, `/login` responde `200` e a query string é mantida.
+
 ## [1.8.0] - 2026-11-04
 
 ### Adicionado

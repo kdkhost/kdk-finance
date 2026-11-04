@@ -16,6 +16,7 @@ use App\Http\Middleware\DeveloperSignatureMiddleware;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\HidePublicSegment;
 use App\Http\Middleware\RestrictHosts;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -42,6 +43,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(ForceHttps::class);
         $middleware->append(DeveloperSignatureMiddleware::class);
         $middleware->append(SecurityHeaders::class);
+
+        // A pasta public/ nunca aparece na URL; cobre NGINX e proxies que não
+        // leem o .htaccess do Apache.
+        $middleware->append(HidePublicSegment::class);
 
         // Usuário desativado perde a sessão na requisição seguinte.
         $middleware->web(append: [

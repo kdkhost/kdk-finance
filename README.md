@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.8.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.8.1 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -49,6 +49,7 @@ marca o resultado como desatualizado.
 - Painel de segurança completo (HTTPS, HSTS, cabeçalhos, CSP, hosts, proxies, sessão, bloqueio de login e política de senhas) gravado no banco.
 - SMTP completo no painel, com envio de teste e diagnóstico, e tema de e-mail responsivo editável com prévia.
 - Exportação CSV organizada (BOM UTF-8, separador `;`, colunas em ordem alfabética e fórmulas neutralizadas).
+- URLs sempre limpas: a pasta `public/` nunca aparece no endereço, com redirecionamento permanente (301) e preservação da query string em Apache, NGINX e proxies.
 - Perfis de acesso: desenvolvedor/administrador, gestor financeiro e consulta.
 - PWA instalável no Windows e Android, com página offline.
 - Tema claro e escuro, interface integralmente em português do Brasil.
