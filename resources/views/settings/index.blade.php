@@ -138,9 +138,26 @@
                                 </div>
                             </div>
                         @endforeach
+                        @php
+                            $rateSource = (string) $rates['USD']['source'];
+                            $rateSourceBase = str_replace(' (última conhecida)', '', $rateSource);
+                            $rateSourceLabels = [
+                                'awesomeapi' => 'AwesomeAPI',
+                                'open.er-api' => 'ExchangeRate-API',
+                                'frankfurter' => 'Frankfurter (BCE)',
+                            ];
+                            $rateSourceLabel = $rateSourceLabels[$rateSourceBase] ?? $rateSourceBase;
+                            if (str_contains($rateSource, 'última conhecida')) {
+                                $rateSourceLabel .= ' (última conhecida)';
+                            }
+                            $usingAlternative = in_array($rateSourceBase, ['open.er-api', 'frankfurter'], true);
+                        @endphp
                         <div class="text-muted-soft" style="font-size:.72rem;">
-                            Fonte: {{ $rates['USD']['source'] }} · atualizado em {{ \Illuminate\Support\Carbon::parse($rates['USD']['updated_at'])->format('d/m/Y H:i') }}.
+                            Fonte: {{ $rateSourceLabel }} · atualizado em {{ \Illuminate\Support\Carbon::parse($rates['USD']['updated_at'])->format('d/m/Y H:i') }}.
                             Cache de 15 minutos com fallback para a última cotação conhecida.
+                            @if ($usingAlternative)
+                                <span class="d-block mt-1">A AwesomeAPI está limitada no momento; usando o provedor alternativo automaticamente.</span>
+                            @endif
                         </div>
                     </div>
                 </div>

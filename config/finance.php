@@ -50,9 +50,18 @@ return [
         'api_url' => 'https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL',
         // Par direto (ex.: /last/EUR-USD) — gratuito e sem chave, igual ao endpoint acima.
         'pair_api_url' => 'https://economia.awesomeapi.com.br/json/last',
+        // Provedores consultados nesta ordem até um responder. A AwesomeAPI é a
+        // principal; os demais são gratuitos, sem chave e entram quando ela
+        // estoura a cota (HTTP 429) ou fica fora do ar.
+        'providers' => ['awesomeapi', 'er-api', 'frankfurter'],
+        'er_api_url' => 'https://open.er-api.com/v6/latest/USD',
+        'frankfurter_url' => 'https://api.frankfurter.app/latest?from=USD&to=BRL,EUR',
         'timeout' => 12,
         'cache_minutes' => 15,
         'pair_cache_minutes' => 5,
+        // Tempo de cache do resultado degradado (última cotação conhecida)
+        // para não repetir a consulta a cada carregamento quando todos falham.
+        'failure_cache_minutes' => 2,
         // Em produção mantenha true. No WAMP local, sem bundle CA, use false no .env.
         'verify_ssl' => env('FINANCE_VERIFY_SSL', true),
         'default_rates' => [

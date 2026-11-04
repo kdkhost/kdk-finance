@@ -79,6 +79,8 @@ class SyncInvoicesCommandTest extends TestCase
     {
         Http::fake([
             'economia.awesomeapi.com.br/*' => Http::response('indisponível', 503),
+            'open.er-api.com/*' => Http::response('indisponível', 503),
+            'api.frankfurter.app/*' => Http::response('indisponível', 503),
         ]);
 
         $this->artisan('finance:sync-invoices', ['--fresh' => true])

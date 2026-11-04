@@ -62,6 +62,8 @@ class ExchangeRatePairTest extends TestCase
     {
         Http::fake([
             'economia.awesomeapi.com.br/*' => Http::response([], 500),
+            'open.er-api.com/*' => Http::response([], 500),
+            'api.frankfurter.app/*' => Http::response([], 500),
         ]);
 
         $pair = app(ExchangeRateService::class)->pair('EUR', 'USD');
@@ -78,6 +80,8 @@ class ExchangeRatePairTest extends TestCase
 
         Http::fake([
             'economia.awesomeapi.com.br/*' => Http::response([], 500),
+            'open.er-api.com/*' => Http::response([], 500),
+            'api.frankfurter.app/*' => Http::response([], 500),
         ]);
 
         $pair = app(ExchangeRateService::class)->pair('EUR', 'USD');
@@ -86,6 +90,66 @@ class ExchangeRatePairTest extends TestCase
         $this->assertSame('padrão do sistema', $pair['source']);
         $this->assertTrue($pair['stale']);
         $this->assertNotNull($pair['error']);
+    }
+
+    public function test_uses_the_fallback_provider_when_awesomeapi_is_rate_limited(): void
+    {
+        Http::fake([
+            'economia.awesomeapi.com.br/*' => Http::response([
+                'code' => 'QuotaExceeded',
+            ], 429),
+            'open.er-api.com/*' => Http::response([
+                'result' => 'success',
+                'rates' => ['BRL' => 5.50, 'EUR' => 0.909091],
+            ]),
+        ]);
+
+        $pair = app(ExchangeRateService::class)->pair('EUR', 'USD');
+
+        // 5,50 / 0,909091 = 6,05 (EURBRL); 6,05 / 5,50 = 1,1
+        $this->assertEquals(1.1, $pair['rate']);
+        $this->assertSame('cruzamento BRL', $pair['source']);
+        $this->assertFalse($pair['stale']);
+        $this->assertNull($pair['error']);
+    }
+
+    public function test_rates_come_from_the_fallback_provider_and_are_cached(): void
+    {
+        Http::fake([
+            'economia.awesomeapi.com.br/*' => Http::response([], 429),
+            'open.er-api.com/*' => Http::response([
+                'result' => 'success',
+                'rates' => ['BRL' => 5.50, 'EUR' => 0.909091],
+            ]),
+        ]);
+
+        $service = app(ExchangeRateService::class);
+        $rates = $service->rates();
+
+        $this->assertEquals(5.50, $rates['USD']['rate']);
+        $this->assertEquals(6.05, $rates['EUR']['rate']);
+        $this->assertSame('open.er-api', $rates['USD']['source']);
+        $this->assertFalse($rates['USD']['stale']);
+
+        $service->rates();
+
+        // Uma consulta à AwesomeAPI e uma ao provedor alternativo, sem repetição.
+        Http::assertSentCount(2);
+    }
+
+    public function test_caches_the_degraded_result_to_avoid_hammering_the_providers(): void
+    {
+        Http::fake([
+            'economia.awesomeapi.com.br/*' => Http::response([], 429),
+            'open.er-api.com/*' => Http::response([], 500),
+            'api.frankfurter.app/*' => Http::response([], 500),
+        ]);
+
+        $service = app(ExchangeRateService::class);
+        $service->rates();
+        $service->rates();
+
+        Http::assertSentCount(3);
     }
 
     public function test_the_pair_is_cached_for_five_minutes(): void

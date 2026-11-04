@@ -5,6 +5,28 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.8.3] - 2026-11-04
+
+### Corrigido
+
+- **API monetária em falha por cota**: a AwesomeAPI passou a responder `HTTP 429 (QuotaExceeded)` para o IP da hospedagem, fazendo as cotações caírem para o último valor conhecido em todas as telas. O serviço agora consulta provedores em cadeia — AwesomeAPI, `open.er-api.com` e Frankfurter — e usa o primeiro que responder com valores válidos.
+- Pares livres (EUR-USD, USD-EUR etc.) continuam tentando o par direto da AwesomeAPI e, quando ela falha, são derivados pelo cruzamento BRL a partir das cotações do provedor alternativo.
+- O resultado degradado (última cotação conhecida) agora fica em cache por 2 minutos, evitando repetir a consulta e prolongar o bloqueio a cada carregamento de página.
+
+### Adicionado
+
+- Configuração `finance.exchange.providers`, `er_api_url`, `frankfurter_url` e `failure_cache_minutes` para controlar a ordem e os endereços dos provedores sem alterar código.
+- Testes de fallback: cotações vindas do provedor alternativo, par derivado por cruzamento quando a AwesomeAPI está limitada e cache do resultado degradado.
+
+### Alterado
+
+- Versão exibida no rodapé, menu lateral, login, páginas de erro, README e instalador atualizada para 1.8.3.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: 121 testes e 559 asserções.
+- Validação em produção: com a AwesomeAPI em `429`, as cotações retornam `USD 5,4861` e `EUR 6,1405` com origem `open.er-api`, e o par EUR-USD retorna `1,119283` por cruzamento BRL, sem marcação de cotação antiga.
+
 ## [1.8.2] - 2026-11-04
 
 ### Alterado

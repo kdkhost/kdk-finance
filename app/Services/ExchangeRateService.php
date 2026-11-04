@@ -36,18 +36,38 @@ class ExchangeRateService
             Cache::forget(self::CACHE_KEY);
         }
 
+        $cached = Cache::get(self::CACHE_KEY);
+
+        if (is_array($cached) && $cached !== []) {
+            return $cached;
+        }
+
         try {
-            return Cache::remember(
+            $rates = $this->fetchRates();
+            Cache::put(
                 self::CACHE_KEY,
-                now()->addMinutes((int) config('finance.exchange.cache_minutes', 15)),
-                fn (): array => $this->fetchRates()
+                $rates,
+                now()->addMinutes((int) config('finance.exchange.cache_minutes', 15))
             );
+
+            return $rates;
         } catch (Throwable $exception) {
-            Log::warning('Falha ao consultar a AwesomeAPI. Usando a última cotação conhecida.', [
+            Log::warning('Nenhum provedor de câmbio respondeu. Usando a última cotação conhecida.', [
                 'error' => $exception->getMessage(),
             ]);
 
-            return $this->lastKnownRates($exception->getMessage());
+            $rates = $this->lastKnownRates($exception->getMessage());
+
+            // Guarda também o resultado degradado por alguns minutos para não
+            // repetir a consulta (e o bloqueio por excesso de requisições) a
+            // cada carregamento de página.
+            Cache::put(
+                self::CACHE_KEY,
+                $rates,
+                now()->addMinutes((int) config('finance.exchange.failure_cache_minutes', 2))
+            );
+
+            return $rates;
         }
     }
 
@@ -89,14 +109,14 @@ class ExchangeRateService
         return Cache::remember(
             $cacheKey,
             now()->addMinutes((int) config('finance.exchange.pair_cache_minutes', 5)),
-            fn (): array => $this->resolvePair($from, $to)
+            fn (): array => $this->resolvePair($from, $to, $fresh)
         );
     }
 
     /**
      * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}
      */
-    private function resolvePair(string $from, string $to): array
+    private function resolvePair(string $from, string $to, bool $fresh = false): array
     {
         try {
             return $this->fetchPair($from, $to);
@@ -105,7 +125,7 @@ class ExchangeRateService
                 'error' => $exception->getMessage(),
             ]);
 
-            $crossed = $this->crossPair($from, $to);
+            $crossed = $this->crossPair($from, $to, $fresh);
 
             if ($crossed !== null) {
                 return $crossed;
@@ -158,10 +178,10 @@ class ExchangeRateService
      *
      * @return array{from: string, to: string, rate: float, inverse: float, pct_change: float, source: string, updated_at: string, stale: bool, error: string|null}|null
      */
-    private function crossPair(string $from, string $to): ?array
+    private function crossPair(string $from, string $to, bool $fresh = false): ?array
     {
         try {
-            $rates = $this->rates();
+            $rates = $this->rates($fresh);
         } catch (Throwable) {
             return null;
         }
@@ -248,9 +268,56 @@ class ExchangeRateService
     }
 
     /**
+     * Consulta os provedores na ordem configurada e usa o primeiro que
+     * responder com cotações válidas.
+     *
      * @return array<string, array{rate: float, pct_change: float, source: string, updated_at: string, stale: bool}>
      */
     private function fetchRates(): array
+    {
+        $providers = (array) config('finance.exchange.providers', ['awesomeapi', 'er-api', 'frankfurter']);
+        $errors = [];
+
+        foreach ($providers as $provider) {
+            try {
+                $rates = $this->ratesFromProvider((string) $provider);
+                $this->rememberLastKnown($rates);
+
+                return $rates;
+            } catch (Throwable $exception) {
+                $errors[] = $provider.': '.$exception->getMessage();
+                Log::warning('Provedor de câmbio indisponível: '.$provider, [
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        throw new \RuntimeException('Nenhum provedor respondeu ('.implode('; ', $errors).')');
+    }
+
+    /**
+     * @return array<string, array{rate: float, pct_change: float, source: string, updated_at: string, stale: bool}>
+     */
+    private function ratesFromProvider(string $provider): array
+    {
+        return match ($provider) {
+            'awesomeapi' => $this->ratesFromAwesomeApi(),
+            'er-api' => $this->ratesFromUsdBase(
+                (string) config('finance.exchange.er_api_url'),
+                'open.er-api'
+            ),
+            'frankfurter' => $this->ratesFromUsdBase(
+                (string) config('finance.exchange.frankfurter_url'),
+                'frankfurter'
+            ),
+            default => throw new \RuntimeException('Provedor de câmbio desconhecido: '.$provider),
+        };
+    }
+
+    /**
+     * @return array<string, array{rate: float, pct_change: float, source: string, updated_at: string, stale: bool}>
+     */
+    private function ratesFromAwesomeApi(): array
     {
         $response = Http::acceptJson()
             ->timeout((int) config('finance.exchange.timeout', 12))
@@ -263,27 +330,80 @@ class ExchangeRateService
 
         $payload = $response->json();
 
-        $rates = [];
+        return [
+            'USD' => $this->rateEntry($payload, 'USDBRL', 'awesomeapi'),
+            'EUR' => $this->rateEntry($payload, 'EURBRL', 'awesomeapi'),
+        ];
+    }
 
-        foreach (['USD' => 'USDBRL', 'EUR' => 'EURBRL'] as $currency => $pair) {
-            $rate = (float) data_get($payload, $pair.'.bid');
-
-            if ($rate <= 0) {
-                throw new \RuntimeException('Cotação inválida para '.$currency);
-            }
-
-            $rates[$currency] = [
-                'rate' => round($rate, 4),
-                'pct_change' => round((float) data_get($payload, $pair.'.pctChange', 0), 4),
-                'source' => 'awesomeapi',
-                'updated_at' => now()->toIso8601String(),
-                'stale' => false,
-            ];
+    /**
+     * Provedores que devolvem cotações com base no dólar (1 USD = X).
+     * O euro em reais é derivado de BRL/EUR.
+     *
+     * @return array<string, array{rate: float, pct_change: float, source: string, updated_at: string, stale: bool}>
+     */
+    private function ratesFromUsdBase(string $url, string $source): array
+    {
+        if ($url === '') {
+            throw new \RuntimeException('Endereço do provedor '.$source.' não configurado');
         }
 
-        $this->rememberLastKnown($rates);
+        $response = Http::acceptJson()
+            ->timeout((int) config('finance.exchange.timeout', 12))
+            ->withOptions(['verify' => (bool) config('finance.exchange.verify_ssl', true)])
+            ->get($url);
 
-        return $rates;
+        if (! $response->successful()) {
+            throw new \RuntimeException($source.' respondeu HTTP '.$response->status());
+        }
+
+        $payload = $response->json();
+        $usdBrl = (float) data_get($payload, 'rates.BRL');
+        $usdEur = (float) data_get($payload, 'rates.EUR');
+
+        if ($usdBrl <= 0 || $usdEur <= 0) {
+            throw new \RuntimeException('Cotação inválida em '.$source);
+        }
+
+        return [
+            'USD' => $this->rateValue($usdBrl, $source),
+            'EUR' => $this->rateValue($usdBrl / $usdEur, $source),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{rate: float, pct_change: float, source: string, updated_at: string, stale: bool}
+     */
+    private function rateEntry(array $payload, string $pair, string $source): array
+    {
+        $rate = (float) data_get($payload, $pair.'.bid');
+
+        if ($rate <= 0) {
+            throw new \RuntimeException('Cotação inválida para '.$pair);
+        }
+
+        return [
+            'rate' => round($rate, 4),
+            'pct_change' => round((float) data_get($payload, $pair.'.pctChange', 0), 4),
+            'source' => $source,
+            'updated_at' => now()->toIso8601String(),
+            'stale' => false,
+        ];
+    }
+
+    /**
+     * @return array{rate: float, pct_change: float, source: string, updated_at: string, stale: bool}
+     */
+    private function rateValue(float $rate, string $source): array
+    {
+        return [
+            'rate' => round($rate, 4),
+            'pct_change' => 0.0,
+            'source' => $source,
+            'updated_at' => now()->toIso8601String(),
+            'stale' => false,
+        ];
     }
 
     /**
