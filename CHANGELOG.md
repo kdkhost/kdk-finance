@@ -5,6 +5,20 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.3.1] - 2026-11-04
+
+### Corrigido
+
+- Lista de faturas no mobile: a tabela não força mais a rolagem horizontal. As colunas secundárias (Moeda, Valor original, Cotação) passam a aparecer apenas em telas maiores; Status e Vencimento aparecem a partir do breakpoint `md`.
+- No mobile, cada fatura exibe situação, vencimento (em vermelho quando atrasada), câmbio travado, valor original e cotação em um bloco compacto sob a descrição, para não perder informação com as colunas ocultas.
+- Descrição da fatura limitada a duas linhas no mobile e espaçamento das células reduzido, deixando as linhas visivelmente mais curtas.
+- Filtro **Somente vencidas** alinhado aos demais campos e botões em todas as larguras (removido o espaçador fixo que desalinhava o controle e criava área morta).
+- Tabela agora cabe integralmente no cartão em 360 px, 393 px, 768 px, 1024 px, 1200 px e 1440 px, sem rolagem horizontal e sem barra vertical interna.
+
+### Alterado
+
+- Versão do sistema atualizada para 1.3.1 em telas, PWA e documentação.
+
 ## [1.3.0] - 2026-11-04
 
 ### Adicionado
@@ -146,6 +160,7 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.3.1]: https://kdkhost.com.br/
 [1.3.0]: https://kdkhost.com.br/
 [1.2.0]: https://kdkhost.com.br/
 [1.1.0]: https://kdkhost.com.br/

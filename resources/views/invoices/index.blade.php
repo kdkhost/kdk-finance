@@ -57,8 +57,8 @@
                         <option value="USD" @selected(($filters['currency'] ?? '') === 'USD')>USD · Dólar</option>
                     </select>
                 </div>
-                <div class="col-sm-6 col-lg-2">
-                    <div class="form-check form-switch mt-4 pt-1">
+                <div class="col-sm-6 col-lg-2 d-flex align-items-end">
+                    <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" role="switch" id="overdue" name="overdue" value="1" @checked(! empty($filters['overdue']))>
                         <label class="form-check-label" for="overdue" style="font-size:.8rem;">Somente vencidas</label>
                     </div>
@@ -81,37 +81,52 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 invoices-table">
                 <thead>
                     <tr>
                         <th>Fatura</th>
-                        <th>Moeda</th>
-                        <th class="text-end">Valor original</th>
-                        <th class="text-end">Cotação</th>
+                        <th class="d-none d-lg-table-cell">Moeda</th>
+                        <th class="text-end d-none d-xl-table-cell">Valor original</th>
+                        <th class="text-end d-none d-xxl-table-cell">Cotação</th>
                         <th class="text-end">Total BRL</th>
-                        <th>Status</th>
-                        <th>Vencimento</th>
+                        <th class="d-none d-md-table-cell">Status</th>
+                        <th class="d-none d-md-table-cell">Vencimento</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($invoices as $invoice)
                         <tr data-invoice-row="{{ $invoice->id }}">
-                            <td style="min-width: 230px;">
+                            <td class="invoice-title-cell">
                                 <a href="{{ route('invoices.show', $invoice) }}" class="cell-title d-block">{{ \Illuminate\Support\Str::limit($invoice->description, 48) }}</a>
                                 <span class="cell-sub">{{ $invoice->external_reference ?: 'Cadastro manual' }}</span>
+                                <div class="invoice-mobile-meta d-md-none">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="{{ $invoice->statusBadgeClass() }}">{{ $invoice->statusLabel() }}</span>
+                                        @if ($invoice->rate_locked)
+                                            <i class="bi bi-lock-fill" title="Câmbio travado"></i>
+                                        @endif
+                                        <span class="ms-auto {{ $invoice->isOverdue() ? 'text-danger fw-semibold' : '' }}">
+                                            <i class="bi bi-calendar-event me-1"></i>{{ $invoice->due_date?->format('d/m/Y') }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        {{ $invoice->currencySymbol() }} {{ number_format((float) $invoice->amount_original, 2, ',', '.') }}
+                                        · cotação {{ number_format((float) $invoice->exchange_rate, 4, ',', '.') }}
+                                    </div>
+                                </div>
                             </td>
-                            <td><span class="currency-chip">{{ $invoice->currencySymbol() }} {{ $invoice->currency }}</span></td>
-                            <td class="text-end tabular">{{ number_format((float) $invoice->amount_original, 2, ',', '.') }}</td>
-                            <td class="text-end tabular">{{ number_format((float) $invoice->exchange_rate, 4, ',', '.') }}</td>
+                            <td class="d-none d-lg-table-cell"><span class="currency-chip">{{ $invoice->currencySymbol() }} {{ $invoice->currency }}</span></td>
+                            <td class="text-end tabular d-none d-xl-table-cell">{{ number_format((float) $invoice->amount_original, 2, ',', '.') }}</td>
+                            <td class="text-end tabular d-none d-xxl-table-cell">{{ number_format((float) $invoice->exchange_rate, 4, ',', '.') }}</td>
                             <td class="text-end tabular fw-semibold" data-invoice-total="{{ $invoice->id }}">{{ $money($invoice->total_brl) }}</td>
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 <span class="{{ $invoice->statusBadgeClass() }}">{{ $invoice->statusLabel() }}</span>
                                 @if ($invoice->rate_locked)
                                     <i class="bi bi-lock-fill ms-1 text-muted-soft" title="Câmbio travado" style="font-size:.7rem;"></i>
                                 @endif
                             </td>
-                            <td class="tabular {{ $invoice->isOverdue() ? 'text-danger fw-semibold' : '' }}">{{ $invoice->due_date?->format('d/m/Y') }}</td>
+                            <td class="tabular d-none d-md-table-cell {{ $invoice->isOverdue() ? 'text-danger fw-semibold' : '' }}">{{ $invoice->due_date?->format('d/m/Y') }}</td>
                             <td class="text-end">
                                 <div class="dropdown">
                                     <button class="btn btn-ghost btn-icon-sm" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações da fatura">

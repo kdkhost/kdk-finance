@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.3.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.3.1 · Laravel 12.71.0 · PHP 8.3
 
 ---
 

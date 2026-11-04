@@ -646,6 +646,55 @@ select optgroup {
     color: var(--kdk-muted);
 }
 
+.invoice-title-cell {
+    min-width: 0;
+}
+
+.invoice-mobile-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 0.7rem;
+    color: var(--kdk-muted);
+}
+
+@media (min-width: 768px) {
+    .invoice-title-cell {
+        min-width: 230px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .invoices-table > thead th,
+    .invoices-table > tbody > tr > td {
+        padding: 10px 8px;
+    }
+
+    .invoices-table {
+        font-size: 0.82rem;
+    }
+
+    .invoice-title-cell .cell-title {
+        /* sobrescreve o utilitário .d-block do Bootstrap */
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+@media (max-width: 359.98px) {
+    .invoices-table > thead th,
+    .invoices-table > tbody > tr > td {
+        padding: 9px 6px;
+    }
+
+    .invoices-table .invoice-mobile-meta {
+        font-size: 0.66rem;
+    }
+}
+
 .currency-chip {
     display: inline-flex;
     align-items: center;
