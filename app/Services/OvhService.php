@@ -99,11 +99,11 @@ class OvhService
     }
 
     /**
-     * Serviços ativos (detalhados) da conta OVHcloud.
+     * Todos os serviços contratados (detalhados) da conta OVHcloud.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function getActiveServices(int $limit = 30): array
+    public function getActiveServices(int $limit = 200): array
     {
         $ids = $this->client()->get('/service');
 
@@ -123,15 +123,24 @@ class OvhService
                     fn () => $this->client()->get('/service/'.$id)
                 );
 
+                $routePath = (string) data_get($service, 'route.path', '');
+                $type = trim(explode('/', trim($routePath, '/'))[0] ?? '', '/');
+
                 $services[] = [
-                    'id' => $id,
-                    'name' => data_get($service, 'resource.name'),
+                    'service_id' => (string) $id,
+                    'name' => (string) data_get($service, 'resource.name', $id),
                     'display_name' => data_get($service, 'resource.displayName'),
+                    'type' => $type !== '' ? $type : null,
+                    'route_path' => $routePath !== '' ? $routePath : null,
+                    'route_url' => data_get($service, 'route.url'),
                     'state' => data_get($service, 'resource.state'),
-                    'route' => data_get($service, 'route.path'),
+                    'quantity' => (int) data_get($service, 'quantity', 1),
+                    'renew_mode' => data_get($service, 'renew.mode'),
+                    'renew_interval' => data_get($service, 'renew.interval'),
+                    'creation_date' => data_get($service, 'creationDate'),
                     'expiration_date' => data_get($service, 'expirationDate'),
                     'next_billing_date' => data_get($service, 'nextBillingDate'),
-                    'renew_mode' => data_get($service, 'renew.mode'),
+                    'metadata' => $service,
                 ];
             } catch (Throwable $exception) {
                 Log::warning('Falha ao detalhar serviço OVHcloud.', [
@@ -154,7 +163,7 @@ class OvhService
      *
      * @return array<int, array<string, mixed>>
      */
-    public function getRecentBills(int $days = 60, int $limit = 25): array
+    public function getRecentBills(int $days = 365, int $limit = 100): array
     {
         $ids = $this->client()->get('/me/bill');
 
@@ -193,9 +202,125 @@ class OvhService
     /**
      * @return array<string, mixed>
      */
-    public function getPendingInvoices(int $days = 60, int $limit = 25): array
+    public function getPendingInvoices(int $days = 365, int $limit = 100): array
     {
         return $this->getRecentBills($days, $limit);
+    }
+
+    /**
+     * Itens (linhas) de uma fatura, com valores individuais por serviço.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getBillItems(string $billId): array
+    {
+        $ids = Cache::remember(
+            'ovh:bill-items-ids:'.$billId,
+            now()->addMinutes(30),
+            fn () => $this->client()->get('/me/bill/'.$billId.'/details')
+        );
+
+        if (! is_array($ids)) {
+            return [];
+        }
+
+        $items = [];
+
+        foreach ($ids as $detailId) {
+            try {
+                $detail = Cache::remember(
+                    'ovh:bill-item:'.$billId.':'.$detailId,
+                    now()->addMinutes(30),
+                    fn () => (array) $this->client()->get('/me/bill/'.$billId.'/details/'.$detailId)
+                );
+
+                $items[] = [
+                    'external_id' => (string) data_get($detail, 'billDetailId', $detailId),
+                    'description' => (string) data_get($detail, 'description', 'Item da fatura'),
+                    'domain' => data_get($detail, 'domain'),
+                    'quantity' => (float) data_get($detail, 'quantity', 1),
+                    'unit_price' => (float) data_get($detail, 'unitPrice.value', 0),
+                    'total_price' => (float) data_get($detail, 'totalPrice.value', 0),
+                    'currency' => strtoupper((string) data_get($detail, 'unitPrice.currencyCode', 'EUR')),
+                    'period_start' => data_get($detail, 'periodStart'),
+                    'period_end' => data_get($detail, 'periodEnd'),
+                    'metadata' => $detail,
+                ];
+            } catch (Throwable $exception) {
+                Log::warning('Falha ao consultar item de fatura OVHcloud.', [
+                    'bill' => $billId,
+                    'detail' => $detailId,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Blocos de IP da conta, com detalhes e DNS reverso.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getIps(): array
+    {
+        $blocks = $this->client()->get('/ip');
+
+        if (! is_array($blocks)) {
+            return [];
+        }
+
+        $ips = [];
+
+        foreach ($blocks as $block) {
+            try {
+                $encoded = rawurlencode((string) $block);
+
+                $detail = Cache::remember(
+                    'ovh:ip:'.$block,
+                    now()->addHour(),
+                    fn () => (array) $this->client()->get('/ip/'.$encoded)
+                );
+
+                $reverse = [];
+
+                try {
+                    $reverse = (array) Cache::remember(
+                        'ovh:ip-reverse:'.$block,
+                        now()->addHour(),
+                        fn () => $this->client()->get('/ip/'.$encoded.'/reverse')
+                    );
+                } catch (Throwable $exception) {
+                    Log::debug('DNS reverso indisponível para o IP OVHcloud.', [
+                        'block' => $block,
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
+
+                $ips[] = [
+                    'block' => (string) data_get($detail, 'ip', $block),
+                    'version' => (int) data_get($detail, 'version', str_contains((string) $block, ':') ? 6 : 4),
+                    'type' => data_get($detail, 'type'),
+                    'country' => data_get($detail, 'country'),
+                    'campus' => data_get($detail, 'campus'),
+                    'rir' => data_get($detail, 'rir'),
+                    'routed_to' => data_get($detail, 'routedTo.serviceName'),
+                    'is_additional' => (bool) data_get($detail, 'isAdditionalIp', false),
+                    'can_be_terminated' => (bool) data_get($detail, 'canBeTerminated', false),
+                    'description' => data_get($detail, 'description'),
+                    'reverse_dns' => array_values($reverse),
+                    'metadata' => $detail,
+                ];
+            } catch (Throwable $exception) {
+                Log::warning('Falha ao detalhar bloco de IP OVHcloud.', [
+                    'block' => $block,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return $ips;
     }
 
     /**

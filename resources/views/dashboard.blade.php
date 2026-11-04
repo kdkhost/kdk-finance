@@ -37,6 +37,7 @@
     @php
         $rateStale = collect($rates)->contains(fn ($rate) => $rate['stale'] ?? false);
         $money = fn ($value) => 'R$ '.number_format((float) $value, 2, ',', '.');
+        $euro = fn ($value) => '€ '.number_format((float) $value, 2, ',', '.');
     @endphp
 
     @if ($rateStale)
@@ -256,6 +257,115 @@
                             Valor original × cotação + spread + IOF + ICMS + outros tributos. Faturas pagas têm o câmbio travado automaticamente.
                         </p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-xl-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">Serviços contratados e valores individuais</div>
+                        <div class="text-muted-soft" style="font-size:.76rem;">
+                            {{ $infrastructure['services'] }} serviços · custo mensal {{ $euro($infrastructure['monthly_eur']) }}
+                            ({{ $money($infrastructure['monthly_brl']) }})
+                        </div>
+                    </div>
+                    <a href="{{ route('infrastructure.index') }}" class="btn btn-ghost btn-sm">Ver infraestrutura <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Serviço</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th class="text-end">Mensal (EUR)</th>
+                                <th class="text-end">Mensal (BRL)</th>
+                                <th>Renovação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($services as $row)
+                                @php $service = $row['service']; @endphp
+                                <tr>
+                                    <td>
+                                        <span class="cell-title d-block">{{ $service->label() }}</span>
+                                        <span class="cell-sub mono">{{ $service->name }}</span>
+                                    </td>
+                                    <td><span class="badge text-bg-light border">{{ $service->typeLabel() }}</span></td>
+                                    <td>
+                                        <span class="{{ $service->state === 'ok' || $service->state === 'active' ? 'badge-status badge-status--paid' : 'badge-status badge-status--pending' }}">
+                                            {{ $service->stateLabel() }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end tabular">{{ $service->priceLabel('EUR') }}</td>
+                                    <td class="text-end tabular fw-semibold">{{ $row['monthly_brl'] !== null ? $money($row['monthly_brl']) : '—' }}</td>
+                                    <td class="tabular">{{ $service->renewalLabel() }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="empty-state">
+                                            <div class="icon"><i class="bi bi-hdd-stack"></i></div>
+                                            <h3>Nenhum serviço sincronizado</h3>
+                                            <p>Rode a sincronização da OVHcloud para importar os serviços contratados e os valores individuais.</p>
+                                            @if (auth()->user()->isDeveloperAdmin())
+                                                <a href="{{ route('settings.index') }}" class="btn btn-primary btn-sm">Abrir configurações</a>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        @if ($services->isNotEmpty())
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="fw-semibold">Total mensal</td>
+                                    <td class="text-end tabular fw-semibold">{{ $euro($infrastructure['monthly_eur']) }}</td>
+                                    <td class="text-end tabular fw-semibold">{{ $money($infrastructure['monthly_brl']) }}</td>
+                                    <td class="text-muted-soft" style="font-size:.74rem;">Cotação EUR {{ number_format($eurRate, 4, ',', '.') }}</td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="fw-semibold">Endereços IP</div>
+                    <span class="badge text-bg-light border">{{ $infrastructure['ips'] }}</span>
+                </div>
+                <div class="card-body">
+                    @forelse ($ips as $ip)
+                        <div class="py-2 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <span class="mono fw-semibold" style="font-size:.8rem;">{{ $ip->block }}</span>
+                                <span class="badge text-bg-light border">{{ $ip->versionLabel() }} · {{ $ip->typeLabel() }}</span>
+                            </div>
+                            <div class="text-muted-soft" style="font-size:.72rem;">
+                                {{ $ip->routed_to ?: 'Sem serviço vinculado' }}
+                                @if ($ip->primaryReverse())
+                                    · {{ $ip->primaryReverse() }}
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state py-4">
+                            <div class="icon"><i class="bi bi-diagram-3"></i></div>
+                            <h3>Nenhum IP importado</h3>
+                            <p class="mb-0">A sincronização da OVHcloud também traz os blocos de IP.</p>
+                        </div>
+                    @endforelse
+
+                    <a href="{{ route('infrastructure.index') }}" class="btn btn-outline-secondary w-100 mt-3">
+                        <i class="bi bi-hdd-network me-1"></i> Abrir infraestrutura completa
+                    </a>
                 </div>
             </div>
         </div>

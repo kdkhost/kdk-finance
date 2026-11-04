@@ -5,6 +5,39 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] - 2026-11-03
+
+### Adicionado
+
+- Tabela `ovh_services` e model `OvhServiceItem`: todos os serviços contratados na OVHcloud, com tipo, estado, renovação, datas e valor mensal em EUR.
+- Tabela `ovh_ips` e model `OvhIp`: blocos de IPv4/IPv6, serviço vinculado, país, campus, RIR, adicional e DNS reverso.
+- Tabela `invoice_items` e model `InvoiceItem`: linhas individuais de cada fatura (descrição, domínio, quantidade, valor unitário, total, moeda e período).
+- `OvhInventoryService` com importação de serviços, IPs e itens, além do recálculo do valor mensal de cada serviço a partir da fatura mais recente.
+- `OvhService::getBillItems()` e `OvhService::getIps()` com cache de 30 minutos, incluindo DNS reverso e detalhes por bloco.
+- Página **Serviços OVH** (`/servicos`) com cards de totais, tabela de serviços com valores individuais em EUR e BRL, lista de IPs e última sincronização.
+- Seção **Serviços contratados e valores individuais** no dashboard, com todos os serviços, total mensal e blocos de IP.
+- Seção **Itens da fatura** na página de cada fatura, com o total das linhas.
+- Link **Serviços OVH** no menu Operação da barra lateral.
+- 5 novos testes de feature cobrindo página de infraestrutura, dashboard e itens de fatura (23 testes, 88 asserções no total).
+
+### Alterado
+
+- Importação da OVHcloud passa a trazer todo o histórico: 365 dias e até 100 faturas por padrão (`ovh_import_days` e `ovh_import_limit` no painel).
+- Após importar faturas, o comando sincroniza serviços, IPs e recalcula os valores mensais.
+- Placeholders das credenciais AK/AS/CK passam a indicar "Chave salva · ••••xxxx" em vez de apenas os pontos.
+- Versão do sistema atualizada para 1.1.0 em telas, PWA e documentação.
+
+### Corrigido
+
+- Listener do botão "Testar conexão" da OVH estava dentro do bloco da aba de regras e só funcionava nela; agora funciona em todas as abas.
+- Consulta de detalhe de bloco de IP passa a codificar a barra do CIDR (`rawurlencode`), evitando 404 da API.
+
+### Observações
+
+- A OVHcloud não expõe status de pagamento nas faturas: meses anteriores são tratados como pagos e com câmbio travado; a fatura do mês corrente permanece pendente para conciliação interna.
+- Valores mensais por serviço são derivados das linhas da fatura mais recente; serviços sem cobrança recente (ex.: Public Cloud sem consumo) aparecem como "—".
+- Dados reais sincronizados nesta versão: 17 faturas históricas pagas, 102 itens, 6 serviços e 5 blocos de IP (custo mensal de € 43,96).
+
 ## [1.0.0] - 2026-11-03
 
 ### Adicionado
@@ -49,4 +82,5 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.1.0]: https://kdkhost.com.br/
 [1.0.0]: https://kdkhost.com.br/

@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.0.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.1.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -28,8 +28,10 @@ se a API falhar, o sistema reaproveita a última cotação válida — marcada c
 ### Recursos principais
 
 - Dashboard com pendências, pagos no mês, faturas vencidas, composição da carteira e evolução financeira.
+- Inventário completo da OVHcloud no painel: serviços contratados, valores mensais individuais (EUR e BRL) e blocos de IPv4/IPv6 com DNS reverso.
+- Itens individuais de cada fatura importada (descrição, domínio, quantidade, valor unitário, total e período).
 - CRUD de faturas com prévia do cálculo em tempo real, pagamento, cancelamento, reabertura, recálculo e bloqueio de cotação.
-- Importação automática das faturas recentes da OVHcloud e sincronização agendada a cada 15 minutos.
+- Importação automática de todo o histórico de faturas da OVHcloud e sincronização agendada a cada 15 minutos.
 - Atualização em tempo real do dashboard via Laravel Reverb (WebSocket).
 - Alerta por e-mail, banco e broadcast quando a variação cambial ultrapassa 1%.
 - Exportação CSV organizada (BOM UTF-8, separador `;`, colunas em ordem alfabética e fórmulas neutralizadas).
@@ -142,9 +144,27 @@ faturas continua usando AK/AS/CK (v1), que não expiram.
 
 ```bash
 php artisan finance:sync-invoices            # cotações + recálculo
-php artisan finance:sync-invoices --import   # importa faturas da OVHcloud
+php artisan finance:sync-invoices --import   # importa faturas, itens, serviços e IPs da OVHcloud
 php artisan finance:sync-invoices --import --fresh
 ```
+
+A importação traz **todo o histórico** configurado em Configurações → OVHcloud
+(365 dias e 100 faturas por padrão), grava as linhas individuais de cada fatura,
+sincroniza os serviços contratados e os blocos de IP. A OVHcloud não expõe um
+campo de "pago" nas faturas: faturas de meses anteriores são marcadas como pagas
+e com câmbio travado; a fatura do mês corrente permanece pendente para conciliação.
+
+### Infraestrutura e valores individuais
+
+Em **Serviços OVH** (menu Operação) ficam:
+
+- todos os serviços contratados, com tipo, estado, renovação e valor mensal em EUR e BRL;
+- os blocos de IPv4/IPv6, serviço vinculado e DNS reverso;
+- o custo mensal total da conta, convertido pela cotação atual.
+
+O valor mensal de cada serviço é extraído da fatura mais recente em que ele
+aparece, somando as linhas do mesmo domínio. O dashboard repete o resumo com os
+mesmos valores e a página de cada fatura exibe a tabela **Itens da fatura**.
 
 ### Agendador
 
@@ -196,7 +216,8 @@ php artisan test
 ```
 
 Cobertura atual: cálculo tributário, criptografia de configurações, autenticação,
-fluxo de faturas, exportação CSV e sincronização com a AwesomeAPI.
+fluxo de faturas, exportação CSV, sincronização com a AwesomeAPI, página de
+serviços/IPs do painel e itens individuais de fatura.
 
 ---
 
@@ -206,18 +227,18 @@ fluxo de faturas, exportação CSV e sincronização com a AwesomeAPI.
 app/
 ├── Console/Commands/SyncInvoicesCommand.php
 ├── Events/InvoiceAmountUpdatedEvent.php
-├── Http/Controllers/          # Dashboard, Faturas, Configurações, Usuários, Perfil, Notificações
+├── Http/Controllers/          # Dashboard, Faturas, Infraestrutura, Configurações, Usuários, Perfil, Notificações
 ├── Http/Middleware/           # Assinatura do desenvolvedor e controle de perfil
-├── Models/                    # AppSetting, Invoice, User
+├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, User
 ├── Notifications/             # Variação cambial
-└── Services/                  # ExchangeRate, TaxCalculation, Ovh, Dashboard
+└── Services/                  # ExchangeRate, TaxCalculation, Ovh, OvhInventory, Dashboard
 
 resources/
 ├── css/theme.css              # Tokens claro/escuro e componentes
 ├── js/                        # Bootstrap, Echo, Dashboard, formulário de fatura
 └── views/
     ├── admin/layouts/         # AdminLTE 4 modular
-    ├── auth/ errors/ invoices/ notifications/ profile/ settings/ users/
+    ├── auth/ errors/ infrastructure/ invoices/ notifications/ profile/ settings/ users/
     └── partials/
 
 public/                        # manifest.json, sw.js, offline.html, ícones, favicon

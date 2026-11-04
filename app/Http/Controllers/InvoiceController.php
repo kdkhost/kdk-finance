@@ -99,7 +99,7 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice): View
     {
         return view('invoices.show', [
-            'invoice' => $invoice->load([]),
+            'invoice' => $invoice->load('items'),
             'rates' => $this->exchange->rates(),
         ]);
     }

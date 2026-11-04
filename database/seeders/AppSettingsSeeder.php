@@ -52,8 +52,8 @@ class AppSettingsSeeder extends Seeder
         // ------------------------------------------------------------------
         AppSetting::set('rate_variation_threshold', '1.00', 'finance');
         AppSetting::set('ovh_auto_import', '1', 'ovh');
-        AppSetting::set('ovh_import_days', '60', 'ovh');
-        AppSetting::set('ovh_import_limit', '25', 'ovh');
+        AppSetting::set('ovh_import_days', '365', 'ovh');
+        AppSetting::set('ovh_import_limit', '100', 'ovh');
         AppSetting::set('notify_email', 'contato@kdkhost.com.br', 'mail');
 
         $this->command?->info('Configurações iniciais gravadas (credenciais OVHcloud criptografadas).');

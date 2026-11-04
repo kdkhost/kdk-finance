@@ -160,15 +160,15 @@
                                     </div>
                                     <div class="col-md-8">
                                         <label class="form-label" for="ovh_application_key">Application Key (AK)</label>
-                                        <input type="password" class="form-control mono" id="ovh_application_key" name="ovh_application_key" placeholder="{{ $masked['ovh_application_key'] }}" autocomplete="new-password">
+                                        <input type="password" class="form-control mono" id="ovh_application_key" name="ovh_application_key" placeholder="{{ $masked['ovh_application_key'] === '—' ? 'Informe a Application Key' : 'Chave salva · '.$masked['ovh_application_key'] }}" autocomplete="new-password">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label" for="ovh_application_secret">Application Secret (AS)</label>
-                                        <input type="password" class="form-control mono" id="ovh_application_secret" name="ovh_application_secret" placeholder="{{ $masked['ovh_application_secret'] }}" autocomplete="new-password">
+                                        <input type="password" class="form-control mono" id="ovh_application_secret" name="ovh_application_secret" placeholder="{{ $masked['ovh_application_secret'] === '—' ? 'Informe a Application Secret' : 'Chave salva · '.$masked['ovh_application_secret'] }}" autocomplete="new-password">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label" for="ovh_consumer_key">Consumer Key (CK)</label>
-                                        <input type="password" class="form-control mono" id="ovh_consumer_key" name="ovh_consumer_key" placeholder="{{ $masked['ovh_consumer_key'] }}" autocomplete="new-password">
+                                        <input type="password" class="form-control mono" id="ovh_consumer_key" name="ovh_consumer_key" placeholder="{{ $masked['ovh_consumer_key'] === '—' ? 'Informe a Consumer Key' : 'Chave salva · '.$masked['ovh_consumer_key'] }}" autocomplete="new-password">
                                     </div>
                                 </div>
                             </div>
@@ -271,13 +271,13 @@
                                 <div class="col-md-4">
                                     <label class="form-label" for="ovh_import_days">Janela de importação</label>
                                     <div class="input-group">
-                                        <input type="number" min="1" max="365" class="form-control tabular" id="ovh_import_days" name="ovh_import_days" value="{{ \App\Models\AppSetting::get('ovh_import_days', '60') }}" required>
+                                        <input type="number" min="1" max="365" class="form-control tabular" id="ovh_import_days" name="ovh_import_days" value="{{ \App\Models\AppSetting::get('ovh_import_days', '365') }}" required>
                                         <span class="input-group-text">dias</span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label" for="ovh_import_limit">Máximo de faturas</label>
-                                    <input type="number" min="1" max="100" class="form-control tabular" id="ovh_import_limit" name="ovh_import_limit" value="{{ \App\Models\AppSetting::get('ovh_import_limit', '25') }}" required>
+                                    <input type="number" min="1" max="100" class="form-control tabular" id="ovh_import_limit" name="ovh_import_limit" value="{{ \App\Models\AppSetting::get('ovh_import_limit', '100') }}" required>
                                 </div>
                                 <div class="col-md-8">
                                     <label class="form-label" for="notify_email">E-mail de cópia dos alertas</label>

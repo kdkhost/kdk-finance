@@ -126,6 +126,58 @@
                 </div>
             </div>
 
+            @if ($invoice->items->isNotEmpty())
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold">Itens da fatura</div>
+                            <div class="text-muted-soft" style="font-size:.76rem;">Valores individuais importados da OVHcloud</div>
+                        </div>
+                        <span class="badge text-bg-light border">{{ $invoice->items->count() }}</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Período</th>
+                                    <th class="text-end">Qtd.</th>
+                                    <th class="text-end">Unitário</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($invoice->items->sortBy('description') as $item)
+                                    @php
+                                        $itemSymbol = $item->currency === 'BRL' ? 'R$' : ($item->currency === 'USD' ? 'US$' : '€');
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <span class="cell-title d-block">{{ $item->description }}</span>
+                                            @if ($item->domain)
+                                                <span class="cell-sub mono">{{ $item->domain }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-muted-soft" style="font-size:.76rem;">{{ $item->periodLabel() }}</td>
+                                        <td class="text-end tabular">{{ $item->quantityLabel() }}</td>
+                                        <td class="text-end tabular">{{ $itemSymbol }} {{ number_format((float) $item->unit_price, 2, ',', '.') }}</td>
+                                        <td class="text-end tabular fw-semibold">{{ $itemSymbol }} {{ number_format((float) $item->total_price, 2, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="text-end fw-semibold">Total dos itens</td>
+                                    <td class="text-end tabular fw-semibold">
+                                        {{ $invoice->currencySymbol() }} {{ number_format((float) $invoice->items->sum('total_price'), 2, ',', '.') }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
             <div class="card">
                 <div class="card-header">Histórico</div>
                 <div class="card-body">

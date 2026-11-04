@@ -13,6 +13,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InfrastructureController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function (): void {
     // Faturas — leitura para todos, escrita para gestores/desenvolvedores
     // ---------------------------------------------------------------------
     Route::get('/faturas', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/servicos', InfrastructureController::class)->name('infrastructure.index');
 
     Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
         // Antes da rota com parâmetro para não capturar "nova" como id.

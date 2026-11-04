@@ -15,6 +15,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
@@ -55,6 +56,11 @@ class Invoice extends Model
             'rate_locked' => 'boolean',
             'calculated_at' => 'datetime',
         ];
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(InvoiceItem::class);
     }
 
     public static function statuses(): array

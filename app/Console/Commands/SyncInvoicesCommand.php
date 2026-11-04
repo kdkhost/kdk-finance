@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Notifications\InvoiceRateVariationNotification;
 use App\Services\DashboardService;
 use App\Services\ExchangeRateService;
+use App\Services\OvhInventoryService;
 use App\Services\OvhService;
 use App\Services\TaxCalculationService;
 use Illuminate\Console\Command;
@@ -40,6 +41,7 @@ class SyncInvoicesCommand extends Command
         ExchangeRateService $exchange,
         TaxCalculationService $tax,
         OvhService $ovh,
+        OvhInventoryService $inventory,
         DashboardService $dashboard
     ): int {
         $this->info('Sincronização financeira iniciada em '.now()->format('d/m/Y H:i:s'));
@@ -59,10 +61,18 @@ class SyncInvoicesCommand extends Command
             $this->warn('A AwesomeAPI está indisponível; os valores foram recalculados com a última cotação conhecida.');
         }
 
-        $imported = $this->importFromOvh($ovh, $tax, $rates);
+        $imported = $this->importFromOvh($ovh, $inventory, $tax, $rates);
 
-        if ($imported > 0) {
-            $this->info($imported.' fatura(s) importada(s) da OVHcloud.');
+        if ($imported['bills'] > 0) {
+            $this->info($imported['bills'].' fatura(s) importada(s) da OVHcloud.');
+        }
+
+        if ($imported['items'] > 0) {
+            $this->info($imported['items'].' item(ns) de fatura detalhado(s).');
+        }
+
+        if ($imported['services'] > 0 || $imported['ips'] > 0) {
+            $this->info($imported['services'].' serviço(s) e '.$imported['ips'].' bloco(s) de IP sincronizado(s).');
         }
 
         $threshold = (float) AppSetting::get('rate_variation_threshold', config('finance.variation_threshold_percent', 1));
@@ -129,35 +139,41 @@ class SyncInvoicesCommand extends Command
     }
 
     /**
+     * Importa faturas (pagas e pendentes), itens individuais, serviços e IPs.
+     *
      * @param  array<string, array<string, mixed>>  $rates
+     * @return array{bills: int, items: int, services: int, ips: int}
      */
-    private function importFromOvh(OvhService $ovh, TaxCalculationService $tax, array $rates): int
-    {
+    private function importFromOvh(
+        OvhService $ovh,
+        OvhInventoryService $inventory,
+        TaxCalculationService $tax,
+        array $rates
+    ): array {
+        $result = ['bills' => 0, 'items' => 0, 'services' => 0, 'ips' => 0];
         $autoImport = filter_var(AppSetting::get('ovh_auto_import', '1'), FILTER_VALIDATE_BOOLEAN);
 
         if (! $this->option('import') && ! $autoImport) {
-            return 0;
+            return $result;
         }
 
         if (! $ovh->isConfigured()) {
             $this->warn('Importação OVHcloud ignorada: credenciais não configuradas.');
 
-            return 0;
+            return $result;
         }
 
         try {
             $bills = $ovh->getRecentBills(
-                (int) AppSetting::get('ovh_import_days', 60),
-                (int) AppSetting::get('ovh_import_limit', 25)
+                (int) AppSetting::get('ovh_import_days', 365),
+                (int) AppSetting::get('ovh_import_limit', 100)
             );
         } catch (Throwable $exception) {
             $this->warn('Não foi possível consultar a OVHcloud: '.$exception->getMessage());
             Log::warning('Falha na importação de faturas OVHcloud.', ['error' => $exception->getMessage()]);
 
-            return 0;
+            return $result;
         }
-
-        $imported = 0;
 
         foreach ($bills as $bill) {
             $attributes = $ovh->billToInvoiceAttributes($bill);
@@ -171,20 +187,54 @@ class SyncInvoicesCommand extends Command
                 $attributes + ['total_brl' => 0, 'status' => Invoice::STATUS_PENDING]
             );
 
-            if (! $invoice->wasRecentlyCreated) {
-                continue;
+            $isNew = $invoice->wasRecentlyCreated;
+
+            if ($isNew) {
+                $rate = (float) ($rates[$invoice->currency]['rate'] ?? 0);
+
+                if ($rate > 0) {
+                    $tax->applyToInvoice($invoice, $rate);
+                }
+
+                $result['bills']++;
             }
 
-            $rate = (float) ($rates[$invoice->currency]['rate'] ?? 0);
-
-            if ($rate > 0) {
-                $tax->applyToInvoice($invoice, $rate);
-            }
-
-            $imported++;
+            $this->markHistoricalBillAsPaid($invoice, $bill);
+            $result['items'] += $inventory->importBillItems($invoice, $ovh);
         }
 
-        return $imported;
+        $result['services'] = $inventory->syncServices($ovh);
+        $result['ips'] = $inventory->syncIps($ovh);
+
+        $inventory->refreshServicePrices();
+
+        return $result;
+    }
+
+    /**
+     * A OVHcloud não expõe um campo de pagamento em /me/bill. Faturas de meses
+     * anteriores a este mês são consideradas quitadas e travadas; as do mês
+     * corrente entram como pendentes para conciliação interna.
+     *
+     * @param  array<string, mixed>  $bill
+     */
+    private function markHistoricalBillAsPaid(Invoice $invoice, array $bill): void
+    {
+        if ($invoice->status !== Invoice::STATUS_PENDING || $invoice->paid_at !== null) {
+            return;
+        }
+
+        $date = \Illuminate\Support\Carbon::parse(data_get($bill, 'date', $invoice->due_date));
+
+        if (! $date->lt(now()->startOfMonth())) {
+            return;
+        }
+
+        $invoice->forceFill([
+            'status' => Invoice::STATUS_PAID,
+            'paid_at' => $date,
+            'rate_locked' => true,
+        ])->save();
     }
 
     private function shouldNotify(Invoice $invoice): bool
