@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.5.4] - 2026-11-04
+
+### Corrigido
+
+- Menu lateral marcava **Conversões** e **Nova conversão** ao mesmo tempo nas telas de cadastro e edição. O item Conversões agora só fica ativo na listagem e no detalhe; o item Nova conversão fica ativo apenas na própria tela de cadastro, como já acontece com Faturas e Nova fatura.
+
 ## [1.5.3] - 2026-11-04
 
 ### Alterado

@@ -60,7 +60,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('conversions.index') }}" class="nav-link {{ request()->routeIs('conversions.*') ? 'active' : '' }}">
+                    <a href="{{ route('conversions.index') }}" class="nav-link {{ request()->routeIs('conversions.index', 'conversions.show', 'conversions.edit') ? 'active' : '' }}">
                         <i class="bi bi-currency-exchange"></i>
                         <span>Conversões</span>
                     </a>
@@ -128,6 +128,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por George Marcelo</div>
-        <div class="mt-1 opacity-75">v1.5.3 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.5.4 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>
