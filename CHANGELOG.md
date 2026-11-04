@@ -5,6 +5,17 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.5.3] - 2026-11-04
+
+### Alterado
+
+- **Redesenho da página de conversões** (`/conversoes`): o topo agora mostra a cotação ao vivo em destaque, com a taxa inversa, a fonte, o horário da consulta, as tarifas padrão e um atalho para as configurações de conversão.
+- Faixa de resumo com total convertido, quantidade de conversões, spread médio e equivalente em reais, exibida apenas quando há registros.
+- Filtros compactados em uma barra única, sem o cartão pesado anterior.
+- Estado vazio refeito: mensagem centralizada, exemplo real (€ 43,96 → US$ 51,73) e chamada para criar a primeira conversão, em vez de quatro cartões zerados e uma tabela vazia.
+- Tabela oculta quando não há conversões nem filtros, deixando a tela limpa; a tabela continua completa em desktop e mobile quando há dados.
+- Layout verificado nos temas claro e escuro e em telas estreitas.
+
 ## [1.5.2] - 2026-11-04
 
 ### Adicionado
