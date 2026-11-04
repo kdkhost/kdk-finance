@@ -112,6 +112,22 @@ class CurrencyConversion extends Model
         return round((((float) $this->effective_rate / $market) - 1) * 100, 3);
     }
 
+    /**
+     * VET (Valor Efetivo Total) em reais por unidade da moeda de origem:
+     * tudo o que a operação custou (câmbio + spread + IOF + tarifa + margem)
+     * dividido pelo valor convertido. É a taxa que o app do banco exibe.
+     */
+    public function vetBrl(): float
+    {
+        $amount = (float) $this->amount_from;
+
+        if ($amount <= 0) {
+            return 0.0;
+        }
+
+        return round((float) $this->total_brl / $amount, 6);
+    }
+
     public function isCalibrated(): bool
     {
         return $this->statement_amount !== null;

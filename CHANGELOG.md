@@ -5,6 +5,19 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.5.1] - 2026-11-04
+
+### Adicionado
+
+- **VET (Valor Efetivo Total)** exibido nas conversões e nas faturas: mostra quantos reais custou cada unidade da moeda de origem já com câmbio, spread, IOF, tarifa e margem — a mesma taxa efetiva que o app do banco apresenta.
+- Prévia da conversão e prévia da fatura calculam o VET em tempo real; a tela salva e o detalhe da fatura exibem o VET com 4 a 6 casas.
+- Explicação no painel de que o VET não é uma taxa a cadastrar, e sim o resultado do cálculo.
+
+### Alterado
+
+- IOF padrão das conversões passa de 0% para **3,50%**, acompanhando a tarifa mostrada pelo banco; a orientação para usar 0% quando o saldo em dólar já foi abastecido com IOF continua visível.
+- README documenta o VET e a nova orientação do IOF.
+
 ## [1.5.0] - 2026-11-04
 
 ### Adicionado
@@ -213,6 +226,7 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.5.1]: https://kdkhost.com.br/
 [1.5.0]: https://kdkhost.com.br/
 [1.4.0]: https://kdkhost.com.br/
 [1.3.1]: https://kdkhost.com.br/

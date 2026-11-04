@@ -61,6 +61,8 @@ if (payload) {
         set('icms', money.format(icms));
         set('others', money.format(others));
         set('total', money.format(total));
+        set('vet', `R$ ${decimal.format(amount > 0 ? total / amount : 0)}`);
+        set('currency-code', currency);
         set('spread-percent', `${Number(taxes.spread || 0).toFixed(2)}%`);
         set('iof-percent', `${Number(taxes.iof || 0).toFixed(2)}%`);
         set('icms-percent', `${Number(taxes.icms || 0).toFixed(2)}%`);

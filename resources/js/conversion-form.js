@@ -100,6 +100,7 @@ if (payload) {
         const effective = amount > 0 ? total / amount : 0;
         const cost = base > 0 ? ((total / base) - 1) * 100 : 0;
         const brl = total * state.toBrlRate;
+        const vet = amount > 0 && brl > 0 ? brl / amount : 0;
 
         set('total', money(to, total));
         set('base', money(to, base));
@@ -114,6 +115,7 @@ if (payload) {
         set('effective', decimal(effective, 6));
         set('cost', `${decimal(cost, 3)}%`);
         set('brl', brl > 0 ? money('BRL', brl) : '—');
+        set('vet', vet > 0 ? `R$ ${decimal(vet, 6)}` : '—');
         set('amount-label', `${money(from, amount)}`);
     };
 

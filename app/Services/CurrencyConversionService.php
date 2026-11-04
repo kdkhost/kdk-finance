@@ -152,6 +152,9 @@ class CurrencyConversionService
             'to_currency' => $to,
             'to_brl_rate' => round($toBrlRate, 4),
             'total_brl' => round($result['total_to'] * $toBrlRate, 2),
+            'vet_brl' => $result['amount_from'] > 0
+                ? round(($result['total_to'] * $toBrlRate) / $result['amount_from'], 6)
+                : 0.0,
             'rate_source' => $source ?? ($input['rate_source'] ?? 'informada manualmente'),
             'rate_at' => $rateAt,
             'rate_stale' => $stale,
@@ -178,6 +181,9 @@ class CurrencyConversionService
         return array_merge($result, [
             'to_brl_rate' => round((float) $quote['to_brl_rate'], 4),
             'total_brl' => round($result['total_to'] * (float) $quote['to_brl_rate'], 2),
+            'vet_brl' => $result['amount_from'] > 0
+                ? round(($result['total_to'] * (float) $quote['to_brl_rate']) / $result['amount_from'], 6)
+                : 0.0,
             'rate_source' => (string) $quote['source'],
             'rate_at' => $quote['updated_at'],
             'rate_stale' => (bool) $quote['stale'],

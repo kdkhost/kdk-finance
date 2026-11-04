@@ -71,10 +71,10 @@ return [
     */
     'conversion' => [
         'spread_percent' => 2.00,
-        // 2026: IOF de 3,5% incide no cartão internacional e no aporte da conta
-        // global. Se a conta em dólar já foi abastecida, deixe 0 para não
-        // contar o imposto duas vezes.
-        'iof_percent' => 0.00,
+        // 2026: IOF de 3,5% cobrado pelo banco no cartão internacional/aporte.
+        // Se o saldo em dólar já foi abastecido com IOF, use 0 na operação para
+        // não contar o imposto duas vezes.
+        'iof_percent' => 3.50,
         'fixed_fee' => 0.00,
         'buffer_percent' => 0.00,
         'fallback_pair_rates' => [

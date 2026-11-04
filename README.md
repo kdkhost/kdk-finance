@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.5.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.5.1 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -247,16 +247,18 @@ custo_%     = (total ÷ base − 1) × 100
 
 Cada etapa é arredondada em duas casas, exatamente como no cálculo tributário das
 faturas. O resultado mostra base, spread, subtotal, IOF, tarifa fixa, margem, total
-a pagar, taxa efetiva, custo percentual e o equivalente em BRL.
+a pagar, taxa efetiva, VET, custo percentual e o equivalente em BRL.
 
+- **VET (Valor Efetivo Total):** o sistema calcula quantos reais custou cada unidade
+  da moeda de origem já com câmbio, spread, IOF, tarifa e margem. É a mesma taxa
+  efetiva que o app do banco mostra — não é uma taxa para cadastrar.
 - **Câmbio gratuito:** cotação direta pela AwesomeAPI, sem chave e sem custo. Cache
   de 5 minutos; se o par direto falhar, o sistema cruza EUR-BRL ÷ USD-BRL e, em
   último caso, usa a última cotação conhecida (marcada como desatualizada).
 - **Tarifas no painel:** Configurações → **Conversão e cartão** grava spread, IOF,
-  tarifa fixa e margem em `app_settings` (grupo `conversion`). O padrão de IOF é 0%
-  porque os 3,5% de 2026 incidem **uma única vez** — no cartão internacional ou no
-  aporte para a conta global; em conta já abastecida, contar de novo seria imposto
-  em dobro.
+  tarifa fixa e margem em `app_settings` (grupo `conversion`). O IOF padrão é
+  **3,50%**, a tarifa mostrada pelo banco; se o saldo em dólar já foi abastecido e o
+  IOF já foi pago no aporte, zere o IOF naquela operação para não contar duas vezes.
 - **Conferência da fatura:** informe o valor realmente cobrado pelo cartão e o
   sistema grava o custo real percentual, a diferença para o calculado e a data da
   conferência.
@@ -341,7 +343,7 @@ de cotação, cotações direta/cruzada/última conhecida e cache de 5 minutos) 
 de cliente da LicenseBoy (preço decimal, valor do painel usado na fatura,
 credenciais criptografadas, permissões, empate de produtos ignorado, precedência
 sobre a loja e ciclo definindo o equivalente mensal).
-São 70 testes e 310 asserções.
+São 71 testes e 314 asserções.
 
 ---
 

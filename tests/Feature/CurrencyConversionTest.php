@@ -95,8 +95,21 @@ class CurrencyConversionTest extends TestCase
         $this->assertEquals(118.30, (float) $conversion->total_to);
         $this->assertEquals(1.183, (float) $conversion->effective_rate);
         $this->assertEquals(650.65, (float) $conversion->total_brl);
+        $this->assertEquals(6.5065, $conversion->vetBrl());
         $this->assertSame('informada manualmente', $conversion->rate_source);
         $this->assertNotNull($conversion->created_by);
+    }
+
+    public function test_show_page_displays_the_vet_effective_rate(): void
+    {
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload());
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        $this->actingAs($this->manager())
+            ->get(route('conversions.show', $conversion))
+            ->assertOk()
+            ->assertSee('VET')
+            ->assertSee('6,506500');
     }
 
     public function test_server_ignores_tampered_totals_sent_by_the_form(): void

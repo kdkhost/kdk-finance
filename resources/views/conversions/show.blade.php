@@ -83,9 +83,17 @@
                             <div class="kpi-value">{{ number_format($conversion->costPercent(), 3, ',', '.') }}%</div>
                         </div>
                         <div class="kpi">
+                            <div class="kpi-label">VET · R$ por {{ $conversion->from_currency }}</div>
+                            <div class="kpi-value">R$ {{ number_format($conversion->vetBrl(), 6, ',', '.') }}</div>
+                        </div>
+                        <div class="kpi">
                             <div class="kpi-label">Equivalente em BRL</div>
                             <div class="kpi-value">R$ {{ number_format((float) $conversion->total_brl, 2, ',', '.') }}</div>
                         </div>
+                    </div>
+                    <div class="form-text mt-2">
+                        VET (Valor Efetivo Total): custo em reais de cada unidade da moeda de origem, já incluindo
+                        câmbio, spread, IOF, tarifa e margem — a mesma taxa efetiva exibida pelo app do banco.
                     </div>
                 </div>
             </div>

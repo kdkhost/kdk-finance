@@ -29,6 +29,9 @@
     @php
         $money = fn ($value) => 'R$ '.number_format((float) $value, 2, ',', '.');
         $taxTotal = $invoice->taxesTotal();
+        $vetBrl = (float) $invoice->amount_original > 0
+            ? (float) $invoice->total_brl / (float) $invoice->amount_original
+            : 0.0;
     @endphp
 
     @if ($invoice->isOverdue())
@@ -81,6 +84,10 @@
                         <div class="kpi">
                             <div class="kpi-label">Tributos</div>
                             <div class="kpi-value">{{ $money($taxTotal) }}</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">VET · R$ por {{ $invoice->currency }}</div>
+                            <div class="kpi-value">R$ {{ number_format($vetBrl, 4, ',', '.') }}</div>
                         </div>
                         <div class="kpi">
                             <div class="kpi-label">Cotação atual</div>

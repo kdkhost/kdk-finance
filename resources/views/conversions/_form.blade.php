@@ -193,6 +193,10 @@
 
                     <div class="kpi-inline mt-3 pt-3 border-top">
                         <div class="kpi">
+                            <div class="kpi-label">VET · R$ por <span data-calc="from-code">{{ $from }}</span></div>
+                            <div class="kpi-value" data-calc="vet">—</div>
+                        </div>
+                        <div class="kpi">
                             <div class="kpi-label">Cotação efetiva</div>
                             <div class="kpi-value" data-calc="effective">—</div>
                         </div>
@@ -204,6 +208,11 @@
                             <div class="kpi-label">Equivalente em BRL</div>
                             <div class="kpi-value" data-calc="brl">—</div>
                         </div>
+                    </div>
+
+                    <div class="form-text mt-2">
+                        VET (Valor Efetivo Total): quanto custa, em reais, cada unidade da moeda de origem já com câmbio,
+                        spread, IOF, tarifa e margem. É a taxa efetiva que o app do banco mostra.
                     </div>
 
                     <div class="hint-banner mt-3">

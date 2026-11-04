@@ -121,8 +121,7 @@
                         <tr>
                             <td>Valor convertido</td>
                             <td class="value" data-calc="base">R$ 0,00</td>
-                        </tr>
-                        <tr>
+                        </tr>                        <tr>
                             <td>Spread <span class="text-muted-soft" data-calc="spread-percent">0,00%</span></td>
                             <td class="value" data-calc="spread">R$ 0,00</td>
                         </tr>
@@ -143,6 +142,11 @@
                             <td class="value" data-calc="total">R$ 0,00</td>
                         </tr>
                     </table>
+
+                    <div class="text-muted-soft mt-2" style="font-size:.74rem;">
+                        VET: <strong data-calc="vet">R$ 0,00</strong> por <span data-calc="currency-code">EUR</span>
+                        — total em reais dividido pelo valor original, já com tributos.
+                    </div>
 
                     <div class="hint-banner mt-3">
                         <i class="bi bi-info-circle"></i>

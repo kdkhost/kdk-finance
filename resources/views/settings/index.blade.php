@@ -174,7 +174,7 @@
                                         <span class="input-group-text">%</span>
                                         @error('conversion_iof_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
-                                    <div class="form-text">Deixe 0% se o saldo em dólar já foi abastecido com IOF.</div>
+                                    <div class="form-text">O app do banco mostra 3,50%. Use 0% apenas se o saldo em dólar já foi abastecido com IOF.</div>
                                 </div>
                                 <div class="col-sm-6">
                                     <label class="form-label" for="conversion_fixed_fee">Tarifa fixa por operação</label>
@@ -282,7 +282,16 @@
                                 <td>Total a pagar</td>
                                 <td class="value">em USD</td>
                             </tr>
+                            <tr>
+                                <td>VET (Valor Efetivo Total)</td>
+                                <td class="value">total em R$ ÷ valor em €</td>
+                            </tr>
                         </table>
+                        <p class="text-muted-soft mt-3 mb-0">
+                            O <strong>VET</strong> não é uma taxa para cadastrar: é o resultado. Ele mostra quantos reais
+                            custou cada unidade da moeda de origem já com câmbio, spread, IOF, tarifa e margem — a mesma
+                            taxa efetiva que o app do banco exibe. O sistema calcula e mostra o VET em cada conversão.
+                        </p>
                         <p class="text-muted-soft mt-3 mb-0">
                             Depois do pagamento, use <strong>Conferir fatura</strong> na tela da conversão para comparar
                             o valor real cobrado e descobrir o custo efetivo do seu cartão.
