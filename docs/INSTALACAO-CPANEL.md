@@ -384,4 +384,4 @@ KDKHost Soluções
 E-mail: contato@kdkhost.com.br
 Site: https://kdkhost.com.br
 
-Desenvolvido por George Marcelo de Oliveira Pimentel.
+Desenvolvido por Marcelo Brad - RJ.

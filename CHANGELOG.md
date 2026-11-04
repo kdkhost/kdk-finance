@@ -5,6 +5,18 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.8.2] - 2026-11-04
+
+### Alterado
+
+- Assinatura do desenvolvedor padronizada como **Marcelo Brad - RJ** em todo o sistema: cabeçalhos dos arquivos, metadados HTML, rodapé, menu lateral, login, páginas de erro, notificações, instalador, documentação e metadados do Composer.
+- A identidade técnica fica centralizada em `config/finance.php`; os cabeçalhos `X-Developer-Name` e `X-System-Author` passam a ler essa configuração em vez de repetir o nome no middleware.
+- Versão exibida no rodapé, menu lateral, login, páginas de erro, README e instalador atualizada para 1.8.2.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória e verificação de que nenhuma ocorrência do nome anterior permanece no código.
+
 ## [1.8.1] - 2026-11-04
 
 ### Adicionado

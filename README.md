@@ -2,10 +2,10 @@
 
 Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL), gestão de tributos de importação, acompanhamento das faturas da OVHcloud, controle das licenças LicenseBoy e central de cron gerenciada pelo painel.
 
-- **Desenvolvedor:** George Marcelo de Oliveira Pimentel
+- **Desenvolvedor:** Marcelo Brad - RJ
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.8.1 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.8.2 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -455,7 +455,7 @@ tests/Feature/                 # Suíte de testes
 
 ## Créditos
 
-Desenvolvido por **George Marcelo de Oliveira Pimentel** para a
+Desenvolvido por **Marcelo Brad - RJ** para a
 **KDKHost Soluções** (CNPJ 33.986.975/0001-90).
 
 - Site: https://kdkhost.com.br

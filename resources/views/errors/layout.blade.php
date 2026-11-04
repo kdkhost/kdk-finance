@@ -2,7 +2,7 @@
  ============================================================================
  SISTEMA FINANCEIRO MULTIMOEDAS & GESTÃO DE INFRAESTRUTURA
  ============================================================================
- Desenvolvedor : George Marcelo de Oliveira Pimentel
+ Desenvolvedor : Marcelo Brad - RJ
  Empresa       : KDKHost Soluções (CNPJ: 33.986.975/0001-90)
  Contato       : contato@kdkhost.com.br | https://kdkhost.com.br
  Função        : Responsável Técnico / Engenheiro de Software Full-Stack
@@ -47,7 +47,7 @@
                 <hr class="my-4">
                 <div class="text-muted-soft" style="font-size:.72rem;line-height:1.7;">
                     {{ config('finance.developer.company') }} · CNPJ {{ config('finance.developer.cnpj') }}<br>
-                    Desenvolvido por {{ config('finance.developer.name') }} · v1.8.1
+                    Desenvolvido por {{ config('finance.developer.name') }} · v1.8.2
                 </div>
             </div>
         </div>

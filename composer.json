@@ -2,12 +2,12 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "kdkhost/financeiro-multimoedas",
     "type": "project",
-    "description": "Sistema financeiro multimoedas para conciliação de faturas internacionais (EUR/USD para BRL), tributos de importação e integração com a OVHcloud. Desenvolvido por George Marcelo de Oliveira Pimentel (KDKHost Soluções).",
+    "description": "Sistema financeiro multimoedas para conciliação de faturas internacionais (EUR/USD para BRL), tributos de importação e integração com a OVHcloud. Desenvolvido por Marcelo Brad - RJ (KDKHost Soluções).",
     "keywords": ["financeiro", "multimoedas", "cambio", "ovhcloud", "laravel", "adminlte", "pwa"],
     "license": "proprietary",
     "authors": [
         {
-            "name": "George Marcelo de Oliveira Pimentel",
+            "name": "Marcelo Brad - RJ",
             "email": "contato@kdkhost.com.br",
             "homepage": "https://kdkhost.com.br",
             "role": "Responsável Técnico / Engenheiro de Software Full-Stack"
