@@ -15,6 +15,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
@@ -39,6 +40,7 @@ class Invoice extends Model
         'paid_at',
         'rate_locked',
         'calculated_at',
+        'license_service_id',
     ];
 
     protected function casts(): array
@@ -61,6 +63,11 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function licenseService(): BelongsTo
+    {
+        return $this->belongsTo(LicenseService::class);
     }
 
     public static function statuses(): array

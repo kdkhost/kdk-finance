@@ -53,6 +53,12 @@
                         <span>Serviços OVH</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ route('licenses.index') }}" class="nav-link {{ request()->routeIs('licenses.*') ? 'active' : '' }}">
+                        <i class="bi bi-key"></i>
+                        <span>Licenças</span>
+                    </a>
+                </li>
                 @if ($user->canManageFinance())
                     <li class="nav-item">
                         <a href="{{ route('invoices.create') }}" class="nav-link {{ request()->routeIs('invoices.create') ? 'active' : '' }}">
@@ -84,6 +90,12 @@
                 @endif
                 @if ($user->isDeveloperAdmin())
                     <li class="nav-item">
+                        <a href="{{ route('crons.index') }}" class="nav-link {{ request()->routeIs('crons.*') ? 'active' : '' }}">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Central de cron</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                             <i class="bi bi-people"></i>
                             <span>Usuários e acessos</span>
@@ -104,6 +116,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por George Marcelo</div>
-        <div class="mt-1 opacity-75">v1.1.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.2.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

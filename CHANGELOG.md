@@ -5,6 +5,42 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.0] - 2026-11-04
+
+### Adicionado
+
+- Tabela `license_services` e model `LicenseService`: cadastro das licenças compradas da LicenseBoy com fornecedor, produto, servidor, quantidade, valor unitário, moeda, ciclo, vencimento, situação e renovação automática.
+- Chave da licença criptografada no banco (`encrypted`) e exibida apenas mascarada nas telas; campo em branco na edição preserva a chave atual.
+- Página **Licenças** (`/licencas`) com licenças ativas, custo mensal e projeção anual em BRL, renovações próximas e valores individuais de cada serviço.
+- CRUD completo de licenças com busca de produto, presets de ciclo e resumo lateral do custo convertido.
+- Geração de fatura a partir da licença: cria a fatura em USD/EUR, aplica spread, IOF, ICMS e demais tributos pela cotação atual, vincula à licença e avança o próximo vencimento em um ciclo.
+- Coluna `license_service_id` em `invoices` (remoção da licença preserva a fatura) e vínculo visível na página da fatura.
+- Tabelas `cron_jobs` e `cron_job_runs`: agendamentos, configuração, histórico de execuções, código de saída, duração e saída completa.
+- Página **Central de cron** (`/crons`, exclusiva de desenvolvedor/administrador) com linha única da hospedagem, botão de cópia, sinal de vida do agendador, totais de execuções e falhas.
+- CRUD de crons com comandos Artisan ou shell, expressões validadas, presets (1 min, 5 min, 15 min, hora, diário, semanal e mensal), fuso horário e ativação individual.
+- Execução manual com feedback, bloqueio contra execução simultânea (`Cache::lock`), timeout configurável e captura de stdout/stderr.
+- Comando `cron:run-due`, agendado a cada minuto com `withoutOverlapping` e `onOneServer`, que executa apenas os jobs vencidos e grava o heartbeat do agendador em `app_settings`.
+- 17 novos testes de feature para licenças e central de cron (40 testes e 173 asserções no total).
+
+### Alterado
+
+- Menu lateral ganha **Licenças** (Operação) e **Central de cron** (Sistema, apenas desenvolvedor).
+- Fatura passa a exibir a licença de origem quando gerada a partir de uma licença LicenseBoy.
+- Configuração `finance.cron.timeout` adicionada para limitar a duração das execuções.
+- README documenta o fluxo de licenças, a linha única do cron e o funcionamento do agendador.
+- Versão do sistema atualizada para 1.2.0 em telas, PWA e documentação.
+
+### Corrigido
+
+- `CronJob::isDue()` e `nextRun()` passavam o fuso horário no construtor de `CronExpression` (segundo parâmetro é a fábrica de campos), fazendo toda expressão ser considerada inválida e nenhum cron agendado executar. O fuso agora é enviado aos métodos `isDue()` e `getNextRunDate()`.
+
+### Observações
+
+- A LicenseBoy não publica API de consulta; o cadastro é manual e a geração de fatura usa o mesmo motor tributário das faturas OVH.
+- A central de cron executa comandos shell quando cadastrados; o acesso é restrito ao perfil `DEVELOPER_ADMIN`.
+- O ambiente local precisa de `php artisan schedule:work` (ou da linha única no cron) para o heartbeat ficar ativo.
+- O print dos serviços contratados da LicenseBoy ainda não foi enviado; as licenças reais serão cadastradas assim que ele for compartilhado.
+
 ## [1.1.0] - 2026-11-03
 
 ### Adicionado
@@ -82,5 +118,6 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.2.0]: https://kdkhost.com.br/
 [1.1.0]: https://kdkhost.com.br/
 [1.0.0]: https://kdkhost.com.br/

@@ -12,7 +12,7 @@
  * stale-while-revalidate para assets estáticos e fallback offline.
  */
 
-const VERSION = 'kdk-finance-v1.1.0';
+const VERSION = 'kdk-finance-v1.2.0';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const OFFLINE_URL = '/offline.html';

@@ -48,6 +48,11 @@
                             @if ($invoice->rate_locked)
                                 <span class="currency-chip ms-1"><i class="bi bi-lock-fill"></i> Câmbio travado</span>
                             @endif
+                            @if ($invoice->licenseService)
+                                <a href="{{ route('licenses.show', $invoice->licenseService) }}" class="currency-chip ms-1 text-decoration-none">
+                                    <i class="bi bi-key"></i> {{ $invoice->licenseService->product }}
+                                </a>
+                            @endif
                             <h2 class="mt-3 mb-1" style="font-size:1.25rem;">{{ $invoice->description }}</h2>
                             <div class="text-muted-soft" style="font-size:.8rem;">
                                 {{ $invoice->external_reference ? 'Referência '.$invoice->external_reference : 'Cadastro manual' }}
@@ -260,6 +265,12 @@
                         <span class="text-muted-soft">Referência</span>
                         <span class="fw-semibold">{{ $invoice->external_reference ?: '—' }}</span>
                     </div>
+                    @if ($invoice->licenseService)
+                        <div class="d-flex justify-content-between py-1" style="font-size:.8rem;">
+                            <span class="text-muted-soft">Licença</span>
+                            <a href="{{ route('licenses.show', $invoice->licenseService) }}" class="fw-semibold">{{ $invoice->licenseService->name }}</a>
+                        </div>
+                    @endif
                     <div class="d-flex justify-content-between py-1" style="font-size:.8rem;">
                         <span class="text-muted-soft">Moeda</span>
                         <span class="fw-semibold">{{ $invoice->currency }} · {{ config('finance.currencies.'.$invoice->currency.'.label') }}</span>

@@ -32,3 +32,13 @@ Schedule::command('finance:sync-invoices')
     ->everyFifteenMinutes()
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+| Central de cron do painel: o único agendamento da hospedagem é o
+| `php artisan schedule:run`. Este comando verifica a cada minuto quais
+| crons cadastrados em /crons estão vencidos e executa cada um.
+*/
+Schedule::command('cron:run-due')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();

@@ -12,9 +12,11 @@
  */
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CronJobController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InfrastructureController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
@@ -58,6 +60,40 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/faturas/{invoice}/recalcular', [InvoiceController::class, 'recalculate'])->name('invoices.recalculate');
         Route::post('/faturas/{invoice}/travar-cambio', [InvoiceController::class, 'toggleLock'])->name('invoices.lock');
         Route::get('/faturas-exportar', [InvoiceController::class, 'export'])->name('invoices.export');
+    });
+
+    // ---------------------------------------------------------------------
+    // Licenças (LicenseBoy) — leitura para todos, escrita para gestores
+    // ---------------------------------------------------------------------
+    Route::get('/licencas', [LicenseController::class, 'index'])->name('licenses.index');
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+        Route::get('/licencas/nova', [LicenseController::class, 'create'])->name('licenses.create');
+        Route::post('/licencas', [LicenseController::class, 'store'])->name('licenses.store');
+    });
+
+    Route::get('/licencas/{license}', [LicenseController::class, 'show'])->name('licenses.show');
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+        Route::get('/licencas/{license}/editar', [LicenseController::class, 'edit'])->name('licenses.edit');
+        Route::put('/licencas/{license}', [LicenseController::class, 'update'])->name('licenses.update');
+        Route::delete('/licencas/{license}', [LicenseController::class, 'destroy'])->name('licenses.destroy');
+        Route::post('/licencas/{license}/fatura', [LicenseController::class, 'generateInvoice'])->name('licenses.invoice');
+    });
+
+    // ---------------------------------------------------------------------
+    // Central de cron — somente desenvolvedor/administrador
+    // ---------------------------------------------------------------------
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
+        Route::get('/crons', [CronJobController::class, 'index'])->name('crons.index');
+        Route::get('/crons/novo', [CronJobController::class, 'create'])->name('crons.create');
+        Route::post('/crons', [CronJobController::class, 'store'])->name('crons.store');
+        Route::get('/crons/{cron}', [CronJobController::class, 'show'])->name('crons.show');
+        Route::get('/crons/{cron}/editar', [CronJobController::class, 'edit'])->name('crons.edit');
+        Route::put('/crons/{cron}', [CronJobController::class, 'update'])->name('crons.update');
+        Route::delete('/crons/{cron}', [CronJobController::class, 'destroy'])->name('crons.destroy');
+        Route::post('/crons/{cron}/executar', [CronJobController::class, 'run'])->name('crons.run');
+        Route::post('/crons/{cron}/alternar', [CronJobController::class, 'toggle'])->name('crons.toggle');
     });
 
     // ---------------------------------------------------------------------

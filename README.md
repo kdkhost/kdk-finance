@@ -1,11 +1,11 @@
 # KDK Finance — Multimoedas
 
-Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL), gestão de tributos de importação e acompanhamento das faturas da OVHcloud.
+Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL), gestão de tributos de importação, acompanhamento das faturas da OVHcloud, controle das licenças LicenseBoy e central de cron gerenciada pelo painel.
 
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.1.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.2.0 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -31,6 +31,8 @@ se a API falhar, o sistema reaproveita a última cotação válida — marcada c
 - Inventário completo da OVHcloud no painel: serviços contratados, valores mensais individuais (EUR e BRL) e blocos de IPv4/IPv6 com DNS reverso.
 - Itens individuais de cada fatura importada (descrição, domínio, quantidade, valor unitário, total e período).
 - CRUD de faturas com prévia do cálculo em tempo real, pagamento, cancelamento, reabertura, recálculo e bloqueio de cotação.
+- CRUD de licenças LicenseBoy (cPanel, CloudLinux, LiteSpeed e demais produtos), com custo mensal em BRL, renovações, chave criptografada e geração de fatura em um clique.
+- Central de cron com CRUD de agendamentos, presets, fuso horário, execução manual, histórico de saídas e sinal de vida do agendador — apenas uma linha no cron da hospedagem.
 - Importação automática de todo o histórico de faturas da OVHcloud e sincronização agendada a cada 15 minutos.
 - Atualização em tempo real do dashboard via Laravel Reverb (WebSocket).
 - Alerta por e-mail, banco e broadcast quando a variação cambial ultrapassa 1%.
@@ -166,13 +168,41 @@ O valor mensal de cada serviço é extraído da fatura mais recente em que ele
 aparece, somando as linhas do mesmo domínio. O dashboard repete o resumo com os
 mesmos valores e a página de cada fatura exibe a tabela **Itens da fatura**.
 
-### Agendador
+### Licenças LicenseBoy
 
-A sincronização roda a cada 15 minutos. Em produção, adicione ao cron:
+As licenças são compradas da **LicenseBoy**, que não publica API de consulta.
+Por isso o controle é local, em **Licenças** (menu Operação):
+
+- cadastro por produto (cPanel, DirectAdmin, Plesk, CloudLinux, LiteSpeed,
+  Virtualizor, Imunify360, KernelCare, Softaculous, JetBackup, CXS, OSM, SitePad,
+  WHMReseller, CPNginx e nomes livres), com servidor, quantidade e valor unitário;
+- ciclo mensal, trimestral, semestral, anual ou vitalício e próximo vencimento;
+- chave da licença criptografada no banco e exibida apenas mascarada;
+- custo mensal e projeção anual em BRL pela cotação atual;
+- geração de fatura em um clique: cria a fatura em USD/EUR, aplica spread, IOF,
+  ICMS e demais tributos, vincula à licença e avança o próximo vencimento em um
+  ciclo (licenças vitalícias não avançam).
+
+### Central de cron
+
+Em **Central de cron** (menu Sistema, exclusivo de desenvolvedor/administrador)
+todos os agendamentos ficam no banco. A hospedagem recebe **uma única linha**:
 
 ```cron
 * * * * * cd /caminho/do/projeto && php artisan schedule:run >> /dev/null 2>&1
 ```
+
+O comando `cron:run-due` roda a cada minuto, verifica as expressões cadastradas,
+executa as que estão vencidas e grava histórico com código de saída, duração e
+saída completa. Cada job aceita comando Artisan ou shell, expressão cron com
+presets, fuso horário, ativação/desativação e execução manual. O painel mostra
+um sinal de vida: se o agendador não rodar por 3 minutos, o status fica
+"Sem sinal".
+
+### Agendador
+
+O `schedule:run` dispara a sincronização da OVH a cada 15 minutos e a central de
+cron a cada minuto. Em produção, adicione ao cron exatamente a linha única acima.
 
 ### Filas
 
@@ -217,7 +247,9 @@ php artisan test
 
 Cobertura atual: cálculo tributário, criptografia de configurações, autenticação,
 fluxo de faturas, exportação CSV, sincronização com a AwesomeAPI, página de
-serviços/IPs do painel e itens individuais de fatura.
+serviços/IPs do painel, itens individuais de fatura, CRUD de licenças com
+criptografia e geração de fatura, além da central de cron (permissões, validação,
+execução manual, agendamento por minuto e heartbeat). São 40 testes e 173 asserções.
 
 ---
 
@@ -225,20 +257,20 @@ serviços/IPs do painel e itens individuais de fatura.
 
 ```
 app/
-├── Console/Commands/SyncInvoicesCommand.php
+├── Console/Commands/          # SyncInvoicesCommand e RunDueCronsCommand
 ├── Events/InvoiceAmountUpdatedEvent.php
-├── Http/Controllers/          # Dashboard, Faturas, Infraestrutura, Configurações, Usuários, Perfil, Notificações
+├── Http/Controllers/          # Dashboard, Faturas, Infraestrutura, Licenças, Crons, Configurações, Usuários, Perfil, Notificações
 ├── Http/Middleware/           # Assinatura do desenvolvedor e controle de perfil
-├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, User
+├── Models/                    # AppSetting, Invoice, InvoiceItem, OvhServiceItem, OvhIp, LicenseService, CronJob, CronJobRun, User
 ├── Notifications/             # Variação cambial
-└── Services/                  # ExchangeRate, TaxCalculation, Ovh, OvhInventory, Dashboard
+└── Services/                  # ExchangeRate, TaxCalculation, Ovh, OvhInventory, Dashboard, CronRunner
 
 resources/
 ├── css/theme.css              # Tokens claro/escuro e componentes
 ├── js/                        # Bootstrap, Echo, Dashboard, formulário de fatura
 └── views/
     ├── admin/layouts/         # AdminLTE 4 modular
-    ├── auth/ errors/ infrastructure/ invoices/ notifications/ profile/ settings/ users/
+    ├── auth/ errors/ infrastructure/ invoices/ licenses/ crons/ notifications/ profile/ settings/ users/
     └── partials/
 
 public/                        # manifest.json, sw.js, offline.html, ícones, favicon
