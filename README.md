@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** George Marcelo de Oliveira Pimentel
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.5.1 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.5.2 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -252,6 +252,14 @@ a pagar, taxa efetiva, VET, custo percentual e o equivalente em BRL.
 - **VET (Valor Efetivo Total):** o sistema calcula quantos reais custou cada unidade
   da moeda de origem já com câmbio, spread, IOF, tarifa e margem. É a mesma taxa
   efetiva que o app do banco mostra — não é uma taxa para cadastrar.
+- **Cotação do provedor:** informe a taxa que o PayPal, o banco ou o emissor mostrou
+  no recibo e o spread passa a ser derivado dela contra o mercado, com o campo de
+  spread travado. O recibo costuma trazer a direção inversa (`1 USD = 0,8498 EUR`
+  num pagamento em euro); o sistema detecta, converte para a direção da conversão e
+  avisa na tela. Exemplo: € 43,96 a 1,12584 de mercado e 0,8498 do recibo geram
+  **US$ 51,73**, o mesmo valor cobrado pelo PayPal. Spread negativo é aceito quando
+  o provedor entrega menos moeda de destino por unidade do que o mercado, e o
+  recálculo rederiva o spread a partir da cotação do provedor gravada.
 - **Câmbio gratuito:** cotação direta pela AwesomeAPI, sem chave e sem custo. Cache
   de 5 minutos; se o par direto falhar, o sistema cruza EUR-BRL ÷ USD-BRL e, em
   último caso, usa a última cotação conhecida (marcada como desatualizada).
@@ -343,7 +351,7 @@ de cotação, cotações direta/cruzada/última conhecida e cache de 5 minutos) 
 de cliente da LicenseBoy (preço decimal, valor do painel usado na fatura,
 credenciais criptografadas, permissões, empate de produtos ignorado, precedência
 sobre a loja e ciclo definindo o equivalente mensal).
-São 71 testes e 314 asserções.
+São 76 testes e 342 asserções.
 
 ---
 

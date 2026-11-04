@@ -110,6 +110,15 @@
                             <td>Convertido pela cotação {{ number_format($savedRate, 6, ',', '.') }}</td>
                             <td class="value">{{ $toMoney($conversion->base_to) }}</td>
                         </tr>
+                        @if ($conversion->provider_rate)
+                            <tr>
+                                <td>
+                                    Cotação do provedor
+                                    <span class="text-muted-soft">{{ $conversion->from_currency }} → {{ $conversion->to_currency }}</span>
+                                </td>
+                                <td class="value">{{ number_format((float) $conversion->provider_rate, 6, ',', '.') }}</td>
+                            </tr>
+                        @endif
                         <tr>
                             <td>Spread <span class="text-muted-soft">{{ number_format((float) $conversion->spread_percent, 3, ',', '.') }}%</span></td>
                             <td class="value">{{ $toMoney($conversion->spread_amount) }}</td>
@@ -139,6 +148,23 @@
                     <div class="text-muted-soft mt-2" style="font-size:.76rem;">
                         Referência em reais: {{ $toMoney($conversion->total_to) }} × {{ number_format((float) $conversion->to_brl_rate, 4, ',', '.') }} = <strong>R$ {{ number_format((float) $conversion->total_brl, 2, ',', '.') }}</strong>
                     </div>
+
+                    @if ($conversion->provider_rate)
+                        <div class="hint-banner mt-3">
+                            <i class="bi bi-credit-card"></i>
+                            <div>
+                                O spread de <strong>{{ number_format((float) $conversion->spread_percent, 3, ',', '.') }}%</strong>
+                                vem da cotação do provedor
+                                <strong>{{ number_format((float) $conversion->provider_rate, 6, ',', '.') }}</strong>
+                                contra o mercado de {{ number_format($savedRate, 6, ',', '.') }}.
+                                @if ($conversion->provider_rate_inverted)
+                                    O recibo informou {{ number_format((float) $conversion->providerRateRaw(), 6, ',', '.') }}
+                                    ({{ $conversion->to_currency }} → {{ $conversion->from_currency }}); a taxa foi convertida
+                                    para a direção da conversão.
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 

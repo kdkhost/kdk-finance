@@ -24,6 +24,8 @@ class CurrencyConversion extends Model
         'to_currency',
         'amount_from',
         'market_rate',
+        'provider_rate',
+        'provider_rate_inverted',
         'spread_percent',
         'iof_percent',
         'buffer_percent',
@@ -50,6 +52,8 @@ class CurrencyConversion extends Model
     protected $casts = [
         'amount_from' => 'decimal:2',
         'market_rate' => 'decimal:6',
+        'provider_rate' => 'decimal:6',
+        'provider_rate_inverted' => 'boolean',
         'spread_percent' => 'decimal:3',
         'iof_percent' => 'decimal:3',
         'buffer_percent' => 'decimal:3',
@@ -126,6 +130,25 @@ class CurrencyConversion extends Model
         }
 
         return round((float) $this->total_brl / $amount, 6);
+    }
+
+    /**
+     * Cotação do provedor exatamente como o recibo mostrou. Quando o recibo
+     * trouxe a direção inversa, devolve 1 / provider_rate.
+     */
+    public function providerRateRaw(): ?float
+    {
+        if ($this->provider_rate === null) {
+            return null;
+        }
+
+        $rate = (float) $this->provider_rate;
+
+        if ($this->provider_rate_inverted && $rate > 0) {
+            return round(1 / $rate, 6);
+        }
+
+        return $rate;
     }
 
     public function isCalibrated(): bool

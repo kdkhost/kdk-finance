@@ -5,6 +5,21 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.5.2] - 2026-11-04
+
+### Adicionado
+
+- **Cotação do provedor** (PayPal, banco, emissor) nas conversões: informe a taxa que o recibo mostra e o sistema deriva o spread real sobre a cotação de mercado, travando o campo de spread enquanto a taxa estiver preenchida.
+- O recibo do PayPal traz a taxa na direção inversa do formulário (`1 USD = 0,8498 EUR` num pagamento em euro); o sistema detecta, converte para a direção da conversão e avisa na própria tela. Exemplo validado: € 43,96 a 1,12584 de mercado e 0,8498 do recibo resultam em **US$ 51,73**, exatamente o valor cobrado pelo PayPal.
+- Página de detalhe mostra a cotação do provedor, o spread derivado e, quando houve inversão, a taxa originalmente informada.
+- O **recalcular** rederiva o spread a partir da cotação do provedor gravada, mantendo o total alinhado à taxa que o provedor pratica mesmo quando o mercado se move.
+- 5 novos testes: spread derivado, recibo do PayPal na direção inversa, spread negativo na mesma direção, recálculo preservando a cotação do provedor e exibição na tela de detalhe. São 76 testes e 342 asserções no total.
+
+### Alterado
+
+- Spread aceita valor negativo quando o provedor entrega menos moeda de destino por unidade do que o mercado; a validação do formulário acompanha essa possibilidade.
+- README documenta a cotação do provedor e a interpretação do recibo do PayPal.
+
 ## [1.5.1] - 2026-11-04
 
 ### Adicionado
@@ -226,6 +241,7 @@ versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - A API v2 (`https://api.eu.ovhcloud.com/v2`) usa OAuth2 com tokens de curta duração; a conciliação de faturas usa a API v1 com AK/AS/CK.
 - Em produção, mantenha `FINANCE_VERIFY_SSL=true` e `APP_DEBUG=false`.
 
+[1.5.2]: https://kdkhost.com.br/
 [1.5.1]: https://kdkhost.com.br/
 [1.5.0]: https://kdkhost.com.br/
 [1.4.0]: https://kdkhost.com.br/

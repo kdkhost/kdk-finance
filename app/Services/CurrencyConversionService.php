@@ -137,8 +137,10 @@ class CurrencyConversionService
             $rateAt = $quote['updated_at'];
         }
 
+        $provider = $this->providerRate($input, $marketRate);
+
         $result = $this->calculate($amount, $marketRate, [
-            'spread_percent' => $input['spread_percent'] ?? null,
+            'spread_percent' => $provider['spread'],
             'iof_percent' => $input['iof_percent'] ?? null,
             'fixed_fee' => $input['fixed_fee'] ?? null,
             'buffer_percent' => $input['buffer_percent'] ?? null,
@@ -150,6 +152,8 @@ class CurrencyConversionService
             'description' => trim((string) ($input['description'] ?? '')),
             'from_currency' => $from,
             'to_currency' => $to,
+            'provider_rate' => $provider['rate'],
+            'provider_rate_inverted' => $provider['inverted'],
             'to_brl_rate' => round($toBrlRate, 4),
             'total_brl' => round($result['total_to'] * $toBrlRate, 2),
             'vet_brl' => $result['amount_from'] > 0
@@ -163,6 +167,52 @@ class CurrencyConversionService
     }
 
     /**
+     * Quando o provedor (PayPal, banco, emissor) informa a própria cotação,
+     * o spread é a diferença percentual dela para a cotação de mercado.
+     *
+     * O recibo costuma trazer a taxa na direção em que o provedor converteu,
+     * que pode ser a inversa do formulário (ex.: 1 USD = 0,8498 EUR num
+     * pagamento em EUR). Nesse caso a taxa é invertida e normalizada antes
+     * de calcular o spread — o valor final continua idêntico ao do recibo.
+     *
+     * Spread negativo é legítimo: significa que o provedor entrega menos
+     * moeda de destino por unidade do que a cotação de mercado.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array{rate: float|null, inverted: bool, spread: float|int|string|null}
+     */
+    private function providerRate(array $input, float $marketRate): array
+    {
+        $informed = (float) ($input['provider_rate'] ?? 0);
+
+        if ($informed <= 0) {
+            return [
+                'rate' => null,
+                'inverted' => false,
+                'spread' => $input['spread_percent'] ?? null,
+            ];
+        }
+
+        if ($marketRate <= 0) {
+            return [
+                'rate' => round($informed, 6),
+                'inverted' => false,
+                'spread' => $input['spread_percent'] ?? null,
+            ];
+        }
+
+        $inverse = 1 / $informed;
+        $inverted = abs($inverse - $marketRate) < abs($informed - $marketRate);
+        $rate = $inverted ? $inverse : $informed;
+
+        return [
+            'rate' => round($rate, 6),
+            'inverted' => $inverted,
+            'spread' => round((($rate / $marketRate) - 1) * 100, 3),
+        ];
+    }
+
+    /**
      * Recalcula uma conversão já salva com a cotação atual.
      *
      * @return array<string, mixed>
@@ -170,9 +220,17 @@ class CurrencyConversionService
     public function recalculate(CurrencyConversion $conversion, bool $fresh = true): array
     {
         $quote = $this->quote($conversion->from_currency, $conversion->to_currency, $fresh);
+        $marketRate = (float) $quote['rate'];
 
-        $result = $this->calculate((float) $conversion->amount_from, (float) $quote['rate'], [
-            'spread_percent' => (float) $conversion->spread_percent,
+        // Com cotação de provedor gravada, o spread é rederivado dela para o
+        // novo câmbio: o total continua batendo com a taxa que o provedor
+        // pratica (o spread é só a forma de mostrar a diferença).
+        $spread = $conversion->provider_rate !== null && $marketRate > 0
+            ? round((((float) $conversion->provider_rate / $marketRate) - 1) * 100, 3)
+            : (float) $conversion->spread_percent;
+
+        $result = $this->calculate((float) $conversion->amount_from, $marketRate, [
+            'spread_percent' => $spread,
             'iof_percent' => (float) $conversion->iof_percent,
             'fixed_fee' => (float) $conversion->fixed_fee,
             'buffer_percent' => (float) $conversion->buffer_percent,

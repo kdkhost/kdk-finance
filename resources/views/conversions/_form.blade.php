@@ -82,6 +82,25 @@
                             </div>
                             @error('market_rate')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
+
+                        <div class="col-12">
+                            <label class="form-label" for="provider_rate">
+                                Cotação do provedor
+                                <span class="text-muted-soft fw-normal">(opcional — PayPal, banco, emissor)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-credit-card"></i></span>
+                                <input type="number" step="0.000001" min="0.000001" class="form-control tabular @error('provider_rate') is-invalid @enderror" id="provider_rate" name="provider_rate" value="{{ old('provider_rate', $conversion->providerRateRaw()) }}" placeholder="1 {{ $from }} = ? {{ $to }}">
+                            </div>
+                            <div class="form-text">
+                                Copie a taxa do recibo do provedor na direção
+                                <strong data-calc="from-code">{{ $from }}</strong> → <strong data-calc="to-code">{{ $to }}</strong>.
+                                Se o recibo mostrar a direção inversa (ex.: <em>1 USD = 0,8498 EUR</em> num pagamento em euro),
+                                pode informar assim: o sistema converte e o total continua batendo com o recibo.
+                            </div>
+                            <div class="form-text d-none" data-calc="provider-note"></div>
+                            @error('provider_rate')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        </div>
                     </div>
 
                     @if (! empty($quote['stale']))

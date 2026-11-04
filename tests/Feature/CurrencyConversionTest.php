@@ -151,6 +151,119 @@ class CurrencyConversionTest extends TestCase
             ->assertDontSee('Nova conversão');
     }
 
+    public function test_provider_rate_replaces_the_typed_spread(): void
+    {
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload([
+            'market_rate' => '1.10',
+            'provider_rate' => '1.155',
+            'spread_percent' => '0',
+            'iof_percent' => '0',
+            'fixed_fee' => '0',
+            'buffer_percent' => '0',
+        ]))->assertRedirect();
+
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        $this->assertEquals(1.155, (float) $conversion->provider_rate);
+        $this->assertFalse((bool) $conversion->provider_rate_inverted);
+        $this->assertEquals(5.000, (float) $conversion->spread_percent);
+        $this->assertEquals(110.00, (float) $conversion->base_to);
+        $this->assertEquals(5.50, (float) $conversion->spread_amount);
+        $this->assertEquals(115.50, (float) $conversion->total_to);
+    }
+
+    public function test_provider_rate_in_the_inverse_direction_reproduces_the_paypal_receipt(): void
+    {
+        // Recibo: €43,96 pagos com US$ 51,73; o PayPal mostrou 1 USD = 0,8498 EUR.
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload([
+            'amount_from' => '43.96',
+            'market_rate' => '1.12584',
+            'provider_rate' => '0.8498',
+            'spread_percent' => '0',
+            'iof_percent' => '0',
+            'fixed_fee' => '0',
+            'buffer_percent' => '0',
+        ]))->assertRedirect();
+
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        $this->assertEqualsWithDelta(1.176747, (float) $conversion->provider_rate, 0.000001);
+        $this->assertTrue((bool) $conversion->provider_rate_inverted);
+        $this->assertEqualsWithDelta(0.8498, (float) $conversion->providerRateRaw(), 0.000001);
+        $this->assertEquals(4.522, (float) $conversion->spread_percent);
+        $this->assertEquals(49.49, (float) $conversion->base_to);
+        $this->assertEquals(51.73, (float) $conversion->total_to);
+    }
+
+    public function test_provider_rate_below_market_in_the_same_direction_keeps_a_negative_spread(): void
+    {
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload([
+            'from_currency' => 'USD',
+            'to_currency' => 'EUR',
+            'amount_from' => '100.00',
+            'market_rate' => '0.909091',
+            'provider_rate' => '0.8498',
+            'spread_percent' => '0',
+            'iof_percent' => '0',
+            'fixed_fee' => '0',
+            'buffer_percent' => '0',
+        ]))->assertRedirect();
+
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        $this->assertFalse((bool) $conversion->provider_rate_inverted);
+        $this->assertEqualsWithDelta(-6.522, (float) $conversion->spread_percent, 0.001);
+        $this->assertEquals(84.98, (float) $conversion->total_to);
+    }
+
+    public function test_recalculate_keeps_the_provider_quote_instead_of_the_old_spread(): void
+    {
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload([
+            'market_rate' => '1.10',
+            'provider_rate' => '1.155',
+            'spread_percent' => '0',
+            'iof_percent' => '0',
+            'fixed_fee' => '0',
+            'buffer_percent' => '0',
+        ]))->assertRedirect();
+
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        $this->pairRate = '1.200000';
+
+        $this->actingAs($this->manager())
+            ->post(route('conversions.recalculate', $conversion))
+            ->assertRedirect();
+
+        $conversion->refresh();
+
+        $this->assertEquals(1.155, (float) $conversion->provider_rate);
+        $this->assertEquals(-3.750, (float) $conversion->spread_percent);
+        $this->assertEquals(115.50, (float) $conversion->total_to);
+    }
+
+    public function test_show_page_displays_the_provider_rate(): void
+    {
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload([
+            'amount_from' => '43.96',
+            'market_rate' => '1.12584',
+            'provider_rate' => '0.8498',
+            'spread_percent' => '0',
+            'iof_percent' => '0',
+            'fixed_fee' => '0',
+            'buffer_percent' => '0',
+        ]));
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        $this->actingAs($this->manager())
+            ->get(route('conversions.show', $conversion))
+            ->assertOk()
+            ->assertSee('Cotação do provedor')
+            ->assertSee('1,176747')
+            ->assertSee('0,849800')
+            ->assertSee('51,73');
+    }
+
     public function test_calibrating_with_the_card_statement_stores_the_real_cost(): void
     {
         $this->actingAs($this->manager())->post('/conversoes', $this->payload());
