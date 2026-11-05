@@ -15,6 +15,7 @@ namespace App\Notifications;
 
 use App\Mail\ThemedMail;
 use App\Models\Invoice;
+use App\Services\InvoiceMailDataService;
 use App\Services\MailTemplateService;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Bus\Queueable;
@@ -50,17 +51,14 @@ class InvoiceRateVariationNotification extends Notification
     {
         $direction = $this->variationPercent >= 0 ? 'alta' : 'queda';
         $variation = number_format(abs($this->variationPercent), 2, ',', '.').'%';
-        $payload = app(MailTemplateService::class)->payload('invoice_rate', [
+        $payload = app(MailTemplateService::class)->payload('invoice_rate', app(InvoiceMailDataService::class)->variables($this->invoice, [
             'usuario' => (string) $notifiable->name,
-            'descricao' => (string) $this->invoice->description,
-            'fatura' => (string) ($this->invoice->external_reference ?: $this->invoice->description),
             'direcao' => $direction,
             'variacao' => $variation,
             'variacao_sinal' => ($this->variationPercent >= 0 ? '+' : '−').$variation,
             'valor_anterior' => 'R$ '.number_format($this->previousTotal, 2, ',', '.'),
             'valor_atual' => 'R$ '.number_format($this->newTotal, 2, ',', '.'),
-            'link' => route('invoices.show', $this->invoice),
-        ]) ?? [
+        ])) ?? [
             'subject' => 'Variação cambial na fatura '.$this->invoice->description,
             'heading' => 'Variação cambial na fatura',
             'intro' => 'A fatura '.$this->invoice->description.' variou '.$variation.' e agora totaliza R$ '.number_format($this->newTotal, 2, ',', '.').'.',

@@ -5,6 +5,26 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.7] - 2026-11-05
+
+### Adicionado
+
+- **Valor convertido discriminado nos e-mails de fatura**: vencimento, atraso, pagamento e variação cambial agora mostram, no mesmo bloco de detalhes, a moeda original, o valor original, a cotação aplicada, o valor convertido, o spread, o IOF, o ICMS, os outros tributos e o **total a reservar** em reais. Os percentuais são os efetivamente gravados na fatura, então o e-mail reflete o cálculo original mesmo que as tarifas do painel tenham mudado depois.
+- **Botão para a fatura oficial do fornecedor**: os modelos de fatura trocaram o botão interno por um botão que abre a área oficial de pagamento — o link da fatura devolvido pela OVHcloud ou a lista de faturas do painel da LicenseBoy. Nenhum endereço aparece escrito no corpo do e-mail; o acesso é sempre pelo botão.
+- **Link oficial gravado na fatura**: nova coluna `external_url` recebe o endereço da fatura informado pela OVHcloud durante a importação. Se uma fatura antiga ainda não tiver o link, ele é buscado uma única vez na hora do envio e fica salvo para os próximos alertas.
+- **Assuntos com o valor da reserva**: os e-mails de vencimento, atraso e pagamento passaram a trazer o total em reais no próprio assunto, facilitando a triagem antes de abrir a mensagem.
+
+### Alterado
+
+- **Um único montador de dados**: `InvoiceMailDataService` centraliza o cálculo e a formatação usados por todos os e-mails de fatura, garantindo que cron, baixa manual e notificação de câmbio mostrem exatamente os mesmos valores.
+- **Modelos de fábrica atualizados**: o catálogo de modelos, as variáveis exibidas no editor e as amostras da prévia já incluem os novos campos. A migração atualiza as linhas existentes apenas nos campos que ainda estavam iguais ao padrão anterior, preservando textos personalizados pelo administrador.
+- Quando não existe link oficial (fatura criada manualmente), o botão aponta para a fatura no painel, sem quebrar o envio.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **165 testes e 785 asserções**.
+- Novos testes cobrem o discriminativo completo (moeda, cotação, spread, IOF, ICMS, outros tributos e total), o botão com o link oficial da OVHcloud, o atalho para a área da LicenseBoy e o envio real do cron com todos os campos no e-mail.
+
 ## [1.10.6] - 2026-11-05
 
 ### Alterado

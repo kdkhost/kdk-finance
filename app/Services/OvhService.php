@@ -485,6 +485,7 @@ class OvhService
 
         return [
             'external_reference' => (string) data_get($bill, 'billId'),
+            'external_url' => data_get($bill, 'url'),
             'description' => 'OVHcloud · fatura '.data_get($bill, 'billId').' ('.(data_get($bill, 'category') ?: 'serviço').')',
             'currency' => in_array($currency, ['EUR', 'USD'], true) ? $currency : 'EUR',
             'amount_original' => round($amount, 2),

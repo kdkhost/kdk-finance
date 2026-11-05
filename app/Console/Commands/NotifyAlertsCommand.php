@@ -15,6 +15,7 @@ namespace App\Console\Commands;
 
 use App\Models\Invoice;
 use App\Models\LicenseService;
+use App\Services\InvoiceMailDataService;
 use App\Services\MailTemplateService;
 use App\Support\Settings\MailSettings;
 use Illuminate\Console\Command;
@@ -28,7 +29,7 @@ class NotifyAlertsCommand extends Command
 
     protected $description = 'Envia por e-mail os alertas de faturas e licenças próximas do vencimento';
 
-    public function handle(MailTemplateService $mail): int
+    public function handle(MailTemplateService $mail, InvoiceMailDataService $invoiceData): int
     {
         if (! MailSettings::configured()) {
             $this->warn('SMTP não configurado: nenhum alerta foi enviado.');
@@ -65,15 +66,9 @@ class NotifyAlertsCommand extends Command
 
             $days = max(0, (int) round(now()->startOfDay()->diffInDays($invoice->due_date?->copy()->startOfDay() ?? now())));
 
-            if (! $mail->sendToAlerts('invoice_due', [
-                'usuario' => 'equipe financeira',
-                'descricao' => (string) $invoice->description,
-                'fatura' => (string) ($invoice->external_reference ?: $invoice->description),
-                'vencimento' => $invoice->due_date?->format('d/m/Y') ?? '—',
+            if (! $mail->sendToAlerts('invoice_due', $invoiceData->variables($invoice, [
                 'dias' => (string) $days,
-                'valor' => $this->brl((float) $invoice->total_brl),
-                'link' => route('invoices.show', $invoice),
-            ])) {
+            ]))) {
                 Cache::forget($key);
                 $skipped++;
 
@@ -100,15 +95,9 @@ class NotifyAlertsCommand extends Command
 
             $days = max(1, (int) round(($invoice->due_date?->copy()->startOfDay() ?? now())->diffInDays(now()->startOfDay())));
 
-            if (! $mail->sendToAlerts('invoice_overdue', [
-                'usuario' => 'equipe financeira',
-                'descricao' => (string) $invoice->description,
-                'fatura' => (string) ($invoice->external_reference ?: $invoice->description),
-                'vencimento' => $invoice->due_date?->format('d/m/Y') ?? '—',
+            if (! $mail->sendToAlerts('invoice_overdue', $invoiceData->variables($invoice, [
                 'dias_atraso' => (string) $days,
-                'valor' => $this->brl((float) $invoice->total_brl),
-                'link' => route('invoices.show', $invoice),
-            ])) {
+            ]))) {
                 Cache::forget($key);
                 $skipped++;
 
@@ -156,10 +145,5 @@ class NotifyAlertsCommand extends Command
         $this->info('Alertas enviados: '.$sent.' · já avisados ou sem envio: '.$skipped.'.');
 
         return self::SUCCESS;
-    }
-
-    private function brl(float $value): string
-    {
-        return 'R$ '.number_format($value, 2, ',', '.');
     }
 }

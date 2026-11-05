@@ -188,6 +188,11 @@ class SyncInvoicesCommand extends Command
             );
 
             $isNew = $invoice->wasRecentlyCreated;
+            $officialUrl = trim((string) data_get($bill, 'url', ''));
+
+            if (! $isNew && $officialUrl !== '' && trim((string) $invoice->external_url) === '') {
+                $invoice->forceFill(['external_url' => $officialUrl])->save();
+            }
 
             if ($isNew) {
                 $rate = (float) ($rates[$invoice->currency]['rate'] ?? 0);

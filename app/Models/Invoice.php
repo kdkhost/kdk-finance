@@ -26,6 +26,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'external_reference',
+        'external_url',
         'description',
         'currency',
         'amount_original',
