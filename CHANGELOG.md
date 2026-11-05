@@ -5,6 +5,25 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.5] - 2026-11-05
+
+### Corrigido
+
+- **Abas de Configurações não mexem mais no menu lateral**: clicar em uma aba (Câmbio e tributos, Conversão e cartão, OVHcloud, LicenseBoy, Regras, E-mail ou Segurança) deixou de recarregar a página inteira. O JavaScript troca apenas o conteúdo do painel, mantendo o menu exatamente na mesma posição, com o ramo aberto e a rolagem preservada. A rota continua sendo um link real (`?tab=...`), então abrir em nova aba, compartilhar a URL, voltar pelo histórico e navegar sem JavaScript seguem funcionando.
+- **Troca de aba registrada durante a leitura do HTML**: o tratamento do clique agora é declarado no próprio Blade da página, antes de qualquer clique possível, e não depende mais do carregamento do bundle — eliminando a janela em que um clique rápido recarregava a página.
+- **Animação da árvore contida na primeira pintura**: o menu só anima depois que o estado salvo é aplicado (`kdk-ui-ready`), sem "piscar" abrindo e fechando a cada navegação.
+
+### Alterado
+
+- **Abas internas padronizadas nos dois temas**: pílulas com o mesmo raio, altura, espaçamento, ícones e transição no claro e no escuro, usando apenas os tokens de cor do projeto (`--kdk-teal`, `--kdk-teal-soft`, `--kdk-muted`, `--kdk-card-muted`). O item ativo ganha fundo suave e contorno teal; o foco por teclado fica visível.
+- **Teste de conexão com a OVHcloud delegado**: o botão continua funcionando depois de trocar de aba, pois o evento é ouvido no documento em vez de ficar preso ao HTML inicial.
+- O painel esmaece brevemente (`aria-busy`) enquanto a nova aba carrega, evitando conteúdo antigo parecendo atual.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **161 testes e 762 asserções**, incluindo verificação de que a troca de aba é registrada no próprio HTML da página.
+- Validação no navegador com cliques reais: troca de abas sem recarregar (marcador de página preservado), rolagem do menu intacta, voltar/avançar do histórico, editores Summernote e prévia de e-mail inicializados após a troca, teste da OVHcloud retornando o toast de sucesso e ausência de rolagem horizontal em tela estreita. Cores conferidas no tema claro e no escuro.
+
 ## [1.10.4] - 2026-11-05
 
 ### Alterado

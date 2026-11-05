@@ -38,16 +38,17 @@
         ]));
     @endphp
 
-    <ul class="nav nav-pills gap-2 mb-3" aria-label="Seções das configurações">
+    <ul class="nav nav-pills kdk-tabs mb-3" data-settings-tabs aria-label="Seções das configurações">
         @foreach ($tabs as $tab)
             <li class="nav-item">
-                <a class="nav-link {{ $activeTab === $tab['key'] ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => $tab['key']]) }}" @if ($activeTab === $tab['key']) aria-current="page" @endif>
-                    <i class="bi {{ $tab['icon'] }} me-1"></i> {{ $tab['label'] }}
+                <a class="nav-link {{ $activeTab === $tab['key'] ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => $tab['key']]) }}" data-settings-tab="{{ $tab['key'] }}" aria-controls="settings-panel" @if ($activeTab === $tab['key']) aria-current="page" @endif>
+                    <i class="bi {{ $tab['icon'] }}"></i> {{ $tab['label'] }}
                 </a>
             </li>
         @endforeach
     </ul>
 
+    <div id="settings-panel" tabindex="-1" aria-live="polite">
     @if ($activeTab === 'taxes')
         <div class="row g-3">
             <div class="col-lg-7">
@@ -378,7 +379,7 @@
                             </div>
 
                             <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
-                                <button type="button" class="btn btn-outline-secondary" id="ovh-test">
+                                <button type="button" class="btn btn-outline-secondary" id="ovh-test" data-ovh-test data-url="{{ route('settings.ovh.test') }}">
                                     <i class="bi bi-plug me-1"></i> Testar conexão
                                 </button>
                                 <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Salvar credenciais</button>
@@ -1156,40 +1157,113 @@
             </div>
         </div>
     @endif
+    </div>
 
     @push('scripts')
         <script nonce="{{ $cspNonce ?? '' }}">
-            document.getElementById('ovh-test')?.addEventListener('click', async function () {
-                const button = this;
-                const original = button.innerHTML;
-                const token = document.querySelector('meta[name="csrf-token"]').content;
+            // A troca acontece aqui, ainda durante a leitura do HTML: nenhum clique
+            // chega a recarregar a página (e o menu lateral não se mexe).
+            (function () {
+                const tabs = document.querySelector('[data-settings-tabs]');
+                const panel = document.getElementById('settings-panel');
 
-                button.disabled = true;
-                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testando...';
-
-                try {
-                    const response = await fetch(@json(route('settings.ovh.test')), {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': token,
-                            'Accept': 'application/json',
-                        },
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        window.toastr.success(data.message, 'Conexão validada');
-                    } else {
-                        window.toastr.error(data.message || 'Falha ao validar as credenciais.', 'Falha na conexão');
-                    }
-                } catch (error) {
-                    window.toastr.error('Não foi possível contatar o servidor.', 'Falha na conexão');
-                } finally {
-                    button.disabled = false;
-                    button.innerHTML = original;
+                if (!tabs || !panel) {
+                    return;
                 }
-            });
+
+                let pending = null;
+                let requestId = 0;
+
+                const paintTabs = (key) => {
+                    tabs.querySelectorAll('[data-settings-tab]').forEach((tab) => {
+                        const active = tab.dataset.settingsTab === key;
+                        tab.classList.toggle('active', active);
+
+                        if (active) {
+                            tab.setAttribute('aria-current', 'page');
+                        } else {
+                            tab.removeAttribute('aria-current');
+                        }
+                    });
+                };
+
+                const loadTab = async (url, mode) => {
+                    pending?.abort();
+                    pending = new AbortController();
+                    const id = ++requestId;
+
+                    panel.setAttribute('aria-busy', 'true');
+                    tabs.classList.add('is-loading');
+
+                    try {
+                        const response = await fetch(url, {
+                            credentials: 'same-origin',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            signal: pending.signal,
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Resposta ' + response.status);
+                        }
+
+                        // HTML da própria aplicação, renderizado pelo Blade: seguro para injetar.
+                        const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
+                        const next = parsed.getElementById('settings-panel');
+
+                        if (!next) {
+                            throw new Error('Painel ausente na resposta');
+                        }
+
+                        panel.innerHTML = next.innerHTML;
+
+                        const target = new URL(url, window.location.origin);
+                        const key = target.searchParams.get('tab') || 'taxes';
+                        paintTabs(key);
+
+                        if (mode === 'push') {
+                            window.history.pushState({ settingsTab: key }, '', target.href);
+                        } else {
+                            window.history.replaceState({ settingsTab: key }, '', target.href);
+                        }
+
+                        document.dispatchEvent(new CustomEvent('finance:settings-tab', { detail: { tab: key } }));
+                    } catch (error) {
+                        if (error.name === 'AbortError') {
+                            return;
+                        }
+
+                        // Sem resposta utilizável, segue o caminho normal do link.
+                        window.location.href = url;
+                    } finally {
+                        if (id === requestId) {
+                            panel.removeAttribute('aria-busy');
+                            tabs.classList.remove('is-loading');
+                        }
+                    }
+                };
+
+                tabs.addEventListener('click', (event) => {
+                    const tab = event.target.closest('[data-settings-tab]');
+
+                    if (!tab || event.defaultPrevented || event.button !== 0
+                        || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+                        || tab.target === '_blank') {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    if (tab.classList.contains('active')) {
+                        return;
+                    }
+
+                    loadTab(tab.href, 'push');
+                });
+
+                window.addEventListener('popstate', () => {
+                    loadTab(window.location.href, 'replace');
+                });
+            })();
         </script>
     @endpush
 @endsection

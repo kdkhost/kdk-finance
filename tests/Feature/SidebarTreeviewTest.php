@@ -106,7 +106,16 @@ class SidebarTreeviewTest extends TestCase
 
         // A própria página continua com as abas (pílulas) internas.
         $response->assertSee(route('settings.index', ['tab' => 'security']), false);
-        $response->assertSee('nav nav-pills', false);
+        $response->assertSee('data-settings-tabs', false);
+        $response->assertSee('data-settings-tab="security"', false);
+        $response->assertSee('id="settings-panel"', false);
+        $response->assertSee('kdk-tabs', false);
+
+        // A troca de aba é registrada no próprio HTML, sem depender do bundle:
+        // é isso que impede o clique de recarregar a página e mexer no menu.
+        $response->assertSee("document.querySelector('[data-settings-tabs]')", false);
+        $response->assertSee('panel.innerHTML = next.innerHTML;', false);
+        $response->assertSee('pushState', false);
     }
 
     public function test_financial_manager_sees_settings_without_developer_tabs_or_links(): void

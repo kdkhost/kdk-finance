@@ -313,6 +313,57 @@ window.addEventListener('pageshow', () => {
     });
 });
 
+/* O estado guardado é aplicado antes de liberar as animações da árvore:
+ * sem isso o menu "pisca" abrindo e fechando a cada troca de página. */
+requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+        document.documentElement.classList.add('kdk-ui-ready');
+    });
+});
+
+/* ---------------------------------------------------------------------------
+ * Teste de conexão com a OVHcloud (delegado: funciona após trocar de aba)
+ *
+ * A troca das abas de Configurações é registrada no próprio Blade da página,
+ * antes do primeiro clique possível; por isso não depende do carregamento
+ * deste módulo.
+ * ------------------------------------------------------------------------- */
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-ovh-test]');
+    if (!button) {
+        return;
+    }
+
+    const original = button.innerHTML;
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testando...';
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            toastr.success(data.message, 'Conexão validada');
+        } else {
+            toastr.error(data.message || 'Falha ao validar as credenciais.', 'Falha na conexão');
+        }
+    } catch (error) {
+        toastr.error('Não foi possível contatar o servidor.', 'Falha na conexão');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = original;
+    }
+});
+
 /* ---------------------------------------------------------------------------
  * Componentes Bootstrap
  * ------------------------------------------------------------------------- */
