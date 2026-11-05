@@ -74,28 +74,42 @@ class SidebarTreeviewTest extends TestCase
         $this->assertGreaterThan($posInfra, $posLicencas);
     }
 
-    public function test_developer_opens_three_levels_and_marks_the_current_tab(): void
+    public function test_internal_tabs_never_become_sidebar_entries(): void
     {
         $user = User::factory()->create([
             'role' => User::ROLE_DEVELOPER,
             'is_active' => true,
         ]);
 
+        // Nenhuma página do menu aponta para uma aba interna.
+        $dashboard = $this->actingAs($user)->get('/');
+        $dashboard->assertOk();
+        $dashboard->assertDontSee('?tab=', false);
+        $dashboard->assertDontSee('data-tree-item="configuracoes"', false);
+        $dashboard->assertDontSee('data-tree-item="config-cambio"', false);
+        $dashboard->assertDontSee('data-tree-item="config-seguranca"', false);
+
         $response = $this->actingAs($user)->get(route('settings.index', ['tab' => 'security']));
 
         $response->assertOk();
-        $response->assertSee('sidebar-level-3', false);
-        $response->assertSee('aria-controls="sidebar-menu-configuracoes"', false);
-        $response->assertSee('data-tree-item="sistema"', false);
+
+        // Configurações é uma página só, com item ativo próprio.
+        $response->assertSeeInOrder([
+            'data-tree-item="sistema"',
+            '<span>Configurações</span>',
+            '<span>Central de cron</span>',
+            '<span>Modelos de e-mail</span>',
+            '<span>Usuários e acessos</span>',
+        ], false);
         $response->assertSee('data-active-path="true"', false);
         $response->assertSee('aria-current="page"', false);
-        $response->assertSee('Câmbio e tributos');
-        $response->assertSee('Segurança');
-        $response->assertSee('Central de cron');
-        $response->assertSee('Usuários e acessos');
+
+        // A própria página continua com as abas (pílulas) internas.
+        $response->assertSee(route('settings.index', ['tab' => 'security']), false);
+        $response->assertSee('nav nav-pills', false);
     }
 
-    public function test_financial_manager_sees_settings_without_developer_links(): void
+    public function test_financial_manager_sees_settings_without_developer_tabs_or_links(): void
     {
         $user = User::factory()->create([
             'role' => User::ROLE_FINANCIAL,
@@ -105,7 +119,8 @@ class SidebarTreeviewTest extends TestCase
         $response = $this->actingAs($user)->get(route('settings.index'));
 
         $response->assertOk();
-        $response->assertSee('data-tree-item="configuracoes"', false);
+        $response->assertSee('<span>Configurações</span>', false);
+        $response->assertDontSee('data-tree-item="configuracoes"', false);
         $response->assertSee('Câmbio e tributos');
         $response->assertSee('Conversão e cartão');
         $response->assertDontSee(route('settings.index', ['tab' => 'ovh']), false);

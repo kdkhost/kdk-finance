@@ -13,7 +13,6 @@
     $unread = $user->unreadNotifications()->count();
     $canManage = $user->canManageFinance();
     $isDeveloper = $user->isDeveloperAdmin();
-    $settingsTab = request('tab', 'taxes');
 
     $operacao = [
         [
@@ -132,57 +131,8 @@
             'key' => 'configuracoes',
             'label' => 'Configurações',
             'icon' => 'bi-sliders2',
-            'children' => array_values(array_filter([
-                [
-                    'key' => 'config-cambio',
-                    'label' => 'Câmbio e tributos',
-                    'icon' => 'bi-percent',
-                    'url' => route('settings.index', ['tab' => 'taxes']),
-                    'active' => request()->routeIs('settings.index') && $settingsTab === 'taxes',
-                ],
-                [
-                    'key' => 'config-conversao',
-                    'label' => 'Conversão e cartão',
-                    'icon' => 'bi-credit-card',
-                    'url' => route('settings.index', ['tab' => 'conversion']),
-                    'active' => request()->routeIs('settings.index') && $settingsTab === 'conversion',
-                ],
-                $isDeveloper ? [
-                    'key' => 'config-ovh',
-                    'label' => 'OVHcloud',
-                    'icon' => 'bi-cloud',
-                    'url' => route('settings.index', ['tab' => 'ovh']),
-                    'active' => request()->routeIs('settings.index') && $settingsTab === 'ovh',
-                ] : null,
-                $isDeveloper ? [
-                    'key' => 'config-licenseboy',
-                    'label' => 'LicenseBoy',
-                    'icon' => 'bi-key',
-                    'url' => route('settings.index', ['tab' => 'licenseboy']),
-                    'active' => request()->routeIs('settings.index') && $settingsTab === 'licenseboy',
-                ] : null,
-                $isDeveloper ? [
-                    'key' => 'config-regras',
-                    'label' => 'Regras',
-                    'icon' => 'bi-sliders',
-                    'url' => route('settings.index', ['tab' => 'rules']),
-                    'active' => request()->routeIs('settings.index') && $settingsTab === 'rules',
-                ] : null,
-                $isDeveloper ? [
-                    'key' => 'config-email',
-                    'label' => 'E-mail e tema',
-                    'icon' => 'bi-envelope-at',
-                    'url' => route('settings.index', ['tab' => 'mail']),
-                    'active' => request()->routeIs('settings.index') && $settingsTab === 'mail',
-                ] : null,
-                $isDeveloper ? [
-                    'key' => 'config-seguranca',
-                    'label' => 'Segurança',
-                    'icon' => 'bi-shield-check',
-                    'url' => route('settings.index', ['tab' => 'security']),
-                    'active' => request()->routeIs('settings.index') && $settingsTab === 'security',
-                ] : null,
-            ])),
+            'url' => route('settings.index'),
+            'active' => request()->routeIs('settings.*'),
         ] : null,
         $isDeveloper ? [
             'key' => 'crons',
@@ -276,6 +226,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por Marcelo Brad - RJ</div>
-        <div class="mt-1 opacity-75">v1.10.3 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.10.4 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

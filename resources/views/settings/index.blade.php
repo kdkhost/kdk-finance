@@ -26,44 +26,26 @@
         ];
     @endphp
 
-    <ul class="nav nav-pills gap-2 mb-3">
-        <li class="nav-item">
-            <a class="nav-link {{ $activeTab === 'taxes' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'taxes']) }}">
-                <i class="bi bi-percent me-1"></i> Câmbio e tributos
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {{ $activeTab === 'conversion' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'conversion']) }}">
-                <i class="bi bi-currency-exchange me-1"></i> Conversão e cartão
-            </a>
-        </li>
-        @if ($user->isDeveloperAdmin())
+    @php
+        $tabs = array_values(array_filter([
+            ['key' => 'taxes', 'label' => 'Câmbio e tributos', 'icon' => 'bi-percent'],
+            ['key' => 'conversion', 'label' => 'Conversão e cartão', 'icon' => 'bi-currency-exchange'],
+            $user->isDeveloperAdmin() ? ['key' => 'ovh', 'label' => 'OVHcloud', 'icon' => 'bi-cloud'] : null,
+            $user->isDeveloperAdmin() ? ['key' => 'licenseboy', 'label' => 'LicenseBoy', 'icon' => 'bi-key'] : null,
+            $user->isDeveloperAdmin() ? ['key' => 'rules', 'label' => 'Regras', 'icon' => 'bi-sliders'] : null,
+            $user->isDeveloperAdmin() ? ['key' => 'mail', 'label' => 'E-mail', 'icon' => 'bi-envelope-at'] : null,
+            $user->isDeveloperAdmin() ? ['key' => 'security', 'label' => 'Segurança', 'icon' => 'bi-shield-check'] : null,
+        ]));
+    @endphp
+
+    <ul class="nav nav-pills gap-2 mb-3" aria-label="Seções das configurações">
+        @foreach ($tabs as $tab)
             <li class="nav-item">
-                <a class="nav-link {{ $activeTab === 'ovh' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'ovh']) }}">
-                    <i class="bi bi-cloud me-1"></i> OVHcloud
+                <a class="nav-link {{ $activeTab === $tab['key'] ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => $tab['key']]) }}" @if ($activeTab === $tab['key']) aria-current="page" @endif>
+                    <i class="bi {{ $tab['icon'] }} me-1"></i> {{ $tab['label'] }}
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {{ $activeTab === 'licenseboy' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'licenseboy']) }}">
-                    <i class="bi bi-key me-1"></i> LicenseBoy
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ $activeTab === 'rules' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'rules']) }}">
-                    <i class="bi bi-sliders me-1"></i> Regras
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ $activeTab === 'mail' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'mail']) }}">
-                    <i class="bi bi-envelope-at me-1"></i> E-mail
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ $activeTab === 'security' ? 'active' : '' }}" href="{{ route('settings.index', ['tab' => 'security']) }}">
-                    <i class="bi bi-shield-check me-1"></i> Segurança
-                </a>
-            </li>
-        @endif
+        @endforeach
     </ul>
 
     @if ($activeTab === 'taxes')

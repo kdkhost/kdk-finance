@@ -126,7 +126,7 @@
 
                 <div class="auth-footer">
                     {{ config('finance.developer.company') }} · Desenvolvido por {{ config('finance.developer.name') }}<br>
-                    v1.10.3 · Laravel {{ \Illuminate\Foundation\Application::VERSION }}
+                    v1.10.4 · Laravel {{ \Illuminate\Foundation\Application::VERSION }}
                 </div>
             </div>
         </section>

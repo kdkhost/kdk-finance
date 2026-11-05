@@ -5,6 +5,17 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.4] - 2026-11-05
+
+### Alterado
+
+- **Abas internas não entram mais no menu lateral**: *Configurações* virou um item único, apontando para a página e marcado como ativo em qualquer aba (`?tab=...`). As sete seções (Câmbio e tributos, Conversão e cartão, OVHcloud, LicenseBoy, Regras, E-mail e Segurança) continuam nas pílulas da própria página, sem duplicar atalhos no sidebar. Regra vale para qualquer página com abas internas: o menu só leva à página, nunca a uma aba.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **161 testes e 756 asserções**, incluindo verificação de que nenhum link do menu carrega `?tab=` e que Configurações aparece como item único dentro de *Sistema*.
+- Validação no navegador em produção: menu com Configurações em um nível, abas internas preservadas e item ativo ao alternar as seções.
+
 ## [1.10.3] - 2026-11-05
 
 ### Alterado
