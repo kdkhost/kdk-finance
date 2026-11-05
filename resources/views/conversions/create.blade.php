@@ -12,7 +12,7 @@
 
 @section('title', 'Nova conversão')
 @section('eyebrow', 'Conversões')
-@section('subtitle', 'Calcule quantos dólares são necessários para pagar um valor em euros — já com spread, IOF e tarifas do cartão.')
+@section('subtitle', 'Converta entre euro, dólar e real para saber quanto reservar — já com spread, IOF e tarifas do cartão.')
 
 @section('content')
     @include('conversions._form', [

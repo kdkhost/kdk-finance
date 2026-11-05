@@ -79,7 +79,29 @@ class CurrencyConversion extends Model
         return [
             'EUR' => 'EUR · Euro',
             'USD' => 'USD · Dólar americano',
+            'BRL' => 'BRL · Real brasileiro',
         ];
+    }
+
+    /**
+     * Direções possíveis entre as moedas atendidas (origem → destino).
+     *
+     * @return array<int, string>
+     */
+    public static function pairs(): array
+    {
+        $codes = array_keys(self::currencies());
+        $pairs = [];
+
+        foreach ($codes as $from) {
+            foreach ($codes as $to) {
+                if ($from !== $to) {
+                    $pairs[] = $from.'-'.$to;
+                }
+            }
+        }
+
+        return $pairs;
     }
 
     public function creator(): BelongsTo
@@ -92,14 +114,36 @@ class CurrencyConversion extends Model
         return $this->from_currency.' → '.$this->to_currency;
     }
 
+    /**
+     * Prefixos sem ambiguidade: "US$" para dólar, "€" para euro e "R$" para real.
+     *
+     * @return array<string, string>
+     */
+    public static function symbols(): array
+    {
+        return [
+            'EUR' => '€',
+            'USD' => 'US$',
+            'BRL' => 'R$',
+        ];
+    }
+
+    public static function symbol(string $currency): string
+    {
+        $currency = strtoupper($currency);
+
+        return self::symbols()[$currency]
+            ?? (string) config('finance.currencies.'.$currency.'.symbol', $currency);
+    }
+
     public function fromSymbol(): string
     {
-        return (string) config('finance.currencies.'.$this->from_currency.'.symbol', $this->from_currency);
+        return self::symbol((string) $this->from_currency);
     }
 
     public function toSymbol(): string
     {
-        return (string) config('finance.currencies.'.$this->to_currency.'.symbol', $this->to_currency);
+        return self::symbol((string) $this->to_currency);
     }
 
     /**

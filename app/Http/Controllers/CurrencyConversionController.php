@@ -70,7 +70,7 @@ class CurrencyConversionController extends Controller
 
         return redirect()
             ->route('conversions.show', $conversion)
-            ->with('success', 'Conversão salva: '.$conversion->fromSymbol().' '.number_format((float) $conversion->total_to, 2, ',', '.').' é o valor necessário.');
+            ->with('success', 'Conversão salva: '.$conversion->toSymbol().' '.number_format((float) $conversion->total_to, 2, ',', '.').' é o valor necessário.');
     }
 
     public function show(CurrencyConversion $conversion): View
@@ -120,8 +120,8 @@ class CurrencyConversionController extends Controller
         return back()->with(
             'success',
             'Recalculado com a cotação atual ('.number_format((float) $result['market_rate'], 6, ',', '.').'): '
-            .$conversion->fromSymbol().' '.number_format((float) $result['total_to'], 2, ',', '.').'.'
-            .($previous > 0 ? ' Antes: '.$conversion->fromSymbol().' '.number_format($previous, 2, ',', '.').'.' : '')
+            .$conversion->toSymbol().' '.number_format((float) $result['total_to'], 2, ',', '.').'.'
+            .($previous > 0 ? ' Antes: '.$conversion->toSymbol().' '.number_format($previous, 2, ',', '.').'.' : '')
         );
     }
 
@@ -158,8 +158,8 @@ class CurrencyConversionController extends Controller
     public function quote(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'from' => ['required', Rule::in(['EUR', 'USD'])],
-            'to' => ['required', Rule::in(['EUR', 'USD']), 'different:from'],
+            'from' => ['required', Rule::in(array_keys(CurrencyConversion::currencies()))],
+            'to' => ['required', Rule::in(array_keys(CurrencyConversion::currencies())), 'different:from'],
             'fresh' => ['nullable', 'boolean'],
         ]);
 
@@ -173,8 +173,8 @@ class CurrencyConversionController extends Controller
     {
         $data = $request->validate([
             'description' => ['required', 'string', 'max:150'],
-            'from_currency' => ['required', Rule::in(['EUR', 'USD'])],
-            'to_currency' => ['required', Rule::in(['EUR', 'USD']), 'different:from_currency'],
+            'from_currency' => ['required', Rule::in(array_keys(CurrencyConversion::currencies()))],
+            'to_currency' => ['required', Rule::in(array_keys(CurrencyConversion::currencies())), 'different:from_currency'],
             'amount_from' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'market_rate' => ['nullable', 'numeric', 'min:0.000001', 'max:9999'],
             'provider_rate' => ['nullable', 'numeric', 'min:0.000001', 'max:9999'],
@@ -206,7 +206,7 @@ class CurrencyConversionController extends Controller
     {
         $query = CurrencyConversion::query();
 
-        if (in_array($request->query('pair'), ['EUR-USD', 'USD-EUR', 'EUR-BRL', 'USD-BRL'], true)) {
+        if (in_array($request->query('pair'), CurrencyConversion::pairs(), true)) {
             [$from, $to] = explode('-', (string) $request->query('pair'));
             $query->where('from_currency', $from)->where('to_currency', $to);
         }

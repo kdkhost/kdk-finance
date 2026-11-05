@@ -26,7 +26,7 @@ if (payload) {
     const refreshButton = document.getElementById('refresh-quote');
     const swapButton = document.getElementById('swap-currencies');
 
-    const symbols = config.symbols || { EUR: '€', USD: '$' };
+    const symbols = config.symbols || { EUR: '€', USD: '$', BRL: 'R$' };
     const state = {
         rate: Number(config.rate || 0),
         toBrlRate: Number(config.toBrlRate || 0),
@@ -193,7 +193,9 @@ if (payload) {
         const total = round2(subtotal + iof + fixed + buffer);
         const effective = amount > 0 ? total / amount : 0;
         const cost = base > 0 ? ((total / base) - 1) * 100 : 0;
-        const brl = total * state.toBrlRate;
+        // Quando o destino já é o real não existe segunda cotação a aplicar.
+        const toBrlRate = to === 'BRL' ? 1 : state.toBrlRate;
+        const brl = total * toBrlRate;
         const vet = amount > 0 && brl > 0 ? brl / amount : 0;
 
         set('total', money(to, total));
@@ -214,6 +216,13 @@ if (payload) {
     };
 
     const applyQuote = (quote) => {
+        // Duas trocas seguidas disparam duas consultas; a resposta atrasada da
+        // seleção anterior não pode sobrescrever o par que está na tela.
+        if (quote.from && quote.to
+            && (quote.from !== fromInput?.value || quote.to !== toInput?.value)) {
+            return;
+        }
+
         state.rate = Number(quote.rate || 0);
         state.toBrlRate = Number(quote.to_brl_rate || 0);
         state.source = quote.source || '';
@@ -318,7 +327,13 @@ if (payload) {
                 providerInput.value = '';
             }
 
+            // A referência em reais vale para o destino anterior: zera até a
+            // consulta do novo par responder, para não exibir valor trocado.
+            state.toBrlRate = 0;
+
             paintLabels();
+            // Recalcula já com a regra do novo destino (BRL não tem segunda cotação).
+            recalc();
             fetchQuote(false);
         });
     });
@@ -343,7 +358,10 @@ if (payload) {
             }
         }
 
+        state.toBrlRate = 0;
+
         paintLabels();
+        recalc();
         fetchQuote(false);
     });
 

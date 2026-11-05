@@ -12,7 +12,7 @@
 
 @section('title', 'Conversões')
 @section('eyebrow', 'Câmbio internacional')
-@section('subtitle', 'Quanto de EUR ou USD é necessário para pagar cada compromisso, incluindo spread, IOF e tarifas do cartão.')
+@section('subtitle', 'Quanto de euro, dólar ou real é necessário para pagar cada compromisso, incluindo spread, IOF e tarifas do cartão.')
 
 @section('actions')
     @if (auth()->user()->canManageFinance())
@@ -46,9 +46,9 @@
                     <div class="icon"><i class="bi bi-currency-exchange"></i></div>
                     <h3>Nenhuma conversão salva</h3>
                     <p>
-                        Informe o valor da fatura em euro, a cotação de mercado e, se tiver, a cotação
-                        que o PayPal ou o banco mostrou. O sistema aplica spread, IOF e tarifas e devolve
-                        quanto sai do cartão.
+                        Informe o valor da fatura em euro, dólar ou real, a cotação de mercado e, se tiver,
+                        a cotação que o PayPal ou o banco mostrou. O sistema aplica spread, IOF e tarifas e
+                        devolve quanto sai do cartão.
                     </p>
                     <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
                         <span class="currency-chip">EUR → USD · <span data-live="conversion-rate">{{ number_format($rate, 6, ',', '.') }}</span></span>
@@ -131,7 +131,7 @@
                         <label class="form-label" for="pair">Direção</label>
                         <select class="form-select" id="pair" name="pair">
                             <option value="">Todas</option>
-                            @foreach (['EUR-USD', 'USD-EUR'] as $pair)
+                            @foreach (\App\Models\CurrencyConversion::pairs() as $pair)
                                 <option value="{{ $pair }}" @selected(($filters['pair'] ?? '') === $pair)>
                                     {{ str_replace('-', ' → ', $pair) }}
                                 </option>

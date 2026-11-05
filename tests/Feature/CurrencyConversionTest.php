@@ -82,7 +82,8 @@ class CurrencyConversionTest extends TestCase
 
         $conversion = CurrencyConversion::query()->firstOrFail();
 
-        $response->assertRedirect(route('conversions.show', $conversion));
+        $response->assertRedirect(route('conversions.show', $conversion))
+            ->assertSessionHas('success', 'Conversão salva: US$ 118,30 é o valor necessário.');
 
         $this->assertSame('EUR', $conversion->from_currency);
         $this->assertSame('USD', $conversion->to_currency);
@@ -109,7 +110,8 @@ class CurrencyConversionTest extends TestCase
             ->get(route('conversions.show', $conversion))
             ->assertOk()
             ->assertSee('VET')
-            ->assertSee('6,506500');
+            ->assertSee('6,506500')
+            ->assertSee('US$ 118,30');
     }
 
     public function test_server_ignores_tampered_totals_sent_by_the_form(): void
@@ -298,6 +300,75 @@ class CurrencyConversionTest extends TestCase
         $this->assertSame('awesomeapi', $conversion->rate_source);
         // 100 × 1,20 = 120,00 ; spread 2,40 ; IOF 3,5% sobre 122,40 = 4,28 ; +1,00 ; margem 1% = 1,28
         $this->assertEquals(128.96, (float) $conversion->total_to);
+    }
+
+    public function test_real_brazilian_is_available_in_the_conversion_form(): void
+    {
+        $this->actingAs($this->manager())
+            ->get(route('conversions.create'))
+            ->assertOk()
+            ->assertSee('BRL · Real brasileiro');
+    }
+
+    public function test_converts_a_foreign_invoice_to_real_without_an_extra_rate(): void
+    {
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload([
+            'from_currency' => 'USD',
+            'to_currency' => 'BRL',
+            'market_rate' => '5.50',
+        ]))->assertRedirect();
+
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        $this->assertSame('BRL', $conversion->to_currency);
+        $this->assertEquals(550.00, (float) $conversion->base_to);
+        $this->assertEquals(587.46, (float) $conversion->total_to);
+        // O destino já é o real: nada de multiplicar por outra cotação.
+        $this->assertEquals(1.0, (float) $conversion->to_brl_rate);
+        $this->assertEquals(587.46, (float) $conversion->total_brl);
+        $this->assertEquals(5.8746, $conversion->vetBrl());
+    }
+
+    public function test_converts_from_real_using_the_market_cross(): void
+    {
+        $this->actingAs($this->manager())->post('/conversoes', $this->payload([
+            'from_currency' => 'BRL',
+            'to_currency' => 'USD',
+            'amount_from' => '1000.00',
+            'market_rate' => null,
+            'spread_percent' => '0',
+            'iof_percent' => '0',
+            'fixed_fee' => '0',
+            'buffer_percent' => '0',
+        ]))->assertRedirect();
+
+        $conversion = CurrencyConversion::query()->firstOrFail();
+
+        // 1 / 5,50 = 0,181818
+        $this->assertEqualsWithDelta(0.181818, (float) $conversion->market_rate, 0.000001);
+        $this->assertSame('cruzamento BRL', $conversion->rate_source);
+        $this->assertEquals(181.82, (float) $conversion->total_to);
+        $this->assertEquals(5.5, (float) $conversion->to_brl_rate);
+        $this->assertEquals(1000.01, (float) $conversion->total_brl);
+    }
+
+    public function test_quote_endpoint_accepts_real_against_the_brl_cross(): void
+    {
+        $response = $this->actingAs($this->manager())
+            ->getJson('/conversoes/cotacao?from=USD&to=BRL')
+            ->assertOk();
+
+        $this->assertEquals(5.5, (float) $response->json('rate'));
+        $this->assertEquals(1.0, (float) $response->json('to_brl_rate'));
+        $this->assertSame('cruzamento BRL', $response->json('source'));
+    }
+
+    public function test_index_filters_by_directions_including_real(): void
+    {
+        $this->actingAs($this->manager())
+            ->get('/conversoes?pair=BRL-USD')
+            ->assertOk()
+            ->assertSee('BRL → USD');
     }
 
     public function test_quote_endpoint_returns_the_direct_pair(): void

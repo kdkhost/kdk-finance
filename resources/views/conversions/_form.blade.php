@@ -62,7 +62,7 @@
                         <div class="col-md-6">
                             <label class="form-label" for="amount_from">Valor em <span data-calc="from-code">{{ $from }}</span> <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <span class="input-group-text" data-calc="from-symbol">{{ config('finance.currencies.'.$from.'.symbol') }}</span>
+                                <span class="input-group-text" data-calc="from-symbol">{{ \App\Models\CurrencyConversion::symbol($from) }}</span>
                                 <input type="number" step="0.01" min="0.01" class="form-control tabular @error('amount_from') is-invalid @enderror" id="amount_from" name="amount_from" value="{{ old('amount_from', (float) $conversion->amount_from > 0 ? $conversion->amount_from : '') }}" placeholder="0,00" required>
                             </div>
                             @error('amount_from')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -256,9 +256,8 @@
         'fixed_fee' => (float) ($defaults['fixed_fee'] ?? 0),
         'buffer_percent' => (float) ($defaults['buffer_percent'] ?? 0),
     ],
-    'symbols' => [
-        'EUR' => (string) config('finance.currencies.EUR.symbol'),
-        'USD' => (string) config('finance.currencies.USD.symbol'),
-    ],
+    'symbols' => collect(array_keys($currencyOptions))
+        ->mapWithKeys(fn ($code) => [$code => \App\Models\CurrencyConversion::symbol($code)])
+        ->all(),
     'quoteUrl' => route('conversions.quote'),
 ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) !!}</script>

@@ -5,6 +5,26 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.11.0] - 2026-11-05
+
+### Adicionado
+
+- **Real brasileiro nas conversões**: o formulário de conversão passou a oferecer BRL como moeda de origem e de destino, ao lado de euro e dólar. As seis direções ficam disponíveis (EUR-USD, EUR-BRL, USD-EUR, USD-BRL, BRL-EUR e BRL-USD), tanto no cadastro quanto no filtro da listagem.
+- **Cotação do par com o real**: o câmbio é buscado no par direto quando existe e, quando não existe, é derivado do cruzamento com o BRL (ex.: BRL → USD usa 1 ÷ USDBRL). A prévia ao vivo, o recálculo e a cotação do provedor funcionam igual às conversões entre moedas estrangeiras.
+- **Conversão para o real sem cotação dupla**: quando o destino é BRL, o equivalente em reais é o próprio total — nada de multiplicar por outra taxa. A referência em reais continua correta nas conversões em que o real é a origem.
+
+### Corrigido
+
+- **Prefixos de moeda sem ambiguidade na área de conversões**: valores em dólar aparecem como `US$` (antes `$`), o que passa a ser importante agora que o real circula nas mesmas telas. A prévia do formulário, a listagem e a tela de detalhes usam o mesmo prefixo do e-mail.
+- **Mensagem de retorno com a moeda certa**: ao salvar e ao recalcular, o aviso mostra o total na moeda de destino (`R$ 578,88` numa conversão USD → BRL), e não o prefixo da moeda de origem.
+- **Prévia sem valor trocado**: ao trocar a direção rapidamente, a resposta atrasada da consulta anterior não sobrescreve mais o par atual, e o equivalente em BRL fica em branco por um instante em vez de exibir a taxa do par antigo.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **170 testes e 808 asserções**.
+- Novos testes cobrem BRL disponível no formulário, conversão USD → BRL (equivalente em reais igual ao total), conversão BRL → USD pela cotação cruzada, cotação do par aceitando real e filtro pela direção BRL → USD. O aviso de sucesso e a tela de detalhes foram travados em `US$`.
+- Validação no navegador: USD → BRL de US$ 100 mostrou R$ 578,88 com spread, IOF e VET coerentes; BRL → EUR de R$ 1.000 converteu para € 172,40 usando o par direto; a conversão salva abriu a tela de detalhes com os prefixos corretos e o filtro por direção incluiu as seis combinações.
+
 ## [1.10.8] - 2026-11-05
 
 ### Corrigido
