@@ -14,6 +14,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\InvoiceAmountUpdatedEvent;
+use App\Models\AppSetting;
 use App\Models\Invoice;
 use App\Services\DashboardService;
 use App\Services\ExchangeRateService;
@@ -71,6 +72,7 @@ class InvoiceController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $applyServiceTaxes = $this->applyServiceTaxes($request);
 
         $invoice = Invoice::query()->create([
             'external_reference' => $data['external_reference'] ?? null,
@@ -79,13 +81,15 @@ class InvoiceController extends Controller
             'amount_original' => $data['amount_original'],
             'due_date' => $data['due_date'],
             'status' => Invoice::STATUS_PENDING,
+            'apply_service_taxes' => $applyServiceTaxes,
+            'tax_nature' => $data['tax_nature'] ?? 'service',
         ]);
 
         $rate = isset($data['exchange_rate'])
             ? (float) $data['exchange_rate']
             : $this->exchange->rate($invoice->currency);
 
-        $this->tax->applyToInvoice($invoice, $rate);
+        $this->tax->applyToInvoice($invoice, $rate, [], $applyServiceTaxes);
 
         if (($data['status'] ?? Invoice::STATUS_PENDING) === Invoice::STATUS_PAID) {
             $invoice->update([
@@ -125,6 +129,10 @@ class InvoiceController extends Controller
             'external_reference' => $data['external_reference'] ?? null,
             'description' => $data['description'],
             'due_date' => $data['due_date'],
+            'tax_nature' => $data['tax_nature'] ?? ($invoice->tax_nature ?: 'service'),
+            'apply_service_taxes' => $request->has('apply_service_taxes')
+                ? $request->boolean('apply_service_taxes')
+                : (bool) $invoice->apply_service_taxes,
         ]);
 
         if (! $invoice->rate_locked) {
@@ -135,7 +143,7 @@ class InvoiceController extends Controller
                 ? (float) $data['exchange_rate']
                 : $this->exchange->rate($invoice->currency);
 
-            $this->tax->applyToInvoice($invoice, $rate);
+            $this->tax->applyToInvoice($invoice, $rate, [], $invoice->apply_service_taxes);
         }
 
         $desiredStatus = $data['status'] ?? $invoice->status;
@@ -163,7 +171,7 @@ class InvoiceController extends Controller
         }
 
         if (! $invoice->rate_locked) {
-            $this->tax->applyToInvoice($invoice, $this->exchange->rate($invoice->currency));
+            $this->tax->applyToInvoice($invoice, $this->exchange->rate($invoice->currency), [], (bool) $invoice->apply_service_taxes);
         }
 
         $invoice->update([
@@ -213,7 +221,7 @@ class InvoiceController extends Controller
             $paidAt = Carbon::parse(data_get($bill, 'date', now()));
 
             if (! $invoice->rate_locked) {
-                $this->tax->applyToInvoice($invoice, $this->exchange->rate($invoice->currency));
+                $this->tax->applyToInvoice($invoice, $this->exchange->rate($invoice->currency), [], (bool) $invoice->apply_service_taxes);
             }
 
             $invoice->update([
@@ -260,7 +268,7 @@ class InvoiceController extends Controller
         }
 
         $previous = (float) $invoice->total_brl;
-        $result = $this->tax->applyToInvoice($invoice, $this->exchange->rate($invoice->currency));
+        $result = $this->tax->applyToInvoice($invoice, $this->exchange->rate($invoice->currency), [], (bool) $invoice->apply_service_taxes);
         $invoice->refresh();
 
         $variation = $previous > 0 ? (($result['total_brl'] - $previous) / $previous) * 100 : 0;
@@ -286,18 +294,21 @@ class InvoiceController extends Controller
         $rows = $invoices->map(fn (Invoice $invoice): array => [
             'amount_original' => number_format((float) $invoice->amount_original, 2, ',', ''),
             'calculated_at' => $invoice->calculated_at?->format('d/m/Y H:i') ?? '',
+            'card_total' => number_format($invoice->cardTotal(), 2, ',', ''),
             'currency' => $invoice->currency,
             'description' => $invoice->description,
             'due_date' => $invoice->due_date?->format('d/m/Y') ?? '',
             'exchange_rate' => number_format((float) $invoice->exchange_rate, 4, ',', ''),
             'external_reference' => $invoice->external_reference ?? '',
             'icms' => number_format((float) $invoice->icms_amount, 2, ',', ''),
+            'import_taxes' => number_format($invoice->importTaxesTotal(), 2, ',', ''),
             'iof' => number_format((float) $invoice->iof_amount, 2, ',', ''),
             'other_taxes' => number_format((float) $invoice->other_taxes_amount, 2, ',', ''),
             'paid_at' => $invoice->paid_at?->format('d/m/Y H:i') ?? '',
             'rate_locked' => $invoice->rate_locked ? 'Sim' : 'Não',
             'spread' => number_format((float) $invoice->spread_amount, 2, ',', ''),
             'status' => $invoice->statusLabel(),
+            'tax_nature' => $invoice->tax_nature === 'goods' ? 'Produto' : 'Serviço',
             'total_brl' => number_format((float) $invoice->total_brl, 2, ',', ''),
         ]);
 
@@ -307,21 +318,37 @@ class InvoiceController extends Controller
             [
                 'amount_original' => 'Valor original',
                 'calculated_at' => 'Calculado em',
+                'card_total' => 'Total no cartão (R$)',
                 'currency' => 'Moeda',
                 'description' => 'Descrição',
                 'due_date' => 'Vencimento',
                 'exchange_rate' => 'Cotação',
                 'external_reference' => 'Referência OVH',
                 'icms' => 'ICMS (R$)',
+                'import_taxes' => 'Tributos da importação (R$)',
                 'iof' => 'IOF (R$)',
                 'other_taxes' => 'Outros tributos (R$)',
                 'paid_at' => 'Pago em',
                 'rate_locked' => 'Câmbio travado',
                 'spread' => 'Spread (R$)',
                 'status' => 'Status',
-                'total_brl' => 'Total (R$)',
+                'tax_nature' => 'Natureza',
+                'total_brl' => 'Total a reservar (R$)',
             ]
         );
+    }
+
+    /**
+     * Sem o campo no formulário, segue a configuração global de tributos.
+     * O formulário sempre envia o valor quando o usuário usa a tela.
+     */
+    private function applyServiceTaxes(Request $request): bool
+    {
+        if ($request->has('apply_service_taxes')) {
+            return $request->boolean('apply_service_taxes');
+        }
+
+        return filter_var(AppSetting::get('service_taxes_enabled', true), FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -340,6 +367,8 @@ class InvoiceController extends Controller
             'exchange_rate' => ['nullable', 'numeric', 'min:0.0001', 'max:999.9999'],
             'due_date' => ['required', 'date'],
             'status' => ['nullable', Rule::in(array_keys(Invoice::statuses()))],
+            'tax_nature' => ['nullable', Rule::in(array_keys(Invoice::natures()))],
+            'apply_service_taxes' => ['nullable', 'boolean'],
         ], [], [
             'description' => 'descrição',
             'external_reference' => 'referência externa',

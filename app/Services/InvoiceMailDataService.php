@@ -48,6 +48,9 @@ class InvoiceMailDataService
         $others = round((float) $invoice->other_taxes_amount, 2);
         $taxBase = round($base + $spread, 2);
         $total = round((float) $invoice->total_brl, 2);
+        $cardTotal = round($invoice->cardTotal(), 2);
+        $importTotal = round($invoice->importTaxesTotal(), 2);
+        $lines = $invoice->taxLines();
 
         $panelUrl = route('invoices.show', $invoice);
         $officialUrl = $this->officialUrl($invoice) ?: $panelUrl;
@@ -58,6 +61,7 @@ class InvoiceMailDataService
             'fatura' => (string) ($invoice->external_reference ?: $invoice->description),
             'fornecedor' => $this->supplier($invoice),
             'moeda' => $this->currencyLabel($invoice),
+            'natureza' => $invoice->tax_nature === 'goods' ? 'Produto físico' : 'Serviço importado',
             'vencimento' => $invoice->due_date?->format('d/m/Y') ?? '—',
             'valor_original' => $this->originalAmount($invoice, $amountOriginal),
             'cotacao' => 'R$ '.number_format($rate, 4, ',', '.'),
@@ -67,6 +71,16 @@ class InvoiceMailDataService
             'icms' => $this->taxLine($icms, $taxBase),
             'outros_tributos' => $this->taxLine($others, $taxBase),
             'total_tributos' => $this->brl($spread + $iof + $icms + $others),
+            'total_cartao' => $this->brl($cardTotal),
+            'tributos_importacao' => $this->brl($importTotal),
+            'tributos_importacao_detalhe' => $this->importTaxDetail($lines),
+            'pis_cofins' => $this->lineTax($lines, 'pis_cofins', $taxBase),
+            'irrf' => $this->lineTax($lines, 'irrf', $taxBase),
+            'iss' => $this->lineTax($lines, 'iss', $taxBase),
+            'cide' => $this->lineTax($lines, 'cide', $taxBase),
+            'cbs' => $this->lineTax($lines, 'cbs', $taxBase),
+            'ibs' => $this->lineTax($lines, 'ibs', $taxBase),
+            'imposto_importacao' => $this->lineTax($lines, 'import_tax', $taxBase),
             'total_brl' => $this->brl($total),
             // Compatibilidade com modelos antigos que ainda usam {{ valor }}.
             'valor' => $this->brl($total),
@@ -170,6 +184,47 @@ class InvoiceMailDataService
         $percent = $base > 0 ? round($amount / $base * 100, 2) : 0.0;
 
         return number_format($percent, 2, ',', '.').'% · '.$this->brl($amount);
+    }
+
+    /**
+     * Linhas específicas do detalhamento (percentual gravado na fatura).
+     *
+     * @param  list<array<string, mixed>>  $lines
+     */
+    private function lineTax(array $lines, string $key, float $base): string
+    {
+        foreach ($lines as $line) {
+            if (($line['key'] ?? null) === $key) {
+                return $this->taxLine((float) ($line['amount'] ?? 0), $base);
+            }
+        }
+
+        return $this->taxLine(0.0, $base);
+    }
+
+    /**
+     * Só as linhas da importação que realmente incidiram, em uma frase.
+     *
+     * @param  list<array<string, mixed>>  $lines
+     */
+    private function importTaxDetail(array $lines): string
+    {
+        $parts = [];
+
+        foreach ($lines as $line) {
+            if (($line['group'] ?? '') === 'cartao' || (float) ($line['amount'] ?? 0) <= 0) {
+                continue;
+            }
+
+            $percent = $line['percent'] ?? null;
+            $parts[] = ($line['label'] ?? $line['key'])
+                .($percent !== null ? ' '.number_format((float) $percent, 2, ',', '.').'%' : '')
+                .' · '.$this->brl((float) $line['amount']);
+        }
+
+        return $parts !== []
+            ? implode('; ', $parts)
+            : 'Nenhum tributo de importação aplicado nesta fatura.';
     }
 
     private function brl(float $value): string

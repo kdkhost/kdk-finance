@@ -44,7 +44,7 @@ class InvoiceMailBreakdownTest extends TestCase
             'spread' => 2.0,
             'iof' => 3.5,
             'icms' => 0.0,
-            'outros' => 1.0,
+            'outros' => 0.0,
         ]);
 
         return $invoice->fresh();
@@ -60,13 +60,18 @@ class InvoiceMailBreakdownTest extends TestCase
         $this->assertSame('€ 100,00', $variables['valor_original']);
         $this->assertSame('R$ 5,5000', $variables['cotacao']);
         $this->assertSame('R$ 550,00', $variables['valor_base']);
+        $this->assertSame('Serviço importado', $variables['natureza']);
         $this->assertSame('2,00% · R$ 11,00', $variables['spread']);
         $this->assertSame('3,50% · R$ 19,64', $variables['iof']);
-        $this->assertSame('0,00% · R$ 0,00', $variables['icms']);
-        $this->assertSame('1,00% · R$ 5,61', $variables['outros_tributos']);
-        $this->assertSame('R$ 36,25', $variables['total_tributos']);
-        $this->assertSame('R$ 586,25', $variables['total_brl']);
-        $this->assertSame('R$ 586,25', $variables['valor']);
+        $this->assertSame('R$ 580,64', $variables['total_cartao']);
+        $this->assertSame('9,25% · R$ 51,89', $variables['pis_cofins']);
+        $this->assertSame('15,00% · R$ 84,15', $variables['irrf']);
+        $this->assertSame('5,00% · R$ 28,05', $variables['iss']);
+        $this->assertSame('R$ 164,09', $variables['tributos_importacao']);
+        $this->assertStringContainsString('PIS/COFINS-Importação 9,25% · R$ 51,89', $variables['tributos_importacao_detalhe']);
+        $this->assertStringContainsString('IRRF — rendimento no exterior 15,00% · R$ 84,15', $variables['tributos_importacao_detalhe']);
+        $this->assertSame('R$ 744,73', $variables['total_brl']);
+        $this->assertSame('R$ 744,73', $variables['valor']);
         $this->assertSame(route('invoices.show', $invoice), $variables['link_painel']);
         $this->assertSame($variables['link_painel'], $variables['link_oficial']);
     }
@@ -82,9 +87,12 @@ class InvoiceMailBreakdownTest extends TestCase
 
         $this->assertSame($url, $payload['action_url']);
         $this->assertSame('Pagar fatura', $payload['action_text']);
-        $this->assertArrayHasKey('Total a reservar', $payload['details']);
-        $this->assertSame('R$ 586,25', $payload['details']['Total a reservar']);
-        $this->assertStringContainsString('R$ 586,25', $payload['subject']);
+        $this->assertArrayHasKey('Total no cartão', $payload['details']);
+        $this->assertArrayHasKey('Tributos da importação', $payload['details']);
+        $this->assertSame('R$ 580,64', $payload['details']['Total no cartão']);
+        $this->assertSame('R$ 164,09', $payload['details']['Tributos da importação']);
+        $this->assertSame('R$ 744,73', $payload['details']['Total a reservar']);
+        $this->assertStringContainsString('R$ 744,73', $payload['subject']);
     }
 
     public function test_licenseboy_invoice_points_to_the_official_payment_area(): void
@@ -133,8 +141,10 @@ class InvoiceMailBreakdownTest extends TestCase
         Mail::assertSent(ThemedMail::class, function (ThemedMail $mail) use ($url): bool {
             return $mail->actionUrl === $url
                 && ($mail->details['IOF'] ?? null) === '3,50% · R$ 19,64'
-                && ($mail->details['Total a reservar'] ?? null) === 'R$ 586,25'
-                && str_contains((string) $mail->subject, 'R$ 586,25');
+                && ($mail->details['Total no cartão'] ?? null) === 'R$ 580,64'
+                && ($mail->details['Tributos da importação'] ?? null) === 'R$ 164,09'
+                && ($mail->details['Total a reservar'] ?? null) === 'R$ 744,73'
+                && str_contains((string) $mail->subject, 'R$ 744,73');
         });
     }
 }

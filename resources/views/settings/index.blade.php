@@ -18,12 +18,51 @@
     @php
         $activeTab = request('tab', 'taxes');
         $user = auth()->user();
-        $taxValues = [
-            'spread_percent' => \App\Models\AppSetting::get('spread_percent', config('finance.taxes.spread_percent')),
-            'iof_percent' => \App\Models\AppSetting::get('iof_percent', config('finance.taxes.iof_percent')),
-            'icms_percent' => \App\Models\AppSetting::get('icms_percent', config('finance.taxes.icms_percent')),
-            'other_taxes_percent' => \App\Models\AppSetting::get('other_taxes_percent', config('finance.taxes.other_taxes_percent')),
+        $taxFields = [
+            'spread_percent',
+            'iof_percent',
+            'card_fixed_fee',
+            'pis_cofins_percent',
+            'irrf_percent',
+            'iss_percent',
+            'cide_percent',
+            'cbs_percent',
+            'ibs_percent',
+            'other_taxes_percent',
+            'icms_percent',
+            'import_tax_percent',
+            'import_tax_deduction_usd',
         ];
+        $taxValues = [];
+
+        foreach ($taxFields as $field) {
+            $taxValues[$field] = \App\Models\AppSetting::get($field, config('finance.taxes.'.$field, 0));
+        }
+
+        $flagKeys = [
+            'card_spread_auto',
+            'service_taxes_enabled',
+            'pis_cofins_enabled',
+            'irrf_enabled',
+            'iss_enabled',
+            'cide_enabled',
+            'cbs_enabled',
+            'ibs_enabled',
+            'other_taxes_enabled',
+            'icms_enabled',
+            'import_tax_enabled',
+        ];
+        $taxFlags = [];
+
+        foreach ($flagKeys as $flag) {
+            $taxFlags[$flag] = filter_var(
+                \App\Models\AppSetting::get($flag, config('finance.taxes.'.$flag, '0')),
+                FILTER_VALIDATE_BOOLEAN
+            );
+        }
+
+        $spreadSource = (string) \App\Models\AppSetting::get('card_spread_source', 'manual');
+        $percent = fn (string $key, int $decimals = 4) => number_format((float) $taxValues[$key], $decimals, ',', '.');
     @endphp
 
     @php
@@ -50,58 +89,240 @@
 
     <div id="settings-panel" tabindex="-1" aria-live="polite">
     @if ($activeTab === 'taxes')
+        @php
+            $serviceTaxes = [
+                ['key' => 'pis_cofins', 'label' => 'PIS/COFINS-Importação', 'legal' => 'Lei 10.865/2004 — 1,65% + 7,6%', 'hint' => 'Recolhido pela empresa; no lucro real pode gerar crédito.'],
+                ['key' => 'irrf', 'label' => 'IRRF — rendimento no exterior', 'legal' => 'Lei 9.779/1999, art. 7º — 15%', 'hint' => 'Acordos de bitributação podem reduzir a alíquota.'],
+                ['key' => 'iss', 'label' => 'ISS — serviço importado', 'legal' => 'LC 116/2003 — 2% a 5%', 'hint' => 'Ajuste para a alíquota do seu município.'],
+                ['key' => 'cide', 'label' => 'CIDE — serviços técnicos', 'legal' => 'Lei 10.168/2000 — 10%', 'hint' => 'Só em royalties, serviços técnicos e transferência de tecnologia.'],
+                ['key' => 'cbs', 'label' => 'CBS — fase de teste 2026', 'legal' => 'LC 214/2025 — 0,9%', 'hint' => 'Compensável com PIS/COFINS; ative se a contabilidade destacar.'],
+                ['key' => 'ibs', 'label' => 'IBS — fase de teste 2026', 'legal' => 'LC 214/2025 — 0,1%', 'hint' => 'Compensável com ICMS/ISS; ative se a contabilidade destacar.'],
+                ['key' => 'other_taxes', 'label' => 'Outros tributos', 'legal' => 'Manual', 'hint' => 'Taxas específicas do seu município ou regime.'],
+            ];
+            $when = fn ($iso) => $iso ? \Illuminate\Support\Carbon::parse($iso)->format('d/m/Y H:i') : null;
+        @endphp
+
         <div class="row g-3">
-            <div class="col-lg-7">
-                <div class="card">
-                    <div class="card-header">Percentuais aplicados</div>
-                    <div class="card-body">
-                        <form method="POST" action="{{ route('settings.taxes') }}">
-                            @csrf
-                            @method('PUT')
+            <div class="col-xl-7">
+                <form method="POST" action="{{ route('settings.taxes') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="card mb-3">
+                        <div class="card-header">Encargos do cartão — o que aparece na fatura do banco</div>
+                        <div class="card-body">
                             <div class="row g-3">
-                                @foreach ([
-                                    'spread_percent' => 'Spread cambial',
-                                    'iof_percent' => 'IOF',
-                                    'icms_percent' => 'ICMS',
-                                    'other_taxes_percent' => 'Outros tributos',
-                                ] as $field => $label)
-                                    <div class="col-sm-6">
-                                        <label class="form-label" for="{{ $field }}">{{ $label }}</label>
-                                        <div class="input-group">
-                                            <input type="number" step="0.01" min="0" max="100" class="form-control tabular @error($field) is-invalid @enderror" id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $taxValues[$field]) }}" required>
-                                            <span class="input-group-text">%</span>
-                                            @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                        </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label" for="spread_percent">Spread da bandeira/banco</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.0001" min="0" max="100" class="form-control tabular @error('spread_percent') is-invalid @enderror" id="spread_percent" name="spread_percent" value="{{ old('spread_percent', $taxValues['spread_percent']) }}" required>
+                                        <span class="input-group-text">%</span>
+                                        @error('spread_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
-                                @endforeach
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label" for="iof_percent">IOF — cartão internacional</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" max="100" class="form-control tabular @error('iof_percent') is-invalid @enderror" id="iof_percent" name="iof_percent" value="{{ old('iof_percent', $taxValues['iof_percent']) }}" required>
+                                        <span class="input-group-text">%</span>
+                                        @error('iof_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">Decreto 6.306/2007, art. 15-B, VII — 3,5% desde 11/06/2025.</div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label" for="card_fixed_fee">Tarifa fixa do banco</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="number" step="0.01" min="0" class="form-control tabular @error('card_fixed_fee') is-invalid @enderror" id="card_fixed_fee" name="card_fixed_fee" value="{{ old('card_fixed_fee', $taxValues['card_fixed_fee']) }}" required>
+                                        @error('card_fixed_fee')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">Por fatura, quando o banco cobra tarifa fixa.</div>
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="card_spread_auto" name="card_spread_auto" value="1" @checked($taxFlags['card_spread_auto'])>
+                                        <label class="form-check-label" for="card_spread_auto">Atualizar o spread automaticamente</label>
+                                    </div>
+                                    <div class="form-text">O cron diário lê a fonte escolhida e grava o spread usado nas novas faturas.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="card_spread_source">Fonte do spread automático</label>
+                                    <select class="form-select" id="card_spread_source" name="card_spread_source">
+                                        <option value="manual" @selected($spreadSource === 'manual')>Manual — só o painel</option>
+                                        <option value="paypal" @selected($spreadSource === 'paypal')>PayPal — spread observado nos recibos</option>
+                                        <option value="visa" @selected($spreadSource === 'visa')>Visa — markup publicado pela bandeira</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div class="hint-banner mt-3">
                                 <i class="bi bi-calculator"></i>
                                 <div>
-                                    Fórmula: <span class="mono">valor × cotação</span> + spread sobre a base; IOF, ICMS e outros incidem sobre a base com spread.
+                                    <span class="mono">valor × cotação</span> = base; spread e tarifa fixa sobre a base; IOF sobre a base com spread. Os tributos da importação incidem sobre a base com spread e são somados no total a reservar.
                                 </div>
                             </div>
-
-                            <div class="d-flex justify-content-end mt-3">
-                                <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Salvar percentuais</button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
-                </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>Tributos da importação de serviços</span>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch" id="service_taxes_enabled" name="service_taxes_enabled" value="1" @checked($taxFlags['service_taxes_enabled'])>
+                                <label class="form-check-label" for="service_taxes_enabled">Aplicar nas novas faturas</label>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                @foreach ($serviceTaxes as $tax)
+                                    @php $field = $tax['key'].'_percent'; @endphp
+                                    <div class="col-md-6">
+                                        <div class="surface-muted p-3 h-100">
+                                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" role="switch" id="{{ $tax['key'] }}_enabled" name="{{ $tax['key'] }}_enabled" value="1" @checked($taxFlags[$tax['key'].'_enabled'])>
+                                                    <label class="form-check-label" for="{{ $tax['key'] }}_enabled">{{ $tax['label'] }}</label>
+                                                </div>
+                                                <div class="input-group input-group-sm" style="max-width: 120px;">
+                                                    <input type="number" step="0.0001" min="0" max="100" class="form-control tabular @error($field) is-invalid @enderror" id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $taxValues[$field]) }}" required>
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            <div class="text-muted-soft mt-2" style="font-size:.72rem;">{{ $tax['legal'] }}</div>
+                                            <div class="text-muted-soft" style="font-size:.72rem;">{{ $tax['hint'] }}</div>
+                                            @error($field)<div class="text-danger" style="font-size:.72rem;">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="text-muted-soft" style="font-size:.74rem;">
+                                Aplicam-se independentemente da forma de pagamento. PIS/COFINS, IRRF e CIDE são recolhidos pela empresa; o ISS depende do município.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">Importação de bens — produtos físicos</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="icms_enabled" name="icms_enabled" value="1" @checked($taxFlags['icms_enabled'])>
+                                        <label class="form-check-label" for="icms_enabled">ICMS de importação</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" max="100" class="form-control tabular @error('icms_percent') is-invalid @enderror" id="icms_percent" name="icms_percent" value="{{ old('icms_percent', $taxValues['icms_percent']) }}" required>
+                                        <span class="input-group-text">%</span>
+                                        @error('icms_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">Convênio 81/2023 — 17% a 20%, conforme o estado. Não se aplica a serviços.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="import_tax_enabled" name="import_tax_enabled" value="1" @checked($taxFlags['import_tax_enabled'])>
+                                        <label class="form-check-label" for="import_tax_enabled">Imposto de Importação</label>
+                                    </div>
+                                    <div class="input-group mb-2">
+                                        <input type="number" step="0.01" min="0" max="100" class="form-control tabular @error('import_tax_percent') is-invalid @enderror" id="import_tax_percent" name="import_tax_percent" value="{{ old('import_tax_percent', $taxValues['import_tax_percent']) }}" required>
+                                        <span class="input-group-text">%</span>
+                                        @error('import_tax_percent')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <label class="form-label" for="import_tax_deduction_usd">Dedução por remessa</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">US$</span>
+                                        <input type="number" step="0.01" min="0" class="form-control tabular @error('import_tax_deduction_usd') is-invalid @enderror" id="import_tax_deduction_usd" name="import_tax_deduction_usd" value="{{ old('import_tax_deduction_usd', $taxValues['import_tax_deduction_usd']) }}" required>
+                                        @error('import_tax_deduction_usd')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                    <div class="form-text">60% acima de US$ 50, com dedução de US$ 30 no Remessa Conforme. CNPJ paga desde a primeira faixa.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> Salvar tributos</button>
+                    </div>
+                </form>
             </div>
 
-            <div class="col-lg-5">
-                <div class="card">
+            <div class="col-xl-5">
+                <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>Cotações atuais</span>
+                        <span>Referência de tarifas</span>
                         @if ($user->isDeveloperAdmin())
-                            <form method="POST" action="{{ route('settings.rates.refresh') }}">
+                            <form method="POST" action="{{ route('settings.fees.sync') }}">
                                 @csrf
-                                <button type="submit" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-repeat me-1"></i> Atualizar</button>
+                                <button type="submit" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-repeat me-1"></i> Sincronizar</button>
                             </form>
                         @endif
                     </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <div class="fw-semibold">Visa — markup da bandeira</div>
+                                <div class="text-muted-soft" style="font-size:.72rem;">{{ $when($feeReferences['visa_at']) ? 'Lido em '.$when($feeReferences['visa_at']) : 'Ainda não sincronizado' }}</div>
+                            </div>
+                            <div class="tabular fw-semibold">
+                                {{ $feeReferences['visa'] !== null ? number_format((float) $feeReferences['visa'], 4, ',', '.').'%' : '—' }}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <div class="fw-semibold">Mastercard — markup da bandeira</div>
+                                <div class="text-muted-soft" style="font-size:.72rem;">{{ $when($feeReferences['mastercard_at']) ? 'Lido em '.$when($feeReferences['mastercard_at']) : 'Endpoint protegido; falha registrada no histórico' }}</div>
+                            </div>
+                            <div class="tabular fw-semibold">
+                                {{ $feeReferences['mastercard'] !== null ? number_format((float) $feeReferences['mastercard'], 4, ',', '.').'%' : '—' }}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <div class="fw-semibold">Banco Central — PTAX</div>
+                                <div class="text-muted-soft" style="font-size:.72rem;">
+                                    {{ $feeReferences['bcb_usd_date'] ? 'Fechamento de '.\Illuminate\Support\Carbon::parse($feeReferences['bcb_usd_date'])->format('d/m/Y') : 'Ainda não sincronizado' }}
+                                </div>
+                            </div>
+                            <div class="tabular text-end" style="font-size:.82rem;">
+                                US$ {{ $feeReferences['bcb_usd'] !== null ? number_format((float) $feeReferences['bcb_usd'], 4, ',', '.') : '—' }}<br>
+                                € {{ $feeReferences['bcb_eur'] !== null ? number_format((float) $feeReferences['bcb_eur'], 4, ',', '.') : '—' }}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <div class="fw-semibold">PayPal — spread observado</div>
+                                <div class="text-muted-soft" style="font-size:.72rem;">
+                                    {{ $feeReferences['paypal_samples'] ? $feeReferences['paypal_samples'].' conversão(ões) na janela' : 'Sem recibos com cotação do provedor' }}
+                                </div>
+                            </div>
+                            <div class="tabular fw-semibold">
+                                {{ $feeReferences['paypal'] !== null ? number_format((float) $feeReferences['paypal'], 4, ',', '.').'%' : '—' }}
+                            </div>
+                        </div>
+
+                        <div class="hint-banner mt-3">
+                            <i class="bi bi-info-circle"></i>
+                            <div>
+                                O PayPal não publica taxa por API: o spread é a mediana das suas conversões registradas. Bancos também não publicam tarifas — a PTAX é a referência oficial e a tarifa fixa fica no painel.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent text-muted-soft" style="font-size:.72rem;">
+                        Última sincronização: {{ $when($feeReferences['last_at']) ?? 'nunca' }}
+                        @if ($feeReferences['last_status'] === 'indisponivel')
+                            · <span class="text-warning">uma fonte não respondeu</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">Cotações atuais</div>
                     <div class="card-body">
                         @foreach (['USD', 'EUR'] as $currency)
                             @php $rate = $rates[$currency]; @endphp
@@ -141,6 +362,54 @@
                             @if ($usingAlternative)
                                 <span class="d-block mt-1">A AwesomeAPI está limitada no momento; usando o provedor alternativo automaticamente.</span>
                             @endif
+                        </div>
+                        @if ($user->isDeveloperAdmin())
+                            <form method="POST" action="{{ route('settings.rates.refresh') }}" class="mt-3">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-arrow-repeat me-1"></i> Atualizar cotações</button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Histórico da sincronização</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Fonte</th>
+                                        <th>Leitura</th>
+                                        <th class="text-end">Valor</th>
+                                        <th>Quando</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($feeRuns as $run)
+                                        @php
+                                            $statusLabels = [
+                                                \App\Models\FeeSyncRun::STATUS_OK => ['OK', 'badge-status badge-status--paid'],
+                                                \App\Models\FeeSyncRun::STATUS_UNAVAILABLE => ['Indisponível', 'badge-status badge-status--pending'],
+                                                \App\Models\FeeSyncRun::STATUS_SKIPPED => ['Ignorado', 'badge-status badge-status--canceled'],
+                                            ];
+                                            [$statusLabel, $statusClass] = $statusLabels[$run->status] ?? [$run->status, 'badge-status'];
+                                        @endphp
+                                        <tr>
+                                            <td class="text-capitalize">{{ $run->source }}</td>
+                                            <td><span class="{{ $statusClass }}">{{ $statusLabel }}</span></td>
+                                            <td class="text-end tabular">
+                                                {{ $run->value === null ? '—' : ($run->source === 'bcb' ? number_format((float) $run->value, 4, ',', '.') : number_format((float) $run->value, 4, ',', '.').'%') }}
+                                            </td>
+                                            <td class="text-muted-soft" style="font-size:.72rem;">{{ $run->created_at?->format('d/m H:i') }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted-soft py-4">Nenhuma sincronização registrada.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

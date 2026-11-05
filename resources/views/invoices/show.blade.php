@@ -28,7 +28,11 @@
 @section('content')
     @php
         $money = fn ($value) => 'R$ '.number_format((float) $value, 2, ',', '.');
-        $taxTotal = $invoice->taxesTotal();
+        $cardTotal = $invoice->cardTotal();
+        $importTotal = $invoice->importTaxesTotal();
+        $lines = $invoice->taxLines();
+        $importLines = array_values(array_filter($lines, fn (array $line): bool => ($line['group'] ?? '') !== 'cartao'
+            && (($line['active'] ?? false) || (float) ($line['amount'] ?? 0) > 0)));
         $vetBrl = (float) $invoice->amount_original > 0
             ? (float) $invoice->total_brl / (float) $invoice->amount_original
             : 0.0;
@@ -63,11 +67,12 @@
                             </div>
                         </div>
                         <div class="text-end">
-                            <div class="stat-label">Total em BRL</div>
+                            <div class="stat-label">Total a reservar</div>
                             <div class="amount-hero mt-1">{{ $money($invoice->total_brl) }}</div>
                             <div class="text-muted-soft mt-1" style="font-size:.74rem;">
                                 {{ $invoice->currencySymbol() }} {{ number_format((float) $invoice->amount_original, 2, ',', '.') }}
                                 × {{ number_format((float) $invoice->exchange_rate, 4, ',', '.') }}
+                                · no cartão {{ $money($cardTotal) }}
                             </div>
                         </div>
                     </div>
@@ -82,29 +87,31 @@
                             <div class="kpi-value">{{ number_format((float) $invoice->exchange_rate, 4, ',', '.') }}</div>
                         </div>
                         <div class="kpi">
-                            <div class="kpi-label">Tributos</div>
-                            <div class="kpi-value">{{ $money($taxTotal) }}</div>
+                            <div class="kpi-label">Total no cartão</div>
+                            <div class="kpi-value">{{ $money($cardTotal) }}</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Tributos da importação</div>
+                            <div class="kpi-value">{{ $money($importTotal) }}</div>
                         </div>
                         <div class="kpi">
                             <div class="kpi-label">VET · R$ por {{ $invoice->currency }}</div>
                             <div class="kpi-value">R$ {{ number_format($vetBrl, 4, ',', '.') }}</div>
-                        </div>
-                        <div class="kpi">
-                            <div class="kpi-label">Cotação atual</div>
-                            <div class="kpi-value">
-                                {{ number_format((float) ($rates[$invoice->currency]['rate'] ?? 0), 4, ',', '.') }}
-                                @if ($invoice->rate_locked)
-                                    <i class="bi bi-lock-fill text-muted-soft ms-1" style="font-size:.7rem;"></i>
-                                @endif
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="card mb-3">
-                <div class="card-header">Composição do valor</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Composição do valor</span>
+                    <div class="d-flex gap-1">
+                        <span class="currency-chip">{{ $invoice->tax_nature === 'goods' ? 'Produto físico' : 'Serviço importado' }}</span>
+                        <span class="currency-chip">{{ $invoice->apply_service_taxes ? 'Tributos aplicados' : 'Tributos não aplicados' }}</span>
+                    </div>
+                </div>
                 <div class="card-body">
+                    <div class="stat-label mb-2">Fatura do cartão</div>
                     <table class="breakdown">
                         <tr>
                             <td>Valor original ({{ $invoice->currency }})</td>
@@ -114,27 +121,76 @@
                             <td>Conversão pela cotação {{ number_format((float) $invoice->exchange_rate, 4, ',', '.') }}</td>
                             <td class="value">{{ $money((float) $invoice->amount_original * (float) $invoice->exchange_rate) }}</td>
                         </tr>
+                        @php $cardFeeLine = collect($lines)->firstWhere('key', 'card_fee'); @endphp
                         <tr>
                             <td>Spread</td>
                             <td class="value">{{ $money($invoice->spread_amount) }}</td>
                         </tr>
+                        @if ($cardFeeLine && (float) $cardFeeLine['amount'] > 0)
+                            <tr>
+                                <td>Tarifa fixa do banco</td>
+                                <td class="value">{{ $money($cardFeeLine['amount']) }}</td>
+                            </tr>
+                        @endif
                         <tr>
                             <td>IOF</td>
                             <td class="value">{{ $money($invoice->iof_amount) }}</td>
                         </tr>
-                        <tr>
-                            <td>ICMS</td>
-                            <td class="value">{{ $money($invoice->icms_amount) }}</td>
-                        </tr>
-                        <tr>
-                            <td>Outros tributos</td>
-                            <td class="value">{{ $money($invoice->other_taxes_amount) }}</td>
-                        </tr>
                         <tr class="total">
-                            <td>Total em BRL</td>
-                            <td class="value">{{ $money($invoice->total_brl) }}</td>
+                            <td>Total no cartão</td>
+                            <td class="value">{{ $money($cardTotal) }}</td>
                         </tr>
                     </table>
+
+                    <div class="stat-label mt-4 mb-2">Tributos da importação</div>
+                    @if ($importLines !== [])
+                        <table class="breakdown">
+                            @foreach ($importLines as $line)
+                                <tr>
+                                    <td>
+                                        {{ $line['label'] }}
+                                        @if (($line['percent'] ?? null) !== null)
+                                            <span class="text-muted-soft">{{ number_format((float) $line['percent'], 2, ',', '.') }}%</span>
+                                        @endif
+                                    </td>
+                                    <td class="value">{{ $money($line['amount']) }}</td>
+                                </tr>
+                            @endforeach
+                            <tr class="total">
+                                <td>Total da importação</td>
+                                <td class="value">{{ $money($importTotal) }}</td>
+                            </tr>
+                        </table>
+                    @else
+                        <table class="breakdown">
+                            @if ((float) $invoice->icms_amount > 0)
+                                <tr>
+                                    <td>ICMS</td>
+                                    <td class="value">{{ $money($invoice->icms_amount) }}</td>
+                                </tr>
+                            @endif
+                            @if ((float) $invoice->other_taxes_amount > 0)
+                                <tr>
+                                    <td>Outros tributos</td>
+                                    <td class="value">{{ $money($invoice->other_taxes_amount) }}</td>
+                                </tr>
+                            @endif
+                            <tr class="total">
+                                <td>Total da importação</td>
+                                <td class="value">{{ $money($importTotal) }}</td>
+                            </tr>
+                        </table>
+                        @if (! $invoice->apply_service_taxes)
+                            <div class="text-muted-soft mt-2" style="font-size:.74rem;">
+                                Esta fatura não aplica os tributos da importação — total igual ao valor do cartão.
+                            </div>
+                        @endif
+                    @endif
+
+                    <div class="d-flex justify-content-between align-items-baseline mt-3 pt-3 border-top">
+                        <span class="stat-label">Total a reservar</span>
+                        <span class="amount-hero">{{ $money($invoice->total_brl) }}</span>
+                    </div>
                 </div>
             </div>
 

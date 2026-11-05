@@ -15,6 +15,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
 use App\Services\ExchangeRateService;
+use App\Services\Fees\FeeSyncService;
 use App\Services\LicenseBoyPanelService;
 use App\Services\MailTemplateService;
 use App\Services\OvhService;
@@ -34,7 +35,7 @@ use Throwable;
 
 class SettingsController extends Controller
 {
-    public function index(ExchangeRateService $exchange, OvhService $ovh): View
+    public function index(ExchangeRateService $exchange, OvhService $ovh, FeeSyncService $fees): View
     {
         $settings = AppSetting::query()->orderBy('group')->orderBy('key')->get();
         $user = request()->user();
@@ -45,6 +46,23 @@ class SettingsController extends Controller
             'settings' => $settings,
             'rates' => $exchange->rates(),
             'pair' => $exchange->pair('EUR', 'USD'),
+            'feeReferences' => [
+                'visa' => AppSetting::get('card_brand_visa_markup_percent'),
+                'visa_at' => AppSetting::get('card_brand_visa_at'),
+                'mastercard' => AppSetting::get('card_brand_mastercard_markup_percent'),
+                'mastercard_at' => AppSetting::get('card_brand_mastercard_at'),
+                'bcb_usd' => AppSetting::get('bcb_ptax_usd'),
+                'bcb_usd_date' => AppSetting::get('bcb_ptax_usd_date'),
+                'bcb_eur' => AppSetting::get('bcb_ptax_eur'),
+                'bcb_eur_date' => AppSetting::get('bcb_ptax_eur_date'),
+                'bcb_at' => AppSetting::get('bcb_ptax_at'),
+                'paypal' => AppSetting::get('paypal_observed_spread_percent'),
+                'paypal_samples' => AppSetting::get('paypal_observed_samples'),
+                'paypal_at' => AppSetting::get('paypal_observed_at'),
+                'last_at' => AppSetting::get('fee_sync_last_at'),
+                'last_status' => AppSetting::get('fee_sync_last_status'),
+            ],
+            'feeRuns' => $fees->history(10),
             'ovhConfigured' => $ovh->isConfigured(),
             'licenseboyConfigured' => app(LicenseBoyPanelService::class)->isConfigured(),
             'licenseboySyncedAt' => AppSetting::get('licenseboy_panel_synced_at'),
@@ -66,22 +84,96 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updateTaxes(Request $request): RedirectResponse
+    public function updateTaxes(Request $request, FeeSyncService $fees): RedirectResponse
     {
-        $data = $request->validate([
-            'spread_percent' => ['required', 'numeric', 'min:0', 'max:100'],
-            'iof_percent' => ['required', 'numeric', 'min:0', 'max:100'],
-            'icms_percent' => ['required', 'numeric', 'min:0', 'max:100'],
-            'other_taxes_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+        $percentFields = [
+            'spread_percent',
+            'iof_percent',
+            'card_fixed_fee',
+            'pis_cofins_percent',
+            'irrf_percent',
+            'iss_percent',
+            'cide_percent',
+            'cbs_percent',
+            'ibs_percent',
+            'other_taxes_percent',
+            'icms_percent',
+            'import_tax_percent',
+            'import_tax_deduction_usd',
+        ];
+
+        $rules = array_fill_keys($percentFields, ['required', 'numeric', 'min:0', 'max:1000']);
+
+        $data = $request->validate($rules + [
+            'card_spread_auto' => ['nullable', 'boolean'],
+            'card_spread_source' => ['required', Rule::in(['manual', 'visa', 'paypal'])],
+            'service_taxes_enabled' => ['nullable', 'boolean'],
+            'pis_cofins_enabled' => ['nullable', 'boolean'],
+            'irrf_enabled' => ['nullable', 'boolean'],
+            'iss_enabled' => ['nullable', 'boolean'],
+            'cide_enabled' => ['nullable', 'boolean'],
+            'cbs_enabled' => ['nullable', 'boolean'],
+            'ibs_enabled' => ['nullable', 'boolean'],
+            'other_taxes_enabled' => ['nullable', 'boolean'],
+            'icms_enabled' => ['nullable', 'boolean'],
+            'import_tax_enabled' => ['nullable', 'boolean'],
         ]);
 
-        foreach ($data as $key => $value) {
-            AppSetting::set($key, number_format((float) $value, 2, '.', ''), 'taxes');
+        foreach ($percentFields as $key) {
+            $decimals = in_array($key, ['card_fixed_fee', 'import_tax_deduction_usd'], true) ? 2 : 4;
+            AppSetting::set($key, number_format((float) $data[$key], $decimals, '.', ''), 'taxes');
+        }
+
+        $flags = [
+            'card_spread_auto',
+            'service_taxes_enabled',
+            'pis_cofins_enabled',
+            'irrf_enabled',
+            'iss_enabled',
+            'cide_enabled',
+            'cbs_enabled',
+            'ibs_enabled',
+            'other_taxes_enabled',
+            'icms_enabled',
+            'import_tax_enabled',
+        ];
+
+        foreach ($flags as $flag) {
+            AppSetting::set($flag, $request->boolean($flag) ? '1' : '0', 'taxes');
+        }
+
+        AppSetting::set('card_spread_source', (string) $data['card_spread_source'], 'fees');
+
+        // Ao ligar a atualização automática, aplica já o valor observado para
+        // a próxima fatura não esperar o cron da manhã seguinte.
+        $applied = $request->boolean('card_spread_auto')
+            ? $fees->applyAutomaticSpread()
+            : ['applied' => false, 'source' => 'manual', 'value' => null];
+
+        $message = 'Tributos atualizados. Recalcule as faturas pendentes para aplicar.';
+
+        if ($applied['applied']) {
+            $message .= ' Spread automático aplicado: '.number_format((float) $applied['value'], 4, ',', '.').'% ('.$applied['source'].').';
+        } elseif ($request->boolean('card_spread_auto')) {
+            $message .= ' Ainda não há leitura automática do spread; rode a sincronização de tarifas.';
         }
 
         return redirect()
             ->route('settings.index', ['tab' => 'taxes'])
-            ->with('success', 'Percentuais atualizados. Recalcule as faturas pendentes para aplicar.');
+            ->with('success', $message);
+    }
+
+    public function syncFees(FeeSyncService $fees): RedirectResponse
+    {
+        $runs = $fees->run('all');
+        $ok = collect($runs)->where('status', \App\Models\FeeSyncRun::STATUS_OK)->count();
+        $failed = collect($runs)->where('status', \App\Models\FeeSyncRun::STATUS_UNAVAILABLE)->count();
+
+        $message = $ok.' fonte(s) atualizada(s)'.($failed > 0 ? ', '.$failed.' indisponível(is)' : '').'.';
+
+        return redirect()
+            ->route('settings.index', ['tab' => 'taxes'])
+            ->with($failed > 0 ? 'warning' : 'success', $message);
     }
 
     public function updateConversion(Request $request): RedirectResponse

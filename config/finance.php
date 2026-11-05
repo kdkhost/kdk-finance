@@ -98,10 +98,54 @@ return [
     |--------------------------------------------------------------------------
     */
     'taxes' => [
+        // Encargos cobrados na fatura do cartão.
         'spread_percent' => 2.00,
-        'iof_percent' => 3.38,
-        'icms_percent' => 0.00,
+        // Decreto 6.306/2007, art. 15-B, VII, na redação do Decreto 12.499/2025:
+        // 3,5% para cartão internacional e remessas de pagamento de serviços.
+        'iof_percent' => 3.50,
+        'card_fixed_fee' => 0.00,
+        'card_spread_auto' => '0',
+        // Tributos da importação de serviços (recolhidos pela empresa).
+        'service_taxes_enabled' => '1',
+        'pis_cofins_percent' => 9.25,
+        'pis_cofins_enabled' => '1',
+        'irrf_percent' => 15.00,
+        'irrf_enabled' => '1',
+        'iss_percent' => 5.00,
+        'iss_enabled' => '1',
+        'cide_percent' => 10.00,
+        'cide_enabled' => '0',
+        'cbs_percent' => 0.90,
+        'cbs_enabled' => '0',
+        'ibs_percent' => 0.10,
+        'ibs_enabled' => '0',
         'other_taxes_percent' => 0.00,
+        'other_taxes_enabled' => '0',
+        // Importação de bens (não se aplica a serviços).
+        'icms_percent' => 17.00,
+        'icms_enabled' => '0',
+        'import_tax_percent' => 60.00,
+        'import_tax_enabled' => '0',
+        'import_tax_deduction_usd' => 30.00,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sincronização de tarifas (bandeiras, BCB e PayPal)
+    |--------------------------------------------------------------------------
+    | Endpoints públicos consultados pelo comando finance:sync-fees. Nenhuma
+    | chave é necessária; o valor observado fica gravado em app_settings e só
+    | substitui o spread da fatura quando o administrador liga a atualização
+    | automática (card_spread_auto).
+    */
+    'fees' => [
+        'timeout' => 15,
+        'visa_url' => 'https://www.visa.com.br/cmsapi/fx/rates',
+        'mastercard_url' => 'https://www.mastercard.us/settlement/currencyrate/conversion-rate',
+        'bcb_url' => 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata',
+        // Janela de conversões usadas para estimar o spread efetivo do PayPal.
+        'paypal_window_days' => 120,
+        'paypal_min_samples' => 3,
     ],
 
     /*

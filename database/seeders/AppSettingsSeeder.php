@@ -42,10 +42,38 @@ class AppSettingsSeeder extends Seeder
         // ------------------------------------------------------------------
         // Tributos padrão
         // ------------------------------------------------------------------
+        // Encargos do cartão (fatura do banco).
         AppSetting::set('spread_percent', '2.00', 'taxes');
-        AppSetting::set('iof_percent', '3.38', 'taxes');
-        AppSetting::set('icms_percent', '0.00', 'taxes');
+        AppSetting::set('iof_percent', '3.50', 'taxes');
+        AppSetting::set('card_fixed_fee', '0.00', 'taxes');
+        AppSetting::set('card_spread_auto', '0', 'taxes');
+        // Tributos da importação de serviços.
+        AppSetting::set('service_taxes_enabled', '1', 'taxes');
+        AppSetting::set('pis_cofins_percent', '9.25', 'taxes');
+        AppSetting::set('pis_cofins_enabled', '1', 'taxes');
+        AppSetting::set('irrf_percent', '15.00', 'taxes');
+        AppSetting::set('irrf_enabled', '1', 'taxes');
+        AppSetting::set('iss_percent', '5.00', 'taxes');
+        AppSetting::set('iss_enabled', '1', 'taxes');
+        AppSetting::set('cide_percent', '10.00', 'taxes');
+        AppSetting::set('cide_enabled', '0', 'taxes');
+        AppSetting::set('cbs_percent', '0.90', 'taxes');
+        AppSetting::set('cbs_enabled', '0', 'taxes');
+        AppSetting::set('ibs_percent', '0.10', 'taxes');
+        AppSetting::set('ibs_enabled', '0', 'taxes');
         AppSetting::set('other_taxes_percent', '0.00', 'taxes');
+        AppSetting::set('other_taxes_enabled', '0', 'taxes');
+        // Importação de bens.
+        AppSetting::set('icms_percent', '17.00', 'taxes');
+        AppSetting::set('icms_enabled', '0', 'taxes');
+        AppSetting::set('import_tax_percent', '60.00', 'taxes');
+        AppSetting::set('import_tax_enabled', '0', 'taxes');
+        AppSetting::set('import_tax_deduction_usd', '30.00', 'taxes');
+
+        // ------------------------------------------------------------------
+        // Procedência das tarifas (preenchida pelo finance:sync-fees)
+        // ------------------------------------------------------------------
+        AppSetting::set('card_spread_source', 'manual', 'fees');
 
         // ------------------------------------------------------------------
         // Regras operacionais

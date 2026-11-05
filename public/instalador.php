@@ -33,7 +33,7 @@ if (is_file($autoloadFile)) {
     require_once $autoloadFile;
 }
 
-$installerVersion = '1.11.0';
+$installerVersion = '1.12.0';
 
 if (preg_match('/^## \[(\d+\.\d+\.\d+)\]/m', (string) @file_get_contents($basePath.'/CHANGELOG.md'), $versionMatch) === 1) {
     $installerVersion = $versionMatch[1];

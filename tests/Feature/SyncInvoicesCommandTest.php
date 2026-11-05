@@ -67,8 +67,10 @@ class SyncInvoicesCommandTest extends TestCase
 
         $this->assertEquals(6.10, (float) $invoice->exchange_rate);
         $this->assertEquals(12.20, (float) $invoice->spread_amount);
-        $this->assertEquals(21.03, (float) $invoice->iof_amount);
-        $this->assertEquals(643.23, (float) $invoice->total_brl);
+        $this->assertEquals(21.78, (float) $invoice->iof_amount);
+        $this->assertEquals(643.98, (float) $invoice->card_total_brl);
+        $this->assertEquals(181.99, (float) $invoice->import_taxes_amount);
+        $this->assertEquals(825.97, (float) $invoice->total_brl);
         $this->assertNotNull($invoice->calculated_at);
 
         $this->assertEquals(250.00, (float) $locked->fresh()->total_brl);

@@ -154,6 +154,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/configuracoes/ovh/testar', [SettingsController::class, 'testOvh'])->name('settings.ovh.test');
         Route::put('/configuracoes/licenseboy', [SettingsController::class, 'updateLicenseBoy'])->name('settings.licenseboy');
         Route::post('/configuracoes/cotacoes/atualizar', [SettingsController::class, 'refreshRates'])->name('settings.rates.refresh');
+        Route::post('/configuracoes/tarifas/sincronizar', [SettingsController::class, 'syncFees'])->name('settings.fees.sync');
         Route::put('/configuracoes/regras', [SettingsController::class, 'updateOperational'])->name('settings.rules');
 
         // Segurança operacional: tudo gravado em app_settings.

@@ -113,6 +113,13 @@ class CronJob extends Model
                 'description' => 'Lê o valor realmente cobrado no painel da LicenseBoy e sinaliza divergências.',
             ],
             [
+                'name' => 'Sincronizar tarifas de cartão e câmbio oficial',
+                'command' => 'finance:sync-fees',
+                'expression' => '20 6 * * *',
+                'timezone' => 'America/Sao_Paulo',
+                'description' => 'Lê o markup das bandeiras, a PTAX do Banco Central e o spread observado no PayPal; atualiza a referência das tarifas.',
+            ],
+            [
                 'name' => 'Alertas de vencimento',
                 'command' => 'finance:notify-alerts',
                 'expression' => '0 8 * * *',

@@ -60,10 +60,34 @@ class InvoiceWorkflowTest extends TestCase
         $invoice = Invoice::query()->where('external_reference', 'OVH-9001')->firstOrFail();
 
         $response->assertRedirect(route('invoices.show', $invoice));
-        $this->assertEquals(579.96, (float) $invoice->total_brl);
+        $this->assertEquals(744.73, (float) $invoice->total_brl);
+        $this->assertEquals(580.64, (float) $invoice->card_total_brl);
+        $this->assertEquals(164.09, (float) $invoice->import_taxes_amount);
         $this->assertEquals(11.00, (float) $invoice->spread_amount);
-        $this->assertEquals(18.96, (float) $invoice->iof_amount);
+        $this->assertEquals(19.64, (float) $invoice->iof_amount);
+        $this->assertSame('service', $invoice->tax_nature);
+        $this->assertTrue($invoice->apply_service_taxes);
         $this->assertNotNull($invoice->calculated_at);
+    }
+
+    public function test_financial_manager_can_waive_import_taxes_on_a_service_invoice(): void
+    {
+        $this->actingAs($this->manager())->post('/faturas', [
+            'description' => 'Servidor sem retenção',
+            'external_reference' => 'OVH-9002',
+            'currency' => 'EUR',
+            'amount_original' => '100.00',
+            'exchange_rate' => '5.5000',
+            'due_date' => now()->addDays(3)->format('Y-m-d'),
+            'status' => Invoice::STATUS_PENDING,
+            'apply_service_taxes' => '0',
+        ])->assertRedirect();
+
+        $invoice = Invoice::query()->where('external_reference', 'OVH-9002')->firstOrFail();
+
+        $this->assertEquals(580.64, (float) $invoice->total_brl);
+        $this->assertEquals(0.0, (float) $invoice->import_taxes_amount);
+        $this->assertFalse($invoice->apply_service_taxes);
     }
 
     public function test_viewer_cannot_create_invoices(): void

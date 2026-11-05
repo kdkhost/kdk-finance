@@ -36,6 +36,11 @@ class Invoice extends Model
         'icms_amount',
         'other_taxes_amount',
         'total_brl',
+        'card_total_brl',
+        'import_taxes_amount',
+        'tax_breakdown',
+        'apply_service_taxes',
+        'tax_nature',
         'status',
         'due_date',
         'paid_at',
@@ -54,6 +59,10 @@ class Invoice extends Model
             'icms_amount' => 'decimal:2',
             'other_taxes_amount' => 'decimal:2',
             'total_brl' => 'decimal:2',
+            'card_total_brl' => 'decimal:2',
+            'import_taxes_amount' => 'decimal:2',
+            'tax_breakdown' => 'array',
+            'apply_service_taxes' => 'boolean',
             'due_date' => 'date',
             'paid_at' => 'datetime',
             'rate_locked' => 'boolean',
@@ -77,6 +86,19 @@ class Invoice extends Model
             self::STATUS_PENDING => 'Pendente',
             self::STATUS_PAID => 'Paga',
             self::STATUS_CANCELED => 'Cancelada',
+        ];
+    }
+
+    /**
+     * Natureza da importação: serviço (OVHcloud, licenças) ou produto físico.
+     *
+     * @return array<string, string>
+     */
+    public static function natures(): array
+    {
+        return [
+            'service' => 'Serviço — PIS/COFINS, IRRF, ISS',
+            'goods' => 'Produto — ICMS e Imposto de Importação',
         ];
     }
 
@@ -128,6 +150,36 @@ class Invoice extends Model
             + (float) $this->other_taxes_amount,
             2
         );
+    }
+
+    /**
+     * Total que aparece na fatura do cartão (sem os tributos recolhidos pela
+     * empresa). Faturas antigas, sem a coluna preenchida, usam o total geral.
+     */
+    public function cardTotal(): float
+    {
+        return round((float) ($this->card_total_brl ?? $this->total_brl), 2);
+    }
+
+    /**
+     * Tributos da importação separados do que o banco cobra.
+     */
+    public function importTaxesTotal(): float
+    {
+        return round((float) ($this->import_taxes_amount ?? 0), 2);
+    }
+
+    /**
+     * Linhas do detalhamento gravado no cálculo. Faturas antigas devolvem uma
+     * lista vazia e as telas caem no formato legado.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function taxLines(): array
+    {
+        $lines = $this->tax_breakdown;
+
+        return is_array($lines) ? array_values($lines) : [];
     }
 
     public function toLivePayload(): array

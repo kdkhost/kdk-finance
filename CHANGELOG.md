@@ -5,6 +5,38 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.12.0] - 2026-11-05
+
+### Adicionado
+
+- **Tributos da importação separados do cartão**: a fatura passou a ter duas camadas explícitas — os encargos que o banco cobra (spread, IOF e tarifa fixa) e os tributos que a empresa recolhe ao importar (PIS/COFINS-Importação, IRRF, ISS, CIDE, CBS e IBS). O total a reservar soma as duas, e a tela, o e-mail e o CSV mostram a mesma discriminação.
+- **Natureza da fatura**: cada fatura é classificada como *Serviço* ou *Produto*. Serviços recebem os tributos de importação de serviços; produtos recebem ICMS e Imposto de Importação, com dedução de US$ 30 quando o valor passa de US$ 50. A natureza fica gravada na fatura e o cálculo antigo não é reinterpretado.
+- **Alíquotas com base legal no painel**: Configurações → Câmbio e tributos ganhou os campos de PIS/COFINS (9,25%), IRRF (15%), ISS (5%), CIDE (10%), CBS (0,9%), IBS (0,1%), ICMS (17%) e Imposto de Importação (60%), cada um com chave de ativação, origem e base legal. A tarifa fixa do banco passou a ser explícita.
+- **Referência de tarifas e histórico**: o painel passou a mostrar o markup lido da Visa, a PTAX do Banco Central, o spread observado no PayPal e o histórico das últimas leituras, com o motivo quando uma fonte não respondeu.
+- **Sincronização automática de tarifas**: o comando `finance:sync-fees` roda diariamente às 6h20 pela Central de cron e lê as fontes públicas (Visa, Mastercard, PTAX e PayPal). O administrador pode disparar pelo botão *Sincronizar* e ligar a atualização automática do spread, escolhendo a fonte (`manual`, `visa` ou `paypal`).
+- **Detalhamento nos e-mails**: os modelos de fatura passaram a trazer *Total no cartão*, *Tributos da importação*, a composição de cada tributo e o *Total a reservar*. A migração atualiza os modelos que ainda estavam no formato antigo e preserva os que foram personalizados.
+- **Documentação**: novo `docs/IMPOSTOS-IMPORTACAO.md` com as alíquotas, bases legais, fórmula, limites de cada fonte e o passo a passo de configuração.
+
+### Alterado
+
+- **IOF de 3,5%**: o valor padrão deixou de ser 3,38% e acompanha o Decreto 6.306/2007, art. 15-B, VII, na redação do Decreto 12.499/2025. A migração corrige o padrão em bancos que ainda estavam com 3,38%.
+- **Cálculo em duas etapas**: o IOF incide sobre a base com spread; os tributos da importação incidem sobre a base com spread, sem a tarifa fixa do banco. Cada etapa é arredondada em dois decimais.
+- **Faturas existentes preservadas**: o backfill grava o total atual como total do cartão, zera os tributos de importação e mantém o comportamento histórico até a fatura ser recalculada.
+- **Formulário de fatura**: a prévia passou a mostrar as duas camadas em tempo real, com a chave *Aplicar tributos da importação* (ligada por padrão conforme a configuração global) e o seletor de natureza.
+
+### Sincronização — limites documentados
+
+- **PayPal** não publica taxa de câmbio por API. O sistema estima o spread pela mediana das conversões já registradas (cotação do provedor × cotação de mercado), com no mínimo três amostras.
+- **Bancos** não publicam API de tarifas. A PTAX do BCB cobre a referência oficial e a tarifa fixa continua manual no painel.
+- **Mastercard** pode responder 403 (proteção Akamai). A falha é registrada no histórico e não interrompe o cron.
+- A leitura nunca altera o spread da fatura sem opt-in explícito.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **180 testes e 887 asserções**.
+- Novos testes cobrem o cálculo de serviços e de produtos, a dedução do Imposto de Importação, a gravação das alíquotas pelo painel e a sincronização da Visa, Mastercard, PTAX e PayPal com respostas simuladas, incluindo o bloqueio da Mastercard.
+- Testes de fatura e de e-mail foram atualizados para o novo total (por exemplo, US$ 100 a R$ 5,50 = R$ 744,73 a reservar, sendo R$ 580,64 no cartão e R$ 164,09 de tributos).
+
 ## [1.11.0] - 2026-11-05
 
 ### Adicionado

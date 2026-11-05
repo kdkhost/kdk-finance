@@ -174,7 +174,9 @@ class LicenseManagementTest extends TestCase
         $this->assertSame('USD', $invoice->currency);
         $this->assertEquals(25.00, (float) $invoice->amount_original);
         $this->assertEquals(5.42, (float) $invoice->exchange_rate);
-        $this->assertEquals(142.88, (float) $invoice->total_brl);
+        $this->assertEquals(143.05, (float) $invoice->card_total_brl);
+        $this->assertEquals(40.42, (float) $invoice->import_taxes_amount);
+        $this->assertEquals(183.47, (float) $invoice->total_brl);
         $this->assertSame($license->id, $invoice->license_service_id);
         $this->assertStringStartsWith('LIC-'.$license->id.'-', $invoice->external_reference);
 
