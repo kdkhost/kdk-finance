@@ -5,6 +5,22 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.1] - 2026-11-05
+
+### Corrigido
+
+- **Fatura já paga continuava aparecendo como pendente**: a importação da OVHcloud só marcava como paga a fatura de mês anterior, então uma fatura quitada no mês corrente continuava compondo o total pendente e podia disparar alerta de vencimento. Agora a sincronização consulta o estado real do pedido (`/me/order/{id}/status`) e os débitos da conta (`/me/debtAccount/debt`): pedido `delivered` ou `delivering` marca a fatura como paga e trava o câmbio, mesmo emitida no mês atual; pedido `notPaid` mantém pendente sem usar a data como atalho. A estimativa por data passou a valer só quando a OVHcloud não responde.
+- **Cancelamento manual preservado**: faturas canceladas no painel não são reabertas nem alteradas pela conciliação automática.
+
+### Adicionado
+
+- **Botão "Verificar pagamento na OVHcloud"** na tela da fatura pendente: consulta a OVHcloud ignorando o cache de 30 minutos e, se o pagamento estiver confirmado, marca a fatura como paga, trava o câmbio e remove o débito dos totais — sem esperar o cron de 15 minutos.
+- Cache de 30 minutos por estado de pedido e de 15 minutos para a lista de débitos, e consulta de débitos só quando o estado do pedido não é conclusivo, para não gastar cota da API à toa.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **157 testes e 718 asserções**, incluindo fatura do mês corrente paga pela OVHcloud, fatura com pedido `notPaid` que permanece pendente, cancelada preservada, ação manual de conciliação e bloqueio do perfil somente leitura.
+
 ## [1.10.0] - 2026-11-04
 
 ### Adicionado

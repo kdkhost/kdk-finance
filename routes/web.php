@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/faturas/{invoice}/editar', [InvoiceController::class, 'edit'])->name('invoices.edit');
         Route::put('/faturas/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
         Route::post('/faturas/{invoice}/pagar', [InvoiceController::class, 'pay'])->name('invoices.pay');
+        Route::post('/faturas/{invoice}/verificar-pagamento', [InvoiceController::class, 'syncPayment'])->name('invoices.sync-payment');
         Route::post('/faturas/{invoice}/cancelar', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::post('/faturas/{invoice}/reabrir', [InvoiceController::class, 'reopen'])->name('invoices.reopen');
         Route::post('/faturas/{invoice}/recalcular', [InvoiceController::class, 'recalculate'])->name('invoices.recalculate');

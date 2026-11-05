@@ -231,6 +231,13 @@
                                 @csrf
                                 <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2-circle me-1"></i> Marcar como paga</button>
                             </form>
+
+                            @if ($invoice->external_reference)
+                                <form method="POST" action="{{ route('invoices.sync-payment', $invoice) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-cloud-check me-1"></i> Verificar pagamento na OVHcloud</button>
+                                </form>
+                            @endif
                         @endif
 
                         @if (! $invoice->rate_locked)

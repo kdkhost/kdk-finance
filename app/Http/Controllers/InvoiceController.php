@@ -18,11 +18,13 @@ use App\Models\Invoice;
 use App\Services\DashboardService;
 use App\Services\ExchangeRateService;
 use App\Services\MailTemplateService;
+use App\Services\OvhService;
 use App\Services\TaxCalculationService;
 use App\Support\CsvExporter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -179,6 +181,59 @@ class InvoiceController extends Controller
         ]);
 
         return back()->with('success', 'Fatura '.$invoice->external_reference.' marcada como paga e câmbio travado.');
+    }
+
+    public function syncPayment(Invoice $invoice, OvhService $ovh): RedirectResponse
+    {
+        if ($invoice->status !== Invoice::STATUS_PENDING) {
+            return back()->with('warning', 'Somente faturas pendentes precisam de conciliação de pagamento.');
+        }
+
+        $reference = trim((string) $invoice->external_reference);
+
+        if ($reference === '') {
+            return back()->with('warning', 'Esta fatura não possui referência da OVHcloud para consultar.');
+        }
+
+        if (! $ovh->isConfigured()) {
+            return back()->with('error', 'As credenciais da OVHcloud não estão configuradas no painel.');
+        }
+
+        try {
+            $bill = $ovh->refreshBill($reference);
+        } catch (Throwable $exception) {
+            Log::warning('Falha ao consultar a fatura na OVHcloud.', [
+                'invoice' => $invoice->id,
+                'reference' => $reference,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()->with('error', 'Não foi possível consultar a fatura '.$reference.' na OVHcloud agora.');
+        }
+
+        $status = $ovh->paymentStatusForBill($bill, null, true);
+
+        if ($status === 'paid') {
+            $paidAt = Carbon::parse(data_get($bill, 'date', now()));
+
+            if (! $invoice->rate_locked) {
+                $this->tax->applyToInvoice($invoice, $this->exchange->rate($invoice->currency));
+            }
+
+            $invoice->update([
+                'status' => Invoice::STATUS_PAID,
+                'paid_at' => $paidAt,
+                'rate_locked' => true,
+            ]);
+
+            return back()->with('success', 'Pagamento confirmado na OVHcloud: fatura '.$reference.' marcada como paga e câmbio travado.');
+        }
+
+        if ($status === 'pending') {
+            return back()->with('warning', 'A OVHcloud ainda registra a fatura '.$reference.' como não paga.');
+        }
+
+        return back()->with('warning', 'A OVHcloud não informou o status de pagamento desta fatura.');
     }
 
     public function cancel(Invoice $invoice): RedirectResponse

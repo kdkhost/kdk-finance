@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** Marcelo Brad - RJ
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.10.0 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.10.1 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
@@ -220,8 +220,12 @@ php artisan finance:sync-invoices --import --fresh
 A importação traz **todo o histórico** configurado em Configurações → OVHcloud
 (365 dias e 100 faturas por padrão), grava as linhas individuais de cada fatura,
 sincroniza os serviços contratados e os blocos de IP. A OVHcloud não expõe um
-campo de "pago" nas faturas: faturas de meses anteriores são marcadas como pagas
-e com câmbio travado; a fatura do mês corrente permanece pendente para conciliação.
+campo de "pago" na fatura em si, então o status é lido do pedido vinculado
+(`delivered`/`delivering`) e do débito da conta (`PAID`): fatura quitada é
+marcada como paga e tem o câmbio travado, inclusive a do mês corrente. Só quando
+a OVHcloud não responde a estimativa por data é usada. A tela da fatura tem o
+botão **Verificar pagamento na OVHcloud** para conciliar na hora, sem esperar o
+cron de 15 minutos.
 
 ### Infraestrutura e valores individuais
 

@@ -199,7 +199,7 @@ class SyncInvoicesCommand extends Command
                 $result['bills']++;
             }
 
-            $this->markHistoricalBillAsPaid($invoice, $bill);
+            $this->reconcilePaymentStatus($invoice, $bill, $ovh);
             $result['items'] += $inventory->importBillItems($invoice, $ovh);
         }
 
@@ -212,9 +212,69 @@ class SyncInvoicesCommand extends Command
     }
 
     /**
-     * A OVHcloud não expõe um campo de pagamento em /me/bill. Faturas de meses
-     * anteriores a este mês são consideradas quitadas e travadas; as do mês
-     * corrente entram como pendentes para conciliação interna.
+     * Concilia o pagamento de uma fatura já existente.
+     *
+     * A OVHcloud informa o estado real pelo pedido e pelo débito vinculado;
+     * quando ela responde "pago", a fatura sai dos totais pendentes mesmo que
+     * tenha sido emitida no mês corrente. Só quando a OVHcloud não sabe
+     * responder é que a data de emissão é usada como estimativa.
+     *
+     * @param  array<string, mixed>  $bill
+     */
+    private function reconcilePaymentStatus(Invoice $invoice, array $bill, OvhService $ovh): void
+    {
+        if ($invoice->status === Invoice::STATUS_CANCELED) {
+            return;
+        }
+
+        if ($invoice->status === Invoice::STATUS_PAID && $invoice->paid_at !== null) {
+            return;
+        }
+
+        $status = $ovh->paymentStatusForBill($bill);
+
+        if ($status === 'paid') {
+            $this->markBillAsPaid($invoice, $bill, 'OVHcloud confirmou o pagamento');
+
+            return;
+        }
+
+        if ($status === 'pending') {
+            return;
+        }
+
+        $this->markHistoricalBillAsPaid($invoice, $bill);
+    }
+
+    /**
+     * Marca a fatura como paga e trava o câmbio, preservando o valor em BRL.
+     *
+     * @param  array<string, mixed>  $bill
+     */
+    private function markBillAsPaid(Invoice $invoice, array $bill, string $reason): void
+    {
+        if ($invoice->status === Invoice::STATUS_PAID && $invoice->paid_at !== null) {
+            return;
+        }
+
+        $paidAt = \Illuminate\Support\Carbon::parse(data_get($bill, 'date', $invoice->due_date));
+
+        $invoice->forceFill([
+            'status' => Invoice::STATUS_PAID,
+            'paid_at' => $paidAt,
+            'rate_locked' => true,
+        ])->save();
+
+        Log::info('Fatura conciliada como paga.', [
+            'invoice' => $invoice->id,
+            'reference' => $invoice->external_reference,
+            'reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Estimativa usada apenas quando a OVHcloud não informa o pagamento:
+     * faturas de meses anteriores são consideradas quitadas.
      *
      * @param  array<string, mixed>  $bill
      */
@@ -230,11 +290,7 @@ class SyncInvoicesCommand extends Command
             return;
         }
 
-        $invoice->forceFill([
-            'status' => Invoice::STATUS_PAID,
-            'paid_at' => $date,
-            'rate_locked' => true,
-        ])->save();
+        $this->markBillAsPaid($invoice, $bill, 'fatura de mês anterior sem status na OVHcloud');
     }
 
     private function shouldNotify(Invoice $invoice): bool

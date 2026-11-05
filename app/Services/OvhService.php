@@ -336,6 +336,142 @@ class OvhService
     }
 
     /**
+     * Relê a fatura ignorando o cache de 30 minutos.
+     *
+     * @return array<string, mixed>
+     */
+    public function refreshBill(string $billId): array
+    {
+        Cache::forget('ovh:bill:'.$billId);
+
+        return $this->getBill($billId);
+    }
+
+    /**
+     * Status de pagamento de uma fatura, segundo a OVHcloud.
+     *
+     * A fatura (/me/bill) não traz campo de pagamento. A OVHcloud expõe o
+     * estado real pelo pedido (/me/order/{id}/status) e pelo débito vinculado
+     * ao pedido (/me/debtAccount/debt/{id}). "delivered"/"delivering" já
+     * significam pedido quitado; débitos só contam quando ainda não foram
+     * pagos. Sem resposta confiável, devolve null para o chamador decidir.
+     *
+     * @param  array<string, mixed>  $bill
+     * @param  array<int, string>|null  $debtStatuses
+     * @return string|null "paid", "pending" ou null quando indefinido
+     */
+    public function paymentStatusForBill(array $bill, ?array $debtStatuses = null, bool $fresh = false): ?string
+    {
+        $orderId = (int) data_get($bill, 'orderId', 0);
+
+        if ($orderId > 0) {
+            $orderStatus = $this->orderStatus($orderId, $fresh);
+
+            if ($orderStatus !== null) {
+                if (in_array($orderStatus, ['delivered', 'delivering'], true)) {
+                    return 'paid';
+                }
+
+                if (in_array($orderStatus, ['notPaid', 'documentsRequested'], true)) {
+                    return 'pending';
+                }
+            }
+        }
+
+        $debtStatuses ??= $this->debtStatuses($fresh);
+        $debt = $orderId > 0 ? ($debtStatuses[$orderId] ?? null) : null;
+
+        if ($debt !== null) {
+            return $debt === 'PAID' ? 'paid' : 'pending';
+        }
+
+        return null;
+    }
+
+    /**
+     * Estado do pedido na OVHcloud (delivered, notPaid, delivering etc.).
+     */
+    public function orderStatus(int $orderId, bool $fresh = false): ?string
+    {
+        if ($orderId <= 0) {
+            return null;
+        }
+
+        $key = 'ovh:order-status:'.$orderId;
+
+        if ($fresh) {
+            Cache::forget($key);
+        }
+
+        try {
+            $status = Cache::remember(
+                $key,
+                now()->addMinutes(30),
+                fn () => $this->client()->get('/me/order/'.$orderId.'/status')
+            );
+        } catch (Throwable $exception) {
+            Log::debug('Status do pedido OVHcloud indisponível.', [
+                'order' => $orderId,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        return is_string($status) && $status !== '' ? $status : null;
+    }
+
+    /**
+     * Débitos da conta mapeados por pedido, com o status de cada um.
+     *
+     * @return array<int, string>
+     */
+    public function debtStatuses(bool $fresh = false): array
+    {
+        $key = 'ovh:debt-statuses';
+
+        if ($fresh) {
+            Cache::forget($key);
+        }
+
+        try {
+            return Cache::remember($key, now()->addMinutes(15), function (): array {
+                $ids = $this->client()->get('/me/debtAccount/debt');
+
+                if (! is_array($ids)) {
+                    return [];
+                }
+
+                $map = [];
+
+                foreach ($ids as $debtId) {
+                    try {
+                        $debt = (array) $this->client()->get('/me/debtAccount/debt/'.rawurlencode((string) $debtId));
+                        $orderId = (int) data_get($debt, 'orderId', 0);
+
+                        if ($orderId > 0) {
+                            $map[$orderId] = strtoupper((string) data_get($debt, 'status', ''));
+                        }
+                    } catch (Throwable $exception) {
+                        Log::debug('Débito OVHcloud indisponível.', [
+                            'debt' => $debtId,
+                            'error' => $exception->getMessage(),
+                        ]);
+                    }
+                }
+
+                return $map;
+            });
+        } catch (Throwable $exception) {
+            Log::warning('Não foi possível consultar os débitos da OVHcloud.', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
      * Converte uma fatura OVHcloud para os atributos do model Invoice.
      *
      * @param  array<string, mixed>  $bill
