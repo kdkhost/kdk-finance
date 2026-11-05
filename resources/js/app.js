@@ -249,8 +249,10 @@ if (appHeader) {
 }
 
 /* ---------------------------------------------------------------------------
- * Sidebar em árvore (até três níveis)
- * O ramo da página atual abre sempre; os demais respeitam a última escolha.
+ * Sidebar em árvore (até três níveis) — acordeão
+ * O ramo da página atual abre sempre. Ao abrir um grupo, os outros fecham:
+ * só fica aberto o caminho do item escolhido (e o último ramo visitado, para
+ * não perder o lugar ao recarregar). Assim o menu nunca vira uma lista longa.
  * ------------------------------------------------------------------------- */
 const SIDEBAR_TREE_KEY = 'kdk-sidebar-tree';
 
@@ -281,6 +283,48 @@ function setTreeOpen(item, open) {
     }
 }
 
+/* Fecha tudo que não é o item aberto, seus ancestrais ou seus próprios filhos. */
+function collapseOtherBranches(item) {
+    document.querySelectorAll('.sidebar-menu .has-treeview.is-open').forEach((other) => {
+        if (other === item || other.contains(item) || item.contains(other)) {
+            return;
+        }
+
+        setTreeOpen(other, false);
+        if (other.dataset.treeItem) {
+            treeState[other.dataset.treeItem] = false;
+        }
+    });
+
+    writeTreeState(treeState);
+}
+
+/* Deixa apenas o caminho dos itens informados aberto (mais os ancestrais). */
+function collapseToPath(items) {
+    const keep = new Set();
+
+    items.forEach((element) => {
+        let current = element;
+        while (current && current.matches('.sidebar-menu .has-treeview')) {
+            keep.add(current);
+            current = current.parentElement?.closest('.sidebar-menu .has-treeview') || null;
+        }
+    });
+
+    document.querySelectorAll('.sidebar-menu .has-treeview.is-open').forEach((item) => {
+        if (keep.has(item)) {
+            return;
+        }
+
+        setTreeOpen(item, false);
+        if (item.dataset.treeItem) {
+            treeState[item.dataset.treeItem] = false;
+        }
+    });
+
+    writeTreeState(treeState);
+}
+
 document.querySelectorAll('.sidebar-menu .has-treeview').forEach((item) => {
     const key = item.dataset.treeItem;
     if (!key) {
@@ -300,17 +344,31 @@ document.querySelectorAll('.sidebar-menu .has-treeview').forEach((item) => {
 
     toggle?.addEventListener('click', () => {
         const open = !item.classList.contains('is-open');
+
+        if (open) {
+            collapseOtherBranches(item);
+        }
+
         setTreeOpen(item, open);
         treeState[key] = open;
         writeTreeState(treeState);
     });
 });
 
-/* Ao navegar pelo histórico, o ramo da página atual volta a abrir. */
+/* Ao carregar (e ao voltar pelo histórico), só o caminho da página atual
+ * continua aberto — nada de menu inteiro escancarado. */
+function applyAccordion() {
+    const activeItems = Array.from(document.querySelectorAll('.sidebar-menu .has-treeview[data-active-path="true"]'));
+    collapseToPath(activeItems);
+}
+
+applyAccordion();
+
 window.addEventListener('pageshow', () => {
-    document.querySelectorAll('.sidebar-menu .has-treeview[data-active-path="true"]').forEach((item) => {
-        setTreeOpen(item, true);
-    });
+    const activeItems = Array.from(document.querySelectorAll('.sidebar-menu .has-treeview[data-active-path="true"]'));
+
+    activeItems.forEach((item) => setTreeOpen(item, true));
+    collapseToPath(activeItems);
 });
 
 /* O estado guardado é aplicado antes de liberar as animações da árvore:

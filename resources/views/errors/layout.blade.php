@@ -47,7 +47,7 @@
                 <hr class="my-4">
                 <div class="text-muted-soft" style="font-size:.72rem;line-height:1.7;">
                     {{ config('finance.developer.company') }} · CNPJ {{ config('finance.developer.cnpj') }}<br>
-                    Desenvolvido por {{ config('finance.developer.name') }} · v1.10.5
+                    Desenvolvido por {{ config('finance.developer.name') }} · v1.10.6
                 </div>
             </div>
         </div>

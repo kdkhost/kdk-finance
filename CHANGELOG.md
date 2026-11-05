@@ -5,6 +5,19 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.6] - 2026-11-05
+
+### Alterado
+
+- **Menu lateral em acordeão**: ao abrir um grupo, os demais fecham automaticamente. Só permanecem abertos o grupo escolhido e os ancestrais dele (necessários para mostrar o caminho); os filhos do próprio grupo mantêm o estado. O menu nunca mais fica com vários ramos escancarados ao mesmo tempo.
+- **Estado inicial enxuto**: ao carregar a página ou voltar pelo histórico, apenas o caminho da página atual fica aberto. Ramos que estavam abertos de visitas anteriores são recolhidos, inclusive os grupos com abertura padrão — o menu abre limpo e cresce só conforme o uso.
+- O estado de cada grupo continua guardado em `localStorage` (`kdk-sidebar-tree`) e `aria-expanded` acompanha cada abertura/fechamento, então teclado e leitores de tela seguem corretos. Sem JavaScript, os grupos padrão continuam abrindo pelo HTML.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **161 testes e 762 asserções**.
+- Validação no navegador: abrir Financeiro fecha Infraestrutura; abrir Infraestrutura fecha Financeiro; abrir Licenças mantém Infraestrutura aberta e fecha os demais; fechar o grupo aberto deixa o menu recolhido. Ao navegar para Serviços OVH e recarregar, só o caminho de Infraestrutura permanece aberto, mesmo com outro ramo salvo como aberto.
+
 ## [1.10.5] - 2026-11-05
 
 ### Corrigido
