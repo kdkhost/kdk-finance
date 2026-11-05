@@ -42,6 +42,38 @@ class SidebarTreeviewTest extends TestCase
         $response->assertDontSee('data-tree-item="crons"', false);
     }
 
+    public function test_licenses_live_under_infrastructure_instead_of_finance(): void
+    {
+        $user = User::factory()->create([
+            'role' => User::ROLE_DEVELOPER,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user)->get('/');
+        $html = $response->getContent();
+
+        $response->assertOk();
+        $response->assertSee('data-tree-item="infraestrutura"', false);
+        $response->assertSee('data-tree-item="licencas"', false);
+        $response->assertSeeInOrder([
+            'data-tree-item="infraestrutura"',
+            '<span>Serviços OVH</span>',
+            'data-tree-item="licencas"',
+            'Tabela de preços',
+        ], false);
+
+        // Licenças não pode aparecer antes do fim do bloco Financeiro.
+        $posFinanceiro = strpos($html, 'data-tree-item="financeiro"');
+        $posInfra = strpos($html, 'data-tree-item="infraestrutura"');
+        $posLicencas = strpos($html, 'data-tree-item="licencas"');
+
+        $this->assertNotFalse($posFinanceiro);
+        $this->assertNotFalse($posInfra);
+        $this->assertNotFalse($posLicencas);
+        $this->assertGreaterThan($posFinanceiro, $posInfra);
+        $this->assertGreaterThan($posInfra, $posLicencas);
+    }
+
     public function test_developer_opens_three_levels_and_marks_the_current_tab(): void
     {
         $user = User::factory()->create([

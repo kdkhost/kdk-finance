@@ -5,6 +5,16 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.3] - 2026-11-05
+
+### Alterado
+
+- **Licenças passaram para Infraestrutura**: o grupo *Licenças* (Licenças, Tabela de preços e Nova licença) saiu de *Financeiro* e agora fica em *Operação → Infraestrutura*, ao lado de *Serviços OVH*, acompanhando a ideia de que licenças são parte da infraestrutura contratada. Permissões dos atalhos e abertura automática do ramo ativo continuam iguais.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **161 testes e 754 asserções**, incluindo a nova posição de Licenças depois de Serviços OVH e dentro do ramo de Infraestrutura.
+
 ## [1.10.2] - 2026-11-05
 
 ### Adicionado

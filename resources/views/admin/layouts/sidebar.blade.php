@@ -73,6 +73,29 @@
                     ])),
                 ],
                 [
+                    'key' => 'notificacoes',
+                    'label' => 'Notificações',
+                    'icon' => 'bi-bell',
+                    'url' => route('notifications.index'),
+                    'active' => request()->routeIs('notifications.*'),
+                    'badge' => true,
+                ],
+            ],
+        ],
+        [
+            'key' => 'infraestrutura',
+            'label' => 'Infraestrutura',
+            'icon' => 'bi-hdd-stack',
+            'open_default' => true,
+            'children' => [
+                [
+                    'key' => 'servicos-ovh',
+                    'label' => 'Serviços OVH',
+                    'icon' => 'bi-server',
+                    'url' => route('infrastructure.index'),
+                    'active' => request()->routeIs('infrastructure.*'),
+                ],
+                [
                     'key' => 'licencas',
                     'label' => 'Licenças',
                     'icon' => 'bi-key',
@@ -99,29 +122,6 @@
                             'active' => request()->routeIs('licenses.create'),
                         ] : null,
                     ])),
-                ],
-                [
-                    'key' => 'notificacoes',
-                    'label' => 'Notificações',
-                    'icon' => 'bi-bell',
-                    'url' => route('notifications.index'),
-                    'active' => request()->routeIs('notifications.*'),
-                    'badge' => true,
-                ],
-            ],
-        ],
-        [
-            'key' => 'infraestrutura',
-            'label' => 'Infraestrutura',
-            'icon' => 'bi-hdd-stack',
-            'open_default' => true,
-            'children' => [
-                [
-                    'key' => 'servicos-ovh',
-                    'label' => 'Serviços OVH',
-                    'icon' => 'bi-server',
-                    'url' => route('infrastructure.index'),
-                    'active' => request()->routeIs('infrastructure.*'),
                 ],
             ],
         ],
@@ -276,6 +276,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por Marcelo Brad - RJ</div>
-        <div class="mt-1 opacity-75">v1.10.2 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.10.3 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

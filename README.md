@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** Marcelo Brad - RJ
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.10.2 · Laravel 12.71.0 · PHP 8.3
+- **Versão:** 1.10.3 · Laravel 12.71.0 · PHP 8.3
 
 ---
 
