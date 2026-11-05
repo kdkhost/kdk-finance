@@ -5,6 +5,19 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.8] - 2026-11-05
+
+### Corrigido
+
+- **Valor em dólar sem ambiguidade**: faturas em dólar passaram a exibir `US$` em vez de `$` no e-mail. Antes, uma fatura de `US$ 7,99` aparecia como `$ 7,99` e podia ser lida como reais; agora todo valor original usa o prefixo inequívoco da moeda (`US$`, `€`, `R$`).
+- **Rótulo correto no bloco de detalhes**: a linha que mostra o valor na moeda de origem deixou de se chamar *Moeda original* (o nome sugeria o código da moeda) e passou a se chamar *Valor original*, que é o que ela realmente exibe. A migração renomeia o rótulo apenas nos modelos que ainda usavam o nome antigo, preservando qualquer edição feita no painel.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **165 testes e 787 asserções**.
+- Prévia validada com uma fatura real em dólar (LicenseBoy, US$ 7,99): valor original `US$ 7,99`, cotação `R$ 5,4882`, valor convertido `R$ 43,85`, spread `2,01% · R$ 0,88`, IOF `3,38% · R$ 1,51`, total a reservar `R$ 46,24` e botão abrindo a área de faturas da LicenseBoy.
+- Teste de integração passou a conferir explicitamente o rótulo `Dólar americano (USD)` e o valor `US$ 100,00`.
+
 ## [1.10.7] - 2026-11-05
 
 ### Adicionado

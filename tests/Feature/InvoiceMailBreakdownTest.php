@@ -111,6 +111,8 @@ class InvoiceMailBreakdownTest extends TestCase
         $variables = app(InvoiceMailDataService::class)->variables($invoice);
 
         $this->assertSame('LicenseBoy', $variables['fornecedor']);
+        $this->assertSame('Dólar americano (USD)', $variables['moeda']);
+        $this->assertSame('US$ 100,00', $variables['valor_original']);
         $this->assertSame(InvoiceMailDataService::LICENSEBOY_INVOICES_URL, $variables['link_oficial']);
     }
 

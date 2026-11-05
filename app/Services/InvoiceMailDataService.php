@@ -59,7 +59,7 @@ class InvoiceMailDataService
             'fornecedor' => $this->supplier($invoice),
             'moeda' => $this->currencyLabel($invoice),
             'vencimento' => $invoice->due_date?->format('d/m/Y') ?? '—',
-            'valor_original' => $invoice->currencySymbol().' '.number_format($amountOriginal, 2, ',', '.'),
+            'valor_original' => $this->originalAmount($invoice, $amountOriginal),
             'cotacao' => 'R$ '.number_format($rate, 4, ',', '.'),
             'valor_base' => $this->brl($base),
             'spread' => $this->taxLine($spread, $base),
@@ -146,6 +146,20 @@ class InvoiceMailDataService
         $label = (string) config('finance.currencies.'.$code.'.label', $code);
 
         return $label.' ('.$code.')';
+    }
+
+    /**
+     * Prefixo sem ambiguidade: "US$" para dólar, "€" para euro e "R$" para real.
+     */
+    private function originalAmount(Invoice $invoice, float $amount): string
+    {
+        $prefix = match (strtoupper((string) $invoice->currency)) {
+            'USD' => 'US$',
+            'BRL' => 'R$',
+            default => $invoice->currencySymbol(),
+        };
+
+        return $prefix.' '.number_format($amount, 2, ',', '.');
     }
 
     /**
