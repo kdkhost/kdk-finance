@@ -249,6 +249,71 @@ if (appHeader) {
 }
 
 /* ---------------------------------------------------------------------------
+ * Sidebar em árvore (até três níveis)
+ * O ramo da página atual abre sempre; os demais respeitam a última escolha.
+ * ------------------------------------------------------------------------- */
+const SIDEBAR_TREE_KEY = 'kdk-sidebar-tree';
+
+function readTreeState() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(SIDEBAR_TREE_KEY) || '{}');
+        return stored && typeof stored === 'object' ? stored : {};
+    } catch (error) {
+        return {};
+    }
+}
+
+function writeTreeState(state) {
+    try {
+        localStorage.setItem(SIDEBAR_TREE_KEY, JSON.stringify(state));
+    } catch (error) {
+        // Armazenamento indisponível: a árvore continua funcionando na sessão.
+    }
+}
+
+const treeState = readTreeState();
+
+function setTreeOpen(item, open) {
+    item.classList.toggle('is-open', open);
+    const toggle = item.querySelector(':scope > [data-treeview-toggle]');
+    if (toggle) {
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+}
+
+document.querySelectorAll('.sidebar-menu .has-treeview').forEach((item) => {
+    const key = item.dataset.treeItem;
+    if (!key) {
+        return;
+    }
+
+    const toggle = item.querySelector(':scope > [data-treeview-toggle]');
+    const onActivePath = item.dataset.activePath === 'true';
+
+    if (onActivePath) {
+        setTreeOpen(item, true);
+    } else if (Object.hasOwn(treeState, key)) {
+        setTreeOpen(item, treeState[key] === true);
+    } else if (toggle) {
+        setTreeOpen(item, toggle.dataset.defaultOpen === 'true');
+    }
+
+    toggle?.addEventListener('click', () => {
+        const open = !item.classList.contains('is-open');
+        setTreeOpen(item, open);
+        treeState[key] = open;
+        writeTreeState(treeState);
+    });
+});
+
+/* Ao navegar pelo histórico, o ramo da página atual volta a abrir. */
+window.addEventListener('pageshow', () => {
+    document.querySelectorAll('.sidebar-menu .has-treeview[data-active-path="true"]').forEach((item) => {
+        setTreeOpen(item, true);
+    });
+});
+
+/* ---------------------------------------------------------------------------
  * Componentes Bootstrap
  * ------------------------------------------------------------------------- */
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {

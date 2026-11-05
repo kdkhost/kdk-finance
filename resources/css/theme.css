@@ -276,13 +276,6 @@ select optgroup {
     font-weight: 600;
 }
 
-.sidebar-user {
-    padding: 16px 18px 10px;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
-
 .avatar {
     width: 40px;
     height: 40px;
@@ -297,20 +290,6 @@ select optgroup {
     letter-spacing: 0.02em;
     border: 1px solid rgba(255, 255, 255, 0.15);
     flex: 0 0 auto;
-}
-
-.sidebar-user .name {
-    color: #f1f6fc;
-    font-weight: 600;
-    font-size: 0.86rem;
-    line-height: 1.2;
-}
-
-.sidebar-user .role {
-    color: #8fb0cf;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
 }
 
 .sidebar-menu .nav-header {
@@ -361,6 +340,91 @@ select optgroup {
     font-size: 0.65rem;
     background: rgba(255, 255, 255, 0.14);
     color: #eaf3ff;
+}
+
+/* Treeview — até três níveis, com o ramo atual sempre aberto */
+.sidebar-menu .sidebar-treeview-toggle {
+    width: calc(100% - 20px);
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sidebar-menu .sidebar-treeview-toggle.is-current {
+    color: #ffffff;
+}
+
+.sidebar-menu .sidebar-treeview-toggle.is-current > i:first-child {
+    color: #6ef2c9;
+}
+
+.sidebar-menu .treeview-caret {
+    margin-left: auto;
+    font-size: 0.68rem !important;
+    color: #7f9bb9;
+    transition: transform 200ms ease, color 200ms ease;
+}
+
+.has-treeview.is-open > .sidebar-treeview-toggle .treeview-caret {
+    transform: rotate(90deg);
+    color: #6ef2c9;
+}
+
+.sidebar-treeview {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.has-treeview.is-open > .sidebar-treeview {
+    grid-template-rows: 1fr;
+}
+
+.sidebar-treeview > .sidebar-treeview-list {
+    min-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition: visibility 0s linear 220ms;
+}
+
+.has-treeview.is-open > .sidebar-treeview > .sidebar-treeview-list {
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+.sidebar-menu .sidebar-level-2 .nav-link {
+    font-size: 0.82rem;
+    padding-left: 30px;
+}
+
+.sidebar-menu .sidebar-level-2 .nav-link i {
+    font-size: 0.9rem;
+}
+
+.sidebar-menu .sidebar-level-3 .nav-link {
+    font-size: 0.79rem;
+    padding-left: 48px;
+}
+
+.sidebar-menu .sidebar-level-3 .nav-link i {
+    width: 0.85rem;
+    font-size: 0.8rem;
+}
+
+.sidebar-menu .nav-link:focus-visible,
+.sidebar-menu .sidebar-treeview-toggle:focus-visible {
+    outline: 2px solid #6ef2c9;
+    outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-treeview,
+    .sidebar-menu .treeview-caret,
+    .sidebar-menu .nav-link {
+        transition: none;
+    }
 }
 
 .sidebar-footer {

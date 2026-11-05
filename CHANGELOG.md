@@ -5,6 +5,29 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.10.2] - 2026-11-05
+
+### Adicionado
+
+- **Menu lateral em árvore com até três níveis**: a navegação agora é agrupada por assunto e abre em cascata — *Operação → Financeiro → Faturas → Todas as faturas* e *Administração → Sistema → Configurações → Câmbio e tributos*, por exemplo. Grupos intermediários alternam com clique, seta e teclado (`Enter`/`Espaço`), exibem `aria-expanded`/`aria-controls` e usam recuo progressivo por nível.
+- **Ramo atual sempre aberto**: o grupo que contém a página visitada abre sozinho, inclusive depois de voltar pelo histórico do navegador. Os demais grupos respeitam a última escolha do usuário, guardada em `localStorage` por chave estável (`kdk-sidebar-tree`); sem JavaScript, os grupos principais continuam abertos a partir do próprio HTML.
+- **Notificações não lidas ao vivo**: o contador do item *Notificações* entra no canal de atualização (`data-live="unread-count"`) e acompanha o restante do painel sem recarregar a página.
+
+### Alterado
+
+- A navegação foi reorganizada em dois blocos: **Operação** (Dashboard, Financeiro com Faturas/Conversões/Licenças/Notificações e Infraestrutura com Serviços OVH) e **Administração** (Sistema com Configurações por aba, Central de cron, Modelos de e-mail e Usuários, além de Meu perfil). Os atalhos *Nova fatura*, *Nova conversão* e *Nova licença* aparecem dentro da seção correspondente, mantendo as permissões de gestor e de desenvolvedor.
+- Configurações ganhou subitens que apontam direto para cada aba (`?tab=taxes`, `conversion`, `ovh`, `licenseboy`, `rules`, `mail`, `security`), sem duplicar formulários.
+- Respiro, tipografia e ícones dos três níveis foram ajustados para a largura de 250 px do menu, inclusive em telas estreitas, e o foco por teclado recebe contorno visível.
+
+### Removido
+
+- **Bloco do usuário no topo do menu lateral** (avatar com iniciais, nome e cargo). A identificação continua no menu do usuário no cabeçalho, com acesso a perfil, configurações e saída.
+
+### Testado
+
+- Suíte completa em PHP 8.3 com SQLite em memória: **160 testes e 745 asserções**, incluindo renderização das permissões de desenvolvedor, gestor e somente leitura, remoção do bloco de usuário, três níveis de menu e ramo ativo aberto.
+- Validação no navegador: árvore aberta/fechada em desktop e em 360 px, ramo ativo aberto em Faturas e em Configurações, estado preservado ao trocar de página e recarregar, ausência do bloco de usuário no menu e contador de notificações atualizando ao vivo.
+
 ## [1.10.1] - 2026-11-05
 
 ### Corrigido
