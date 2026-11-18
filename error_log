@@ -1,0 +1,15 @@
+[04-Nov-2026 18:53:55 UTC] PHP Warning:  require(/home/financeirokdk202/vendor/autoload.php): Failed to open stream: No such file or directory in /home/financeirokdk202/public_html/__kdk_run_9180c3de4ea1.php on line 27
+[04-Nov-2026 18:53:55 UTC] PHP Warning:  require(/home/financeirokdk202/vendor/autoload.php): Failed to open stream: No such file or directory in /home/financeirokdk202/public_html/__kdk_run_9180c3de4ea1.php on line 27
+[04-Nov-2026 18:53:55 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/financeirokdk202/vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/financeirokdk202/public_html/__kdk_run_9180c3de4ea1.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/financeirokdk202/public_html/__kdk_run_9180c3de4ea1.php on line 27
+[04-Nov-2026 20:42:09 UTC] PHP Warning:  require(/home/financeirokdk202/vendor/autoload.php): Failed to open stream: No such file or directory in /home/financeirokdk202/public_html/__kdk_maint_1100.php on line 17
+[04-Nov-2026 20:42:09 UTC] PHP Warning:  require(/home/financeirokdk202/vendor/autoload.php): Failed to open stream: No such file or directory in /home/financeirokdk202/public_html/__kdk_maint_1100.php on line 17
+[04-Nov-2026 20:42:09 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/financeirokdk202/vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/financeirokdk202/public_html/__kdk_maint_1100.php:17
+Stack trace:
+#0 {main}
+  thrown in /home/financeirokdk202/public_html/__kdk_maint_1100.php on line 17
+[13-Nov-2026 03:14:02 UTC] PHP Warning:  Failed loading Zend extension 'opcache.so' (tried: /opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so (/opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so: undefined symbol: zend_map_ptr_static_size), /opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so.so (/opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[13-Nov-2026 03:14:02 UTC] PHP Warning:  Failed loading Zend extension 'opcache.so' (tried: /opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so (/opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so: undefined symbol: zend_map_ptr_static_size), /opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so.so (/opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so.so: cannot open shared object file: No such file or directory)) in Unknown on line 0
+[13-Nov-2026 03:14:03 UTC] PHP Warning:  Failed loading Zend extension 'opcache.so' (tried: /opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so (/opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so: undefined symbol: zend_map_ptr_static_size), /opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so.so (/opt/cpanel/ea-php82/root/usr/lib64/php/modules/opcache.so.so: cannot open shared object file: No such file or directory)) in Unknown on line 0

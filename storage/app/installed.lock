@@ -1,0 +1,8 @@
+{
+    "installed_at": "2026-11-04T18:20:19+00:00",
+    "version": "1.8.0",
+    "app_url": "https://financeiro.kdkhost.com.br",
+    "database": "mysql",
+    "admin": "george@kdkhost.com.br",
+    "reader": null
+}

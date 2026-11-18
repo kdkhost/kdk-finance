@@ -1,0 +1,59 @@
+# ============================================================================
+# KDK Finance — proteção da raiz do projeto
+# ============================================================================
+# Este arquivo só entra em ação quando o document root da hospedagem aponta
+# para a raiz do projeto (em vez de public/). Ele bloqueia o acesso direto a
+# credenciais, código e arquivos internos, encaminha tudo para public/ e
+# redireciona qualquer endereço com /public para o caminho limpo.
+#
+# Recomendação: no cPanel, aponte o subdomínio/domínio para a pasta public,
+# que é a configuração mais segura.
+# ============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bloqueia arquivos e pastas que nunca devem ser públicos.
+    RewriteRule ^(?:\.env.*|\.git(?:/.*)?|app|bootstrap|config|database|lang|node_modules|resources|routes|storage|tests|tools|vendor|artisan|composer\.json|composer\.lock|package\.json|package-lock\.json|phpunit\.xml|vite\.config\.js|README\.md|CHANGELOG\.md|LEIA-ME\.txt)(?:/.*)?$ - [F,L,NC]
+
+    # A pasta public/ nunca aparece na URL: /public/login vira /login.
+    # THE_REQUEST guarda a requisição original do cliente, então o caminho
+    # interno "public/" usado para entregar a aplicação nunca é redirecionado.
+    RewriteCond %{THE_REQUEST} \s/+public/([^\s?]+)[\s?] [NC]
+    RewriteRule ^ /%1 [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+public/?[\s?] [NC]
+    RewriteRule ^ / [R=301,L]
+
+    # O restante é encaminhado para public/ sem aparecer na URL.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Defina o pacote “ea-php82” como a linguagem padrão de programação “PHP”.
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
