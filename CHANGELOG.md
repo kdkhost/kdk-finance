@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.1] - 2026-11-18
+
+### Corrigido
+
+- **Tamanho do identificador `panel_service_id` na sincronização do IDrive e2**: limitado o comprimento de `panel_service_id` a no máximo 32 caracteres (`e2-<hash12>`) em `IDriveE2PanelService`, evitando o erro `SQLSTATE[22001]: Data too long for column 'panel_service_id'` no MySQL de produção e garantindo a abertura do modal SweetAlert2 de código 2FA na primeira sincronização da conta.
+
 ## [1.13.0] - 2026-11-18
 
 ### Adicionado

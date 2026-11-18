@@ -339,7 +339,7 @@ class IDriveE2PanelService
                 $buckets = $this->listS3Buckets();
                 foreach ($buckets as $bucket) {
                     $services[] = [
-                        'service_id' => 's3-bucket-'.$bucket['name'],
+                        'service_id' => mb_substr('s3-'.$bucket['name'], 0, 32),
                         'product' => 'Bucket S3 Object Storage',
                         'name' => 'Bucket S3 · '.$bucket['name'],
                         'server_name' => (string) AppSetting::get('idrivee2_s3_endpoint', ''),
@@ -785,24 +785,26 @@ class IDriveE2PanelService
 
         // Se o console IDrive e2 é uma SPA que exige 2FA no navegador e não tínhamos OTP:
         $existingLocalCount = LicenseService::query()->where('provider', self::PROVIDER)->count();
+        $verified2faAt = trim((string) AppSetting::get('idrivee2_2fa_verified_at', ''));
+        $totpSecret = trim((string) AppSetting::get('idrivee2_totp_secret', ''));
 
         if ($services === [] && $otpCode === '' && ! $this->hasApiToken() && ! $this->hasS3Credentials()) {
-            // Se o usuário já informou um plano padrão nas configurações, ou se precisamos do código 2FA:
-            $defaultPlanPrice = (float) AppSetting::get('idrivee2_default_price', 0);
-            if ($defaultPlanPrice > 0) {
+            // Se o 2FA ainda não foi verificado nesta conta e não há chave TOTP salva, solicita o código de 6 dígitos no modal SweetAlert2
+            if ($verified2faAt === '' && $totpSecret === '') {
+                $requires2fa = true;
+            } else {
+                $defaultPlanPrice = (float) AppSetting::get('idrivee2_default_price', 60.00);
                 $services[] = [
-                    'service_id' => 'idrivee2-account-'.md5($email),
-                    'product' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 S3 Object Storage'),
-                    'name' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 S3 · '.$email),
+                    'service_id' => 'e2-'.substr(md5($email), 0, 12),
+                    'product' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)'),
+                    'name' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)').' · '.$email,
                     'server_name' => (string) (AppSetting::get('idrivee2_s3_endpoint') ?: 'console.idrivee2.com'),
-                    'price' => $defaultPlanPrice,
+                    'price' => $defaultPlanPrice > 0 ? $defaultPlanPrice : 60.00,
                     'currency' => (string) AppSetting::get('idrivee2_default_currency', 'USD'),
                     'cycle' => (string) AppSetting::get('idrivee2_default_cycle', LicenseService::CYCLE_ANNUAL),
                     'next_due' => AppSetting::get('idrivee2_default_next_due') ?: now()->addYear()->toDateString(),
                     'status' => LicenseService::STATUS_ACTIVE,
                 ];
-            } elseif ($existingLocalCount === 0) {
-                $requires2fa = true;
             }
         }
 
@@ -813,10 +815,10 @@ class IDriveE2PanelService
             $planPrice = (float) AppSetting::get('idrivee2_default_price', 60.00);
             $planCurrency = (string) AppSetting::get('idrivee2_default_currency', 'USD');
             $planCycle = (string) AppSetting::get('idrivee2_default_cycle', LicenseService::CYCLE_ANNUAL);
-            $planDue = AppSetting::get('idrivee2_default_next_due') ?: now()->addMonthNoOverflow()->toDateString();
+            $planDue = AppSetting::get('idrivee2_default_next_due') ?: now()->addYear()->toDateString();
 
             $services[] = [
-                'service_id' => 'idrivee2-main-'.substr(md5($email), 0, 10),
+                'service_id' => 'e2-'.substr(md5($email), 0, 12),
                 'product' => $planName,
                 'name' => $planName.' · '.$email,
                 'server_name' => (string) (AppSetting::get('idrivee2_s3_endpoint') ?: 'console.idrivee2.com'),
@@ -989,14 +991,14 @@ class IDriveE2PanelService
         $firstService = null;
 
         foreach ($services as $item) {
-            $serviceId = (string) ($item['service_id'] ?? '');
+            $serviceId = mb_substr(trim((string) ($item['service_id'] ?? '')), 0, 32);
             $name = (string) ($item['name'] ?? $item['product'] ?? 'IDrive e2 S3 Storage');
             $product = (string) ($item['product'] ?? 'IDrive e2 S3 Storage');
             $price = (float) ($item['price'] ?? 0);
             $currency = in_array($item['currency'] ?? 'USD', ['USD', 'EUR'], true) ? $item['currency'] : 'USD';
             $cycle = $item['cycle'] ?? LicenseService::CYCLE_MONTHLY;
             $nextDue = $item['next_due'] ?? null;
-            $status = $item['status'] ?? LicenseService::STATUS_ACTIVE;
+            $status = mb_substr((string) ($item['status'] ?? LicenseService::STATUS_ACTIVE), 0, 30);
 
             $existing = LicenseService::query()
                 ->where('provider', self::PROVIDER)
