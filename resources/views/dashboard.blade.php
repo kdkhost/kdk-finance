@@ -228,33 +228,49 @@
         <div class="col-xl-4">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <div class="fw-semibold">Atenção imediata</div>
-                    <span class="badge text-bg-light border">{{ $overdueInvoices->count() }}</span>
+                    <div>
+                        <div class="fw-semibold">Faturas em aberto · Vencimento próximo</div>
+                        <div class="text-muted-soft" style="font-size:.72rem;">Vencidas, vencendo hoje e próximos {{ $dueWindowDays ?? 7 }} dias</div>
+                    </div>
+                    <span class="badge text-bg-light border">{{ ($upcomingInvoices ?? $overdueInvoices)->count() }}</span>
                 </div>
                 <div class="card-body">
-                    @forelse ($overdueInvoices as $invoice)
+                    @forelse (($upcomingInvoices ?? $overdueInvoices) as $invoice)
+                        @php
+                            $daysDiff = $invoice->due_date ? (int) round(now()->startOfDay()->diffInDays($invoice->due_date->copy()->startOfDay(), false)) : 0;
+                            $isOverdue = $daysDiff < 0;
+                            $isToday = $daysDiff === 0;
+                        @endphp
                         <a href="{{ route('invoices.show', $invoice) }}" class="d-flex justify-content-between align-items-start gap-2 py-2 border-bottom text-reset">
                             <span>
                                 <span class="d-block fw-semibold" style="font-size:.84rem;">{{ \Illuminate\Support\Str::limit($invoice->description, 34) }}</span>
-                                <span class="text-muted-soft" style="font-size:.72rem;">Venceu em {{ $invoice->due_date?->format('d/m/Y') }}</span>
+                                <span class="text-muted-soft" style="font-size:.72rem;">
+                                    @if ($isOverdue)
+                                        <span class="text-danger fw-semibold">Venceu há {{ abs($daysDiff) }} dia(s) ({{ $invoice->due_date?->format('d/m/Y') }})</span>
+                                    @elseif ($isToday)
+                                        <span class="text-warning fw-semibold">Vence HOJE ({{ $invoice->due_date?->format('d/m/Y') }})</span>
+                                    @else
+                                        Vence em {{ $daysDiff }} dia(s) · {{ $invoice->due_date?->format('d/m/Y') }}
+                                    @endif
+                                </span>
                             </span>
-                            <span class="tabular fw-semibold text-danger" style="font-size:.82rem;">{{ $money($invoice->total_brl) }}</span>
+                            <span class="tabular fw-semibold {{ $isOverdue ? 'text-danger' : ($isToday ? 'text-warning' : '') }}" style="font-size:.82rem;" data-invoice-total="{{ $invoice->id }}">{{ $money($invoice->total_brl) }}</span>
                         </a>
                     @empty
                         <div class="empty-state py-4">
                             <div class="icon"><i class="bi bi-shield-check"></i></div>
-                            <h3>Nada vencido</h3>
-                            <p class="mb-0">Todas as faturas pendentes estão dentro do prazo.</p>
+                            <h3>Tudo em dia</h3>
+                            <p class="mb-0">Nenhuma fatura em aberto com vencimento próximo ou em atraso.</p>
                         </div>
                     @endforelse
 
                     <div class="surface-muted p-3 mt-3">
                         <div class="d-flex align-items-center gap-2 mb-1">
-                            <i class="bi bi-info-circle text-primary"></i>
-                            <span class="fw-semibold" style="font-size:.8rem;">Como o cálculo funciona</span>
+                            <i class="bi bi-bell text-primary"></i>
+                            <span class="fw-semibold" style="font-size:.8rem;">Alertas automáticos ativos</span>
                         </div>
                         <p class="mb-0 text-muted-soft" style="font-size:.74rem;line-height:1.5;">
-                            Valor original × cotação + spread + IOF + ICMS + outros tributos. Faturas pagas têm o câmbio travado automaticamente.
+                            Notificações enviadas na criação da fatura, {{ $dueWindowDays ?? 7 }} dia(s) antes do vencimento, no dia do vencimento e em risco de suspensão.
                         </p>
                     </div>
                 </div>
@@ -380,6 +396,80 @@
             </div>
         </div>
     </div>
+
+    @if (isset($licenseServices) && $licenseServices->isNotEmpty())
+        <div class="row g-3 mt-1">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <div class="fw-semibold">Licenças (LicenseBoy) & Armazenamento S3 (IDrive e2)</div>
+                            <div class="text-muted-soft" style="font-size:.76rem;">
+                                {{ $licenseServices->count() }} serviço(s) registrado(s) · custo mensal estimado {{ $money($licenseServices->sum('monthly_brl')) }}
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('s3.index') }}" class="btn btn-ghost btn-sm">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> IDrive e2 (S3)
+                            </a>
+                            <a href="{{ route('licenses.index') }}" class="btn btn-ghost btn-sm">
+                                <i class="bi bi-key me-1"></i> Licenças <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Serviço / Produto</th>
+                                    <th class="d-none d-md-table-cell">Fornecedor</th>
+                                    <th class="d-none d-md-table-cell">Ciclo</th>
+                                    <th class="text-end d-none d-sm-table-cell">Valor do ciclo</th>
+                                    <th class="text-end">Mensal (BRL)</th>
+                                    <th>Próximo vencimento</th>
+                                    <th class="d-none d-sm-table-cell">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($licenseServices as $item)
+                                    @php
+                                        $lic = $item['service'];
+                                        $isS3 = str_contains(mb_strtolower((string) $lic->provider), 'idrive');
+                                        $showRoute = $isS3 ? route('s3.show', $lic) : route('licenses.show', $lic);
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <a href="{{ $showRoute }}" class="cell-title d-block">{{ $lic->name }}</a>
+                                            <span class="cell-sub">{{ $lic->product }} @if ($lic->server_name) · <span class="mono">{{ $lic->server_name }}</span> @endif</span>
+                                        </td>
+                                        <td class="d-none d-md-table-cell">
+                                            <span class="badge text-bg-light border">
+                                                <i class="bi {{ $isS3 ? 'bi-cloud-arrow-up' : 'bi-key' }} me-1"></i>{{ $lic->provider }}
+                                            </span>
+                                        </td>
+                                        <td class="d-none d-md-table-cell">{{ $lic->billingCycleLabel() }}</td>
+                                        <td class="text-end tabular d-none d-sm-table-cell">{{ $lic->billingCurrencySymbol() }} {{ number_format($lic->totalOriginal(), 2, ',', '.') }}</td>
+                                        <td class="text-end tabular fw-semibold">{{ $money($item['monthly_brl']) }}</td>
+                                        <td class="tabular">
+                                            @if ($lic->next_due_date)
+                                                <span class="{{ $lic->isDueSoon() ? 'text-danger fw-semibold' : '' }}">{{ $lic->next_due_date->format('d/m/Y') }}</span>
+                                                @if ($lic->isDueSoon())
+                                                    <span class="cell-sub d-block text-danger">Renova em breve</span>
+                                                @endif
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
+                                        <td class="d-none d-sm-table-cell"><span class="{{ $lic->statusBadgeClass() }}">{{ $lic->statusLabel() }}</span></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <script type="application/json" id="dashboard-data">{!! json_encode([
         'series' => $series,

@@ -36,7 +36,14 @@
                 @php
                     $data = $notification->data ?? [];
                     $isUnread = $notification->read_at === null;
-                    $icon = data_get($data, 'icon') === 'trending-down' ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow';
+                    $icon = match (data_get($data, 'icon')) {
+                        'trending-down' => 'bi-graph-down-arrow',
+                        'receipt' => 'bi-receipt',
+                        'alarm' => 'bi-alarm',
+                        'exclamation' => 'bi-exclamation-triangle-fill',
+                        'suspension' => 'bi-exclamation-octagon-fill',
+                        default => 'bi-graph-up-arrow',
+                    };
                 @endphp
                 <div class="notification-item {{ $isUnread ? 'is-unread' : '' }} d-flex align-items-start gap-3 py-3 px-3">
                     <span class="icon mt-1"><i class="bi {{ $icon }}"></i></span>

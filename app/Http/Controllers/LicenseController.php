@@ -17,13 +17,17 @@ use App\Models\AppSetting;
 use App\Models\Invoice;
 use App\Models\LicenseCatalogItem;
 use App\Models\LicenseService;
+use App\Models\User;
+use App\Notifications\InvoiceLifecycleNotification;
 use App\Services\ExchangeRateService;
+use App\Services\IDriveE2PanelService;
 use App\Services\LicenseBoyPanelService;
 use App\Services\LicenseBoyPriceService;
 use App\Services\TaxCalculationService;
 use App\Support\RichText;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
@@ -35,6 +39,10 @@ class LicenseController extends Controller
         $rates = $exchange->rates();
 
         $licenses = LicenseService::query()
+            ->where(function ($query): void {
+                $query->where('provider', '!=', IDriveE2PanelService::PROVIDER)
+                    ->orWhereNull('provider');
+            })
             ->with(['lastInvoice', 'catalogItem'])
             ->withCount('invoices')
             ->orderByRaw("CASE status WHEN 'active' THEN 0 WHEN 'expired' THEN 1 ELSE 2 END")
@@ -296,6 +304,7 @@ class LicenseController extends Controller
 
         $rate = $exchange->rate($license->billingCurrency());
         $tax->applyToInvoice($invoice, $rate);
+        $invoice->refresh();
 
         $license->last_invoice_id = $invoice->id;
 
@@ -304,6 +313,24 @@ class LicenseController extends Controller
         }
 
         $license->save();
+
+        if (filter_var(AppSetting::get('notify_on_invoice_create', '1'), FILTER_VALIDATE_BOOLEAN)) {
+            $managers = User::query()
+                ->where('is_active', true)
+                ->whereIn('role', [User::ROLE_DEVELOPER, User::ROLE_FINANCIAL])
+                ->get();
+
+            if ($managers->isNotEmpty()) {
+                try {
+                    Notification::send($managers, new InvoiceLifecycleNotification(
+                        $invoice,
+                        InvoiceLifecycleNotification::STAGE_CREATED,
+                        max(0, (int) round(now()->startOfDay()->diffInDays($invoice->due_date?->copy()->startOfDay() ?? now(), false)))
+                    ));
+                } catch (Throwable) {
+                }
+            }
+        }
 
         return redirect()
             ->route('invoices.show', $invoice)

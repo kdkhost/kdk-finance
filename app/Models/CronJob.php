@@ -113,6 +113,13 @@ class CronJob extends Model
                 'description' => 'Lê o valor realmente cobrado no painel da LicenseBoy e sinaliza divergências.',
             ],
             [
+                'name' => 'Sincronizar painel IDrive e2 (S3)',
+                'command' => 'idrivee2:sync-panel',
+                'expression' => '40 5 * * *',
+                'timezone' => 'America/Sao_Paulo',
+                'description' => 'Sincroniza os planos de armazenamento S3, buckets e faturas do console IDrive e2.',
+            ],
+            [
                 'name' => 'Sincronizar tarifas de cartão e câmbio oficial',
                 'command' => 'finance:sync-fees',
                 'expression' => '20 6 * * *',

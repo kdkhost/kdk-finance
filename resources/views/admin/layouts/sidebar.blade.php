@@ -122,6 +122,34 @@
                         ] : null,
                     ])),
                 ],
+                [
+                    'key' => 's3-idrivee2',
+                    'label' => 'IDrive e2 (S3)',
+                    'icon' => 'bi-cloud-arrow-up',
+                    'children' => array_values(array_filter([
+                        [
+                            'key' => 's3-lista',
+                            'label' => 'Serviços S3',
+                            'icon' => 'bi-hdd-network',
+                            'url' => route('s3.index'),
+                            'active' => request()->routeIs('s3.index', 's3.show', 's3.edit'),
+                        ],
+                        [
+                            'key' => 's3-precos',
+                            'label' => 'Tabela de planos S3',
+                            'icon' => 'bi-tags',
+                            'url' => route('s3.prices'),
+                            'active' => request()->routeIs('s3.prices'),
+                        ],
+                        $canManage ? [
+                            'key' => 's3-novo',
+                            'label' => 'Novo serviço S3',
+                            'icon' => 'bi-plus-square',
+                            'url' => route('s3.create'),
+                            'active' => request()->routeIs('s3.create'),
+                        ] : null,
+                    ])),
+                ],
             ],
         ],
     ];
@@ -226,6 +254,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por Marcelo Brad - RJ</div>
-        <div class="mt-1 opacity-75">v1.12.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.13.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

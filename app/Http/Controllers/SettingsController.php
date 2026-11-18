@@ -16,6 +16,7 @@ namespace App\Http\Controllers;
 use App\Models\AppSetting;
 use App\Services\ExchangeRateService;
 use App\Services\Fees\FeeSyncService;
+use App\Services\IDriveE2PanelService;
 use App\Services\LicenseBoyPanelService;
 use App\Services\MailTemplateService;
 use App\Services\OvhService;
@@ -42,6 +43,16 @@ class SettingsController extends Controller
         $mailSettings = MailSettings::all();
         unset($mailSettings['mail_password']);
 
+        // Preenche automaticamente o login/senha iniciais do IDrive e2 caso ainda não estejam no banco
+        if (trim((string) AppSetting::get('idrivee2_panel_email', '')) === '') {
+            try {
+                AppSetting::set('idrivee2_panel_email', 'site.kdkhost@gmail.com', 'idrivee2');
+                AppSetting::set('idrivee2_panel_password', '83388601Mm...', 'idrivee2', true);
+                $settings = AppSetting::query()->orderBy('group')->orderBy('key')->get();
+            } catch (Throwable) {
+            }
+        }
+
         return view('settings.index', [
             'settings' => $settings,
             'rates' => $exchange->rates(),
@@ -67,6 +78,17 @@ class SettingsController extends Controller
             'licenseboyConfigured' => app(LicenseBoyPanelService::class)->isConfigured(),
             'licenseboySyncedAt' => AppSetting::get('licenseboy_panel_synced_at'),
             'licenseboyEmail' => (string) AppSetting::get('licenseboy_panel_email', ''),
+            'idrivee2Configured' => app(IDriveE2PanelService::class)->isConfigured(),
+            'idrivee2SyncedAt' => AppSetting::get('idrivee2_panel_synced_at'),
+            'idrivee2Email' => (string) AppSetting::get('idrivee2_panel_email', 'site.kdkhost@gmail.com'),
+            'idrivee2Endpoint' => (string) AppSetting::get('idrivee2_s3_endpoint', ''),
+            'idrivee2Region' => (string) AppSetting::get('idrivee2_s3_region', 'us-east-1'),
+            'idrivee2AccessKey' => (string) AppSetting::get('idrivee2_s3_access_key', ''),
+            'idrivee2DefaultPlan' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)'),
+            'idrivee2DefaultPrice' => (string) AppSetting::get('idrivee2_default_price', '60.00'),
+            'idrivee2DefaultCurrency' => (string) AppSetting::get('idrivee2_default_currency', 'USD'),
+            'idrivee2DefaultCycle' => (string) AppSetting::get('idrivee2_default_cycle', 'annual'),
+            'idrivee2DefaultNextDue' => (string) AppSetting::get('idrivee2_default_next_due', ''),
             'mailSettings' => $mailSettings,
             'mailConfigured' => MailSettings::configured(),
             'mailDriver' => MailSettings::driver(),
@@ -80,6 +102,10 @@ class SettingsController extends Controller
                 'ovh_consumer_key' => AppSetting::mask((string) AppSetting::get('ovh_consumer_key', '')),
                 'ovh_v2_bearer_token' => AppSetting::mask((string) AppSetting::get('ovh_v2_bearer_token', '')),
                 'licenseboy_panel_password' => AppSetting::mask((string) AppSetting::get('licenseboy_panel_password', '')),
+                'idrivee2_panel_password' => AppSetting::mask((string) AppSetting::get('idrivee2_panel_password', '')),
+                'idrivee2_totp_secret' => AppSetting::mask((string) AppSetting::get('idrivee2_totp_secret', '')),
+                'idrivee2_api_token' => AppSetting::mask((string) AppSetting::get('idrivee2_api_token', '')),
+                'idrivee2_s3_secret_key' => AppSetting::mask((string) AppSetting::get('idrivee2_s3_secret_key', '')),
             ],
         ]);
     }
@@ -273,6 +299,100 @@ class SettingsController extends Controller
                 : 'Campos em branco foram preservados.');
     }
 
+    public function updateIDriveE2(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'idrivee2_panel_email' => ['nullable', 'email', 'max:190'],
+            'idrivee2_panel_password' => ['nullable', 'string', 'max:255'],
+            'idrivee2_totp_secret' => ['nullable', 'string', 'max:120'],
+            'idrivee2_api_token' => ['nullable', 'string', 'max:500'],
+            'idrivee2_s3_endpoint' => ['nullable', 'string', 'max:255'],
+            'idrivee2_s3_region' => ['nullable', 'string', 'max:80'],
+            'idrivee2_s3_access_key' => ['nullable', 'string', 'max:190'],
+            'idrivee2_s3_secret_key' => ['nullable', 'string', 'max:255'],
+            'idrivee2_default_plan' => ['nullable', 'string', 'max:150'],
+            'idrivee2_default_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'idrivee2_default_currency' => ['nullable', Rule::in(['USD', 'EUR'])],
+            'idrivee2_default_cycle' => ['nullable', Rule::in(['monthly', 'quarterly', 'semiannual', 'annual', 'lifetime'])],
+            'idrivee2_default_next_due' => ['nullable', 'date'],
+            'clear_idrivee2_credentials' => ['nullable', 'boolean'],
+        ], [], [
+            'idrivee2_panel_email' => 'e-mail do console IDrive e2',
+            'idrivee2_panel_password' => 'senha do console IDrive e2',
+            'idrivee2_totp_secret' => 'chave secreta 2FA (TOTP)',
+            'idrivee2_api_token' => 'token de API',
+            'idrivee2_s3_endpoint' => 'endpoint S3',
+            'idrivee2_s3_access_key' => 'Access Key ID',
+            'idrivee2_s3_secret_key' => 'Secret Access Key',
+        ]);
+
+        if ($request->boolean('clear_idrivee2_credentials')) {
+            foreach ([
+                'idrivee2_panel_email',
+                'idrivee2_s3_endpoint',
+                'idrivee2_s3_region',
+                'idrivee2_s3_access_key',
+                'idrivee2_panel_synced_at',
+            ] as $key) {
+                AppSetting::set($key, '', 'idrivee2');
+            }
+
+            foreach ([
+                'idrivee2_panel_password',
+                'idrivee2_totp_secret',
+                'idrivee2_api_token',
+                'idrivee2_s3_secret_key',
+                'idrivee2_session_token',
+            ] as $secretKey) {
+                AppSetting::set($secretKey, '', 'idrivee2', true);
+            }
+
+            return redirect()
+                ->route('settings.index', ['tab' => 'idrivee2'])
+                ->with('success', 'Credenciais do IDrive e2 (S3) removidas do banco de dados.');
+        }
+
+        foreach ([
+            'idrivee2_panel_email',
+            'idrivee2_s3_endpoint',
+            'idrivee2_s3_region',
+            'idrivee2_s3_access_key',
+            'idrivee2_default_plan',
+            'idrivee2_default_currency',
+            'idrivee2_default_cycle',
+            'idrivee2_default_next_due',
+        ] as $plainKey) {
+            if (array_key_exists($plainKey, $data)) {
+                AppSetting::set($plainKey, trim((string) ($data[$plainKey] ?? '')), 'idrivee2');
+            }
+        }
+
+        if (isset($data['idrivee2_default_price']) && $data['idrivee2_default_price'] !== null && $data['idrivee2_default_price'] !== '') {
+            AppSetting::set('idrivee2_default_price', number_format((float) $data['idrivee2_default_price'], 2, '.', ''), 'idrivee2');
+        }
+
+        $secretsUpdated = 0;
+
+        foreach ([
+            'idrivee2_panel_password',
+            'idrivee2_totp_secret',
+            'idrivee2_api_token',
+            'idrivee2_s3_secret_key',
+        ] as $secretKey) {
+            $val = trim((string) ($data[$secretKey] ?? ''));
+            if ($val !== '') {
+                AppSetting::set($secretKey, $val, 'idrivee2', true);
+                $secretsUpdated++;
+            }
+        }
+
+        return redirect()
+            ->route('settings.index', ['tab' => 'idrivee2'])
+            ->with('success', $secretsUpdated > 0
+                ? 'Credenciais do IDrive e2 (S3) salvas e criptografadas com sucesso. Use "Sincronizar painel" para puxar serviços e faturas.'
+                : 'Configurações do IDrive e2 (S3) atualizadas. Senhas e chaves em branco foram preservadas.');
+    }
+
     public function testOvh(OvhService $ovh): JsonResponse
     {
         try {
@@ -324,6 +444,10 @@ class SettingsController extends Controller
             'ovh_import_days' => ['required', 'integer', 'min:1', 'max:365'],
             'ovh_import_limit' => ['required', 'integer', 'min:1', 'max:100'],
             'notify_email' => ['nullable', 'email', 'max:255'],
+            'notify_on_invoice_create' => ['nullable', 'boolean'],
+            'notify_days_before_due' => ['nullable', 'integer', 'min:1', 'max:90'],
+            'notify_on_due_date' => ['nullable', 'boolean'],
+            'notify_suspension_days_overdue' => ['nullable', 'integer', 'min:1', 'max:90'],
         ]);
 
         AppSetting::set('rate_variation_threshold', number_format((float) $data['rate_variation_threshold'], 2, '.', ''), 'finance');
@@ -331,10 +455,14 @@ class SettingsController extends Controller
         AppSetting::set('ovh_import_days', (string) $data['ovh_import_days'], 'ovh');
         AppSetting::set('ovh_import_limit', (string) $data['ovh_import_limit'], 'ovh');
         AppSetting::set('notify_email', $data['notify_email'] ?? '', 'mail');
+        AppSetting::set('notify_on_invoice_create', $request->boolean('notify_on_invoice_create') ? '1' : '0', 'alerts');
+        AppSetting::set('notify_days_before_due', (string) ($data['notify_days_before_due'] ?? 7), 'alerts');
+        AppSetting::set('notify_on_due_date', $request->boolean('notify_on_due_date') ? '1' : '0', 'alerts');
+        AppSetting::set('notify_suspension_days_overdue', (string) ($data['notify_suspension_days_overdue'] ?? 3), 'alerts');
 
         return redirect()
             ->route('settings.index', ['tab' => 'rules'])
-            ->with('success', 'Regras operacionais salvas.');
+            ->with('success', 'Regras operacionais e alertas antecipados salvos.');
     }
 
     /**

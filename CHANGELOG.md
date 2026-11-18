@@ -5,6 +5,19 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.0] - 2026-11-18
+
+### Adicionado
+
+- **Integração com IDrive e2 Cloud Storage (S3) no painel administrativo (`IDriveE2PanelService` e `S3StorageController`)**:
+  - Nova aba **IDrive e2 (S3)** em *Configurações* (`/configuracoes?tab=idrivee2`) para cadastro criptografado (AES-256 via `APP_KEY`) do login e senha do console (`https://console.idrivee2.com/signin`), chave secreta 2FA/TOTP (opcional para geração automática RFC 6238), Token API (`api.idrivee2.com`) e credenciais S3 compatíveis (Access Key ID, Secret Access Key e Endpoint regional com listagem de buckets via AWS Signature v4).
+  - Suporte interativo a **Autenticação de 2 Fatores (2FA)** via **SweetAlert2** + AJAX: ao clicar em *Sincronizar painel S3*, se a conta exigir o código de verificação em duas etapas, o painel abre automaticamente um modal SweetAlert2 para informar o código de 6 dígitos do aplicativo autenticador sem recarregar a página, autenticando e importando serviços e faturas.
+  - Novo módulo **Infraestrutura → IDrive e2 (S3)** (`/s3`, `/s3/precos`, `/s3/novo`) seguindo exatamente o padrão de gestão do *LicenseBoy*: controle de planos e buckets S3 contratados, comparação entre valor de tabela (mensal, anual e promocional de 1º ano) e valor real cobrado no console, cálculo de custo mensal/anual em BRL e geração de faturas com aplicação automática de câmbio, spread, IOF e tributos de importação.
+  - Novo comando Artisan `idrivee2:sync-panel` integrado aos padrões da Central de Cron (`/crons`).
+- **Visibilidade na Dashboard e Alertas Antecipados Completos (`InvoiceLifecycleNotification` e `NotifyAlertsCommand`)**:
+  - A **Dashboard** agora destaca na seção *Faturas em aberto · Vencimento próximo* todas as faturas pendentes vencidas, que vencem hoje ou nos próximos dias configurados, além de listar em tabela dedicada os serviços contratados do **LicenseBoy** e do **IDrive e2 (S3)** com seus respectivos custos mensais e datas de renovação.
+  - Novas regras configuráveis em *Configurações → Regras*: aviso imediato na criação/emissão da fatura (`notify_on_invoice_create`), dias de antecedência antes do vencimento (`notify_days_before_due`), aviso no dia exato do vencimento (`notify_on_due_date`) e alerta crítico de risco de suspensão após o vencimento (`notify_suspension_days_overdue`), enviando notificações tanto para o sino do painel (Central de Notificações) quanto por e-mail.
+
 ## [1.12.1] - 2026-11-18
 
 ### Alterado

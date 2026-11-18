@@ -71,6 +71,7 @@
             ['key' => 'conversion', 'label' => 'Conversão e cartão', 'icon' => 'bi-currency-exchange'],
             $user->isDeveloperAdmin() ? ['key' => 'ovh', 'label' => 'OVHcloud', 'icon' => 'bi-cloud'] : null,
             $user->isDeveloperAdmin() ? ['key' => 'licenseboy', 'label' => 'LicenseBoy', 'icon' => 'bi-key'] : null,
+            $user->isDeveloperAdmin() ? ['key' => 'idrivee2', 'label' => 'IDrive e2 (S3)', 'icon' => 'bi-cloud-arrow-up'] : null,
             $user->isDeveloperAdmin() ? ['key' => 'rules', 'label' => 'Regras', 'icon' => 'bi-sliders'] : null,
             $user->isDeveloperAdmin() ? ['key' => 'mail', 'label' => 'E-mail', 'icon' => 'bi-envelope-at'] : null,
             $user->isDeveloperAdmin() ? ['key' => 'security', 'label' => 'Segurança', 'icon' => 'bi-shield-check'] : null,
@@ -799,6 +800,185 @@
         </div>
     @endif
 
+    @if ($activeTab === 'idrivee2' && $user->isDeveloperAdmin())
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Console & Armazenamento S3 — IDrive e2</span>
+                        <span class="badge {{ ($idrivee2Configured ?? false) ? 'text-bg-success' : 'text-bg-secondary' }}">
+                            {{ ($idrivee2Configured ?? false) ? 'Configurado' : 'Pendente' }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="hint-banner mb-3">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <div>
+                                Conecte sua conta do <strong>IDrive e2</strong> (<span class="mono">https://console.idrivee2.com/signin</span>) para puxar os serviços de armazenamento S3 adquiridos e controlar renovações e faturas no mesmo padrão do LicenseBoy.
+                                Como sua conta utiliza <strong>autenticação em 2 fatores (2FA)</strong>, você pode informar a chave secreta TOTP (para geração automática) ou digitar o código de 6 dígitos no momento da sincronização.
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ route('settings.idrivee2') }}" autocomplete="off">
+                            @csrf
+                            @method('PUT')
+
+                            <div class="settings-section">
+                                <div class="fw-semibold mb-2">1. Acesso ao Console Web (<span class="mono">console.idrivee2.com/signin</span>)</div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_panel_email">E-mail de login</label>
+                                        <input type="email" class="form-control" id="idrivee2_panel_email" name="idrivee2_panel_email" value="{{ old('idrivee2_panel_email', $idrivee2Email ?? 'site.kdkhost@gmail.com') }}" placeholder="site.kdkhost@gmail.com" autocomplete="username">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_panel_password">Senha do console</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="idrivee2_panel_password" name="idrivee2_panel_password" placeholder="{{ ($masked['idrivee2_panel_password'] ?? '—') !== '—' ? 'Senha salva · '.$masked['idrivee2_panel_password'] : 'Informe a senha do console' }}" autocomplete="new-password">
+                                            <button type="button" class="btn btn-outline-secondary" data-toggle-password="idrivee2_panel_password" aria-label="Mostrar senha"><i class="bi bi-eye"></i></button>
+                                        </div>
+                                        <div class="form-text">Criptografada via AES-256 (APP_KEY). Em branco preserva a atual.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_totp_secret">Chave secreta 2FA / TOTP (opcional)</label>
+                                        <input type="password" class="form-control mono" id="idrivee2_totp_secret" name="idrivee2_totp_secret" placeholder="{{ ($masked['idrivee2_totp_secret'] ?? '—') !== '—' ? 'Segredo 2FA salvo · '.$masked['idrivee2_totp_secret'] : 'Segredo Base32 do Authenticator' }}" autocomplete="new-password">
+                                        <div class="form-text">Se preenchida, o sistema gera o código 2FA automaticamente no cron. Sem ela, o painel pede o código de 6 dígitos ao sincronizar.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_api_token">Token API Management/Reseller (opcional)</label>
+                                        <input type="password" class="form-control mono" id="idrivee2_api_token" name="idrivee2_api_token" placeholder="{{ ($masked['idrivee2_api_token'] ?? '—') !== '—' ? 'Token salvo · '.$masked['idrivee2_api_token'] : 'Token de api.idrivee2.com' }}" autocomplete="new-password">
+                                        <div class="form-text">Gerado no perfil do console IDrive e2 para leitura direta via API.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="settings-section">
+                                <div class="fw-semibold mb-2">2. Credenciais S3 Compatíveis (opcional — lista buckets automaticamente)</div>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label" for="idrivee2_s3_endpoint">Endpoint S3 da região</label>
+                                        <input type="text" class="form-control mono" id="idrivee2_s3_endpoint" name="idrivee2_s3_endpoint" value="{{ old('idrivee2_s3_endpoint', $idrivee2Endpoint ?? '') }}" placeholder="Ex.: s3.us-east-1.idrivee2.com">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="idrivee2_s3_region">Região</label>
+                                        <input type="text" class="form-control mono" id="idrivee2_s3_region" name="idrivee2_s3_region" value="{{ old('idrivee2_s3_region', $idrivee2Region ?? 'us-east-1') }}" placeholder="us-east-1">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_s3_access_key">Access Key ID</label>
+                                        <input type="text" class="form-control mono" id="idrivee2_s3_access_key" name="idrivee2_s3_access_key" value="{{ old('idrivee2_s3_access_key', $idrivee2AccessKey ?? '') }}" placeholder="Access Key do IDrive e2">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_s3_secret_key">Secret Access Key</label>
+                                        <input type="password" class="form-control mono" id="idrivee2_s3_secret_key" name="idrivee2_s3_secret_key" placeholder="{{ ($masked['idrivee2_s3_secret_key'] ?? '—') !== '—' ? 'Secret salva · '.$masked['idrivee2_s3_secret_key'] : 'Secret Access Key' }}" autocomplete="new-password">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="settings-section">
+                                <div class="fw-semibold mb-2">3. Plano contratado padrão da conta (usado na importação e conciliação)</div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_default_plan">Plano contratado</label>
+                                        <input type="text" class="form-control" id="idrivee2_default_plan" name="idrivee2_default_plan" value="{{ old('idrivee2_default_plan', $idrivee2DefaultPlan ?? 'IDrive e2 Cloud Storage S3 (1 TB)') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="idrivee2_default_price">Valor recorrente</label>
+                                        <input type="number" step="0.01" min="0" class="form-control tabular" id="idrivee2_default_price" name="idrivee2_default_price" value="{{ old('idrivee2_default_price', $idrivee2DefaultPrice ?? '60.00') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="idrivee2_default_currency">Moeda</label>
+                                        <select class="form-select" id="idrivee2_default_currency" name="idrivee2_default_currency">
+                                            @foreach (['USD', 'EUR'] as $curr)
+                                                <option value="{{ $curr }}" @selected(($idrivee2DefaultCurrency ?? 'USD') === $curr)>{{ $curr }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_default_cycle">Ciclo de cobrança</label>
+                                        <select class="form-select" id="idrivee2_default_cycle" name="idrivee2_default_cycle">
+                                            @foreach (\App\Models\LicenseService::cycles() as $cycleKey => $cycleLabel)
+                                                <option value="{{ $cycleKey }}" @selected(($idrivee2DefaultCycle ?? 'annual') === $cycleKey)>{{ $cycleLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="idrivee2_default_next_due">Próximo vencimento</label>
+                                        <input type="date" class="form-control" id="idrivee2_default_next_due" name="idrivee2_default_next_due" value="{{ old('idrivee2_default_next_due', $idrivee2DefaultNextDue ?? '') }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+                                <a href="{{ route('s3.index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-hdd-network me-1"></i> Abrir Serviços S3
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-shield-lock me-1"></i> Salvar credenciais IDrive e2
+                                </button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div>
+                                <div class="fw-semibold">Sincronizar painel IDrive e2 (com suporte a 2FA)</div>
+                                <div class="text-muted-soft" style="font-size:.8rem;">
+                                    Conecta ao IDrive e2, autentica (solicitando o código 2FA via SweetAlert2 se necessário) e sincroniza os serviços e faturas.
+                                    @if ($idrivee2SyncedAt ?? null)
+                                        Última leitura: {{ \Illuminate\Support\Carbon::parse($idrivee2SyncedAt)->format('d/m/Y H:i') }}.
+                                    @else
+                                        Ainda não sincronizado.
+                                    @endif
+                                </div>
+                            </div>
+                            <form method="POST" action="{{ route('s3.panel.sync') }}" data-idrivee2-sync-form>
+                                @csrf
+                                <input type="hidden" name="otp_code" value="">
+                                <button type="submit" class="btn btn-outline-secondary" data-idrivee2-sync-btn>
+                                    <i class="bi bi-arrow-repeat me-1"></i> Sincronizar IDrive e2
+                                </button>
+                            </form>
+                        </div>
+
+                        <form method="POST" action="{{ route('settings.idrivee2') }}" class="mt-4" data-confirm="As credenciais do IDrive e2 serão removidas do banco de dados." data-confirm-title="Remover credenciais IDrive e2?" data-confirm-button="Remover" data-confirm-variant="danger">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="clear_idrivee2_credentials" value="1">
+                            <button type="submit" class="btn btn-ghost btn-sm text-danger">
+                                <i class="bi bi-trash3 me-1"></i> Limpar credenciais
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-header">Como funciona a integração S3</div>
+                    <div class="card-body">
+                        <div class="settings-section">
+                            <div class="fw-semibold mb-1"><i class="bi bi-shield-check me-1 text-primary"></i> Autenticação de 2 Fatores (2FA)</div>
+                            <p class="text-muted-soft mb-0" style="font-size:.82rem;">
+                                Quando o 2FA está ativo no console (<span class="mono">console.idrivee2.com/signin</span>), clique em <strong>Sincronizar IDrive e2</strong>: o sistema abrirá uma janela SweetAlert2 para você digitar o código de 6 dígitos do aplicativo autenticador, ou gerará o código sozinho caso a chave TOTP esteja salva.
+                            </p>
+                        </div>
+                        <div class="settings-section">
+                            <div class="fw-semibold mb-1"><i class="bi bi-hdd-stack me-1 text-primary"></i> Gestão idêntica ao LicenseBoy</div>
+                            <p class="text-muted-soft mb-0" style="font-size:.82rem;">
+                                Todos os planos e buckets adquiridos ficam listados em <strong>Infraestrutura → IDrive e2 (S3)</strong>, comparando o valor de tabela com o valor real cobrado no console e permitindo gerar e conciliar faturas em USD/EUR convertidas para BRL com impostos.
+                            </p>
+                        </div>
+                        <div class="settings-section">
+                            <div class="fw-semibold mb-1"><i class="bi bi-bell me-1 text-primary"></i> Alertas no Dashboard e por E-mail</div>
+                            <p class="text-muted-soft mb-0" style="font-size:.82rem;">
+                                Os serviços e faturas do IDrive e2 aparecem no Dashboard e disparam avisos automáticos na criação, dias antes do vencimento, no dia do vencimento e em caso de atraso/suspensão.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if ($activeTab === 'rules' && $user->isDeveloperAdmin())
         <div class="row g-3">
             <div class="col-lg-7">
@@ -837,6 +1017,43 @@
                                     <div class="form-check form-switch mb-2">
                                         <input class="form-check-input" type="checkbox" role="switch" id="ovh_auto_import" name="ovh_auto_import" value="1" @checked(\App\Models\AppSetting::get('ovh_auto_import', '1') === '1')>
                                         <label class="form-check-label" for="ovh_auto_import" style="font-size:.8rem;">Importar automaticamente</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+                            <div class="fw-semibold mb-1">Notificações antecipadas de faturas e serviços</div>
+                            <div class="text-muted-soft mb-3" style="font-size:.78rem;">
+                                Configure quando o sistema deve notificar você no painel e por e-mail sobre faturas em aberto e renovações (OVHcloud, LicenseBoy e IDrive e2 S3).
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="notify_days_before_due">Avisar antes do vencimento</label>
+                                    <div class="input-group">
+                                        <input type="number" min="1" max="90" class="form-control tabular" id="notify_days_before_due" name="notify_days_before_due" value="{{ \App\Models\AppSetting::get('notify_days_before_due', '7') }}" required>
+                                        <span class="input-group-text">dias antes</span>
+                                    </div>
+                                    <div class="form-text">Antecedência para alertar faturas e licenças/serviços próximos do vencimento.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="notify_suspension_days_overdue">Alerta de risco de suspensão</label>
+                                    <div class="input-group">
+                                        <input type="number" min="1" max="90" class="form-control tabular" id="notify_suspension_days_overdue" name="notify_suspension_days_overdue" value="{{ \App\Models\AppSetting::get('notify_suspension_days_overdue', '3') }}" required>
+                                        <span class="input-group-text">dias após vencer</span>
+                                    </div>
+                                    <div class="form-text">Dispara alerta crítico de suspensão quando a fatura continua em aberto após o vencimento.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="notify_on_invoice_create" name="notify_on_invoice_create" value="1" @checked(\App\Models\AppSetting::get('notify_on_invoice_create', '1') === '1')>
+                                        <label class="form-check-label" for="notify_on_invoice_create" style="font-size:.82rem;">Notificar imediatamente na criação/importação da fatura</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="notify_on_due_date" name="notify_on_due_date" value="1" @checked(\App\Models\AppSetting::get('notify_on_due_date', '1') === '1')>
+                                        <label class="form-check-label" for="notify_on_due_date" style="font-size:.82rem;">Notificar no dia exato do vencimento</label>
                                     </div>
                                 </div>
                             </div>

@@ -13,7 +13,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\Invoice;
+use App\Models\LicenseService;
 use App\Models\OvhIp;
 use App\Services\DashboardService;
 use App\Services\ExchangeRateService;
@@ -29,6 +31,30 @@ class DashboardController extends Controller
     ): View {
         $rates = $exchange->rates();
         $eurRate = (float) ($rates['EUR']['rate'] ?? 0);
+        $usdRate = (float) ($rates['USD']['rate'] ?? 0);
+        $dueWindowDays = max(1, (int) AppSetting::get('notify_days_before_due', 7));
+
+        $upcomingInvoices = Invoice::query()
+            ->pending()
+            ->whereDate('due_date', '<=', now()->addDays(max(15, $dueWindowDays))->toDateString())
+            ->orderBy('due_date')
+            ->limit(10)
+            ->get();
+
+        $licenseServices = LicenseService::query()
+            ->with(['lastInvoice', 'catalogItem'])
+            ->orderByRaw("CASE status WHEN 'active' THEN 0 WHEN 'expired' THEN 1 ELSE 2 END")
+            ->orderBy('next_due_date')
+            ->get()
+            ->map(function (LicenseService $service) use ($eurRate, $usdRate): array {
+                $rate = $service->billingCurrency() === 'EUR' ? $eurRate : $usdRate;
+
+                return [
+                    'service' => $service,
+                    'rate' => $rate,
+                    'monthly_brl' => $service->monthlyBrl($rate),
+                ];
+            });
 
         return view('dashboard', [
             'totals' => $dashboard->totals(),
@@ -37,7 +63,11 @@ class DashboardController extends Controller
             'rates' => $rates,
             'nextDueDate' => $dashboard->nextDueDate(),
             'eurRate' => $eurRate,
+            'usdRate' => $usdRate,
             'services' => $inventory->pricedServices($eurRate),
+            'licenseServices' => $licenseServices,
+            'upcomingInvoices' => $upcomingInvoices,
+            'dueWindowDays' => $dueWindowDays,
             'ips' => OvhIp::query()->orderBy('version')->orderBy('block')->get(),
             'infrastructure' => $inventory->totals($eurRate),
             'recentInvoices' => Invoice::query()

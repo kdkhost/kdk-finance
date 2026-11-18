@@ -22,6 +22,7 @@ use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\LiveSnapshotController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\S3StorageController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -89,6 +90,28 @@ Route::middleware('auth')->group(function (): void {
     });
 
     // ---------------------------------------------------------------------
+    // Armazenamento S3 (IDrive e2) — mesmo padrão de gestão do LicenseBoy
+    // ---------------------------------------------------------------------
+    Route::get('/s3', [S3StorageController::class, 'index'])->name('s3.index');
+    Route::get('/s3/precos', [S3StorageController::class, 'prices'])->name('s3.prices');
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+        Route::get('/s3/novo', [S3StorageController::class, 'create'])->name('s3.create');
+        Route::post('/s3', [S3StorageController::class, 'store'])->name('s3.store');
+        Route::post('/s3/precos/atualizar', [S3StorageController::class, 'syncPrices'])->name('s3.prices.sync');
+        Route::post('/s3/painel/atualizar', [S3StorageController::class, 'syncPanel'])->name('s3.panel.sync');
+    });
+
+    Route::get('/s3/{s3}', [S3StorageController::class, 'show'])->name('s3.show');
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+        Route::get('/s3/{s3}/editar', [S3StorageController::class, 'edit'])->name('s3.edit');
+        Route::put('/s3/{s3}', [S3StorageController::class, 'update'])->name('s3.update');
+        Route::delete('/s3/{s3}', [S3StorageController::class, 'destroy'])->name('s3.destroy');
+        Route::post('/s3/{s3}/fatura', [S3StorageController::class, 'generateInvoice'])->name('s3.invoice');
+    });
+
+    // ---------------------------------------------------------------------
     // Conversões EUR ↔ USD com tarifas de cartão internacional
     // ---------------------------------------------------------------------
     Route::get('/conversoes', [CurrencyConversionController::class, 'index'])->name('conversions.index');
@@ -153,6 +176,7 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/configuracoes/ovh', [SettingsController::class, 'updateOvh'])->name('settings.ovh');
         Route::post('/configuracoes/ovh/testar', [SettingsController::class, 'testOvh'])->name('settings.ovh.test');
         Route::put('/configuracoes/licenseboy', [SettingsController::class, 'updateLicenseBoy'])->name('settings.licenseboy');
+        Route::put('/configuracoes/idrivee2', [SettingsController::class, 'updateIDriveE2'])->name('settings.idrivee2');
         Route::post('/configuracoes/cotacoes/atualizar', [SettingsController::class, 'refreshRates'])->name('settings.rates.refresh');
         Route::post('/configuracoes/tarifas/sincronizar', [SettingsController::class, 'syncFees'])->name('settings.fees.sync');
         Route::put('/configuracoes/regras', [SettingsController::class, 'updateOperational'])->name('settings.rules');

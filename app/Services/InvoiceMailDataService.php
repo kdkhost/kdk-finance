@@ -29,6 +29,8 @@ class InvoiceMailDataService
 {
     public const LICENSEBOY_INVOICES_URL = 'https://licenseboy.com/panel/clientarea.php?action=invoices';
 
+    public const IDRIVEE2_INVOICES_URL = 'https://console.idrivee2.com/signin';
+
     public function __construct(private readonly OvhService $ovh) {}
 
     /**
@@ -107,12 +109,20 @@ class InvoiceMailDataService
         if ($invoice->license_service_id !== null) {
             $provider = mb_strtolower(trim((string) $invoice->licenseService?->provider));
 
+            if (str_contains($provider, 'idrive') || str_contains($provider, 's3')) {
+                return self::IDRIVEE2_INVOICES_URL;
+            }
+
             return $provider === '' || str_contains($provider, 'licenseboy')
                 ? self::LICENSEBOY_INVOICES_URL
                 : null;
         }
 
         $reference = trim((string) $invoice->external_reference);
+
+        if (str_starts_with($reference, 'E2-')) {
+            return self::IDRIVEE2_INVOICES_URL;
+        }
 
         if ($reference === '' || str_starts_with($reference, 'LIC-') || ! $this->ovh->isConfigured()) {
             return null;
@@ -148,6 +158,10 @@ class InvoiceMailDataService
         }
 
         $reference = trim((string) $invoice->external_reference);
+
+        if (str_starts_with($reference, 'E2-')) {
+            return 'IDrive e2 (S3)';
+        }
 
         return $reference !== '' && ! str_starts_with($reference, 'LIC-')
             ? 'OVHcloud'

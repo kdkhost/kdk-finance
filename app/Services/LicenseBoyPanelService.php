@@ -131,7 +131,12 @@ class LicenseBoyPanelService
         $updated = 0;
         $unmatched = [];
 
-        $licenses = LicenseService::query()->get();
+        $licenses = LicenseService::query()
+            ->where(function ($query): void {
+                $query->where('provider', '!=', IDriveE2PanelService::PROVIDER)
+                    ->orWhereNull('provider');
+            })
+            ->get();
 
         foreach ($licenses as $license) {
             $match = $this->match($license, $services);

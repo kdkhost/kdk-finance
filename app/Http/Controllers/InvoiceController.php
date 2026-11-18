@@ -16,6 +16,8 @@ namespace App\Http\Controllers;
 use App\Events\InvoiceAmountUpdatedEvent;
 use App\Models\AppSetting;
 use App\Models\Invoice;
+use App\Models\User;
+use App\Notifications\InvoiceLifecycleNotification;
 use App\Services\DashboardService;
 use App\Services\ExchangeRateService;
 use App\Services\InvoiceMailDataService;
@@ -28,6 +30,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -97,6 +100,25 @@ class InvoiceController extends Controller
                 'paid_at' => now(),
                 'rate_locked' => true,
             ]);
+        } else {
+            $invoice->refresh();
+            if (filter_var(AppSetting::get('notify_on_invoice_create', '1'), FILTER_VALIDATE_BOOLEAN)) {
+                $managers = User::query()
+                    ->where('is_active', true)
+                    ->whereIn('role', [User::ROLE_DEVELOPER, User::ROLE_FINANCIAL])
+                    ->get();
+
+                if ($managers->isNotEmpty()) {
+                    try {
+                        Notification::send($managers, new InvoiceLifecycleNotification(
+                            $invoice,
+                            InvoiceLifecycleNotification::STAGE_CREATED,
+                            max(0, (int) round(now()->startOfDay()->diffInDays($invoice->due_date?->copy()->startOfDay() ?? now(), false)))
+                        ));
+                    } catch (Throwable) {
+                    }
+                }
+            }
         }
 
         return redirect()

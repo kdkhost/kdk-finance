@@ -17,6 +17,7 @@ use App\Events\InvoiceAmountUpdatedEvent;
 use App\Models\AppSetting;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Notifications\InvoiceLifecycleNotification;
 use App\Notifications\InvoiceRateVariationNotification;
 use App\Services\DashboardService;
 use App\Services\ExchangeRateService;
@@ -206,6 +207,25 @@ class SyncInvoicesCommand extends Command
 
             $this->reconcilePaymentStatus($invoice, $bill, $ovh);
             $result['items'] += $inventory->importBillItems($invoice, $ovh);
+
+            if ($isNew && $invoice->status === Invoice::STATUS_PENDING && filter_var(AppSetting::get('notify_on_invoice_create', '1'), FILTER_VALIDATE_BOOLEAN)) {
+                $invoice->refresh();
+                $managers = User::query()
+                    ->where('is_active', true)
+                    ->whereIn('role', [User::ROLE_DEVELOPER, User::ROLE_FINANCIAL])
+                    ->get();
+
+                if ($managers->isNotEmpty()) {
+                    try {
+                        Notification::send($managers, new InvoiceLifecycleNotification(
+                            $invoice,
+                            InvoiceLifecycleNotification::STAGE_CREATED,
+                            max(0, (int) round(now()->startOfDay()->diffInDays($invoice->due_date?->copy()->startOfDay() ?? now(), false)))
+                        ));
+                    } catch (Throwable) {
+                    }
+                }
+            }
         }
 
         $result['services'] = $inventory->syncServices($ovh);

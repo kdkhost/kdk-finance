@@ -64,8 +64,18 @@
                     </div>
 
                     @forelse ($latestNotifications as $notification)
+                        @php
+                            $bellIcon = match (data_get($notification->data, 'icon')) {
+                                'trending-down' => 'bi-graph-down-arrow',
+                                'receipt' => 'bi-receipt',
+                                'alarm' => 'bi-alarm',
+                                'exclamation' => 'bi-exclamation-triangle-fill',
+                                'suspension' => 'bi-exclamation-octagon-fill',
+                                default => 'bi-graph-up-arrow',
+                            };
+                        @endphp
                         <a class="notification-item is-unread" href="{{ data_get($notification->data, 'url', route('notifications.index')) }}">
-                            <span class="icon"><i class="bi bi-graph-up-arrow"></i></span>
+                            <span class="icon"><i class="bi {{ $bellIcon }}"></i></span>
                             <span>
                                 <span class="title d-block">{{ data_get($notification->data, 'title', 'Atualização') }}</span>
                                 <span class="meta d-block">{{ \Illuminate\Support\Str::limit(data_get($notification->data, 'message', ''), 64) }}</span>
