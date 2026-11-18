@@ -5,6 +5,14 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.14.3] - 2026-11-18
+
+### Corrigido
+
+- **Correção de erro 500 na rota `/conversoes`**:
+  - Removida diretiva Blade `@endif` duplicada na tela vazia de conversões (`conversions/index.blade.php`), que causava falha de compilação da view (`ParseError: unexpected token endif`) e gerava erro 500 no carregamento da listagem para usuários sem privilégio de desenvolvedor.
+  - Limpeza e remoção de trecho residual de botões e diretivas duplicadas na tela de detalhe de licenças (`licenses/show.blade.php`).
+
 ## [1.14.2] - 2026-11-18
 
 ### Segurança e Controle de Acesso

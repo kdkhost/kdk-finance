@@ -58,8 +58,6 @@
                     @if (auth()->user()->isDeveloperAdmin())
                         <a href="{{ route('conversions.create') }}" class="btn btn-primary btn-sm">Criar primeira conversão</a>
                     @else
-                        <div class="text-muted-soft" style="font-size:.82rem;">Nenhuma conversão registrada ainda.</div>
-                    @endif
                         <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consultar as conversões salvas.</div>
                     @endif
                 </div>

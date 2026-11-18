@@ -165,13 +165,6 @@
                         <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta dos serviços e valores. Gerenciamento e faturamento são restritos ao administrador.</div>
                     @endif
                 </div>
-                                <i class="bi bi-trash3 me-1"></i> Remover licença
-                            </button>
-                        </form>
-                    @else
-                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta. Ações de cobrança estão disponíveis para gestores financeiros.</div>
-                    @endif
-                </div>
             </div>
 
             <div class="card mt-3">
