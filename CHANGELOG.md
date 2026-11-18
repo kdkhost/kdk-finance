@@ -5,6 +5,15 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.14.4] - 2026-11-18
+
+### Adicionado / Melhorado
+
+- **Centralização Dinâmica da Versão do Sistema (`SystemVersion`)**:
+  - Criada a classe `App\Support\SystemVersion` e o parâmetro de configuração `finance.version` como fonte única da verdade para a versão do sistema (`v1.14.4`).
+  - Compartilhada a variável global `$appVersion` no `AppServiceProvider` para todas as views Blade.
+  - Substituídas todas as ocorrências de versões estáticas/hardcoded (`v1.12.0`, `v1.14.1`) que existiam no rodapé (`footer.blade.php`), menu lateral (`sidebar.blade.php`), tela de login (`login.blade.php`) e telas de erro (`errors/layout.blade.php`), garantindo que o painel reflita instantaneamente a versão atual em todas as telas.
+
 ## [1.14.3] - 2026-11-18
 
 ### Corrigido

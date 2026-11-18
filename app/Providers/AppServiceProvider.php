@@ -39,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        \Illuminate\Support\Facades\View::share('appVersion', \App\Support\SystemVersion::formatted());
+
         Carbon::setLocale('pt_BR');
         setlocale(LC_TIME, 'pt_BR.UTF-8', 'pt_BR', 'Portuguese_Brazil');
 
