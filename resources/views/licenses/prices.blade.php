@@ -15,7 +15,7 @@
 @section('subtitle', 'Catálogo público da loja com os valores praticados hoje. Use um item para cadastrar ou vincular uma licença.')
 
 @section('actions')
-    @if (auth()->user()->canManageFinance())
+    @if (auth()->user()->isDeveloperAdmin())
         <form method="POST" action="{{ route('licenses.prices.sync') }}" data-confirm="Consultar a loja da LicenseBoy agora? O catálogo e as licenças vinculadas serão atualizados com os preços atuais." data-confirm-button="Atualizar preços">
             @csrf
             <button type="submit" class="btn btn-primary">
@@ -167,7 +167,7 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        @if (auth()->user()->canManageFinance())
+                                        @if (auth()->user()->isDeveloperAdmin())
                                             <a href="{{ route('licenses.create', ['catalogo' => $item->id]) }}" class="btn btn-ghost btn-sm" title="Cadastrar licença com este preço">
                                                 <i class="bi bi-plus-circle me-1"></i><span class="d-none d-sm-inline">Usar este preço</span>
                                             </a>

@@ -19,7 +19,7 @@
         <a href="{{ route('s3.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Serviços S3
         </a>
-        @if (auth()->user()->canManageFinance())
+        @if (auth()->user()->isDeveloperAdmin())
             <form method="POST" action="{{ route('s3.prices.sync') }}" data-confirm="Atualizar a tabela de planos do IDrive e2 agora?" data-confirm-button="Atualizar planos">
                 @csrf
                 <button type="submit" class="btn btn-primary">
@@ -116,10 +116,12 @@
                                 <td class="text-end tabular">R$ {{ number_format($brlPrice, 2, ',', '.') }}</td>
                                 <td class="d-none d-md-table-cell"><span class="badge text-bg-light border">{{ $item->cycleLabel() }}</span></td>
                                 <td class="text-end">
-                                    @if (auth()->user()->canManageFinance())
+                                    @if (auth()->user()->isDeveloperAdmin())
                                         <a href="{{ route('s3.create', ['catalogo' => $item->id]) }}" class="btn btn-ghost btn-sm">
                                             <i class="bi bi-plus-circle me-1"></i> Usar este plano
                                         </a>
+                                    @else
+                                        <span class="text-muted-soft" style="font-size:.74rem;">Somente consulta</span>
                                     @endif
                                 </td>
                             </tr>

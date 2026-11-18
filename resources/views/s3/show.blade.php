@@ -18,7 +18,7 @@
     <a href="{{ route('s3.index') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
-    @if (auth()->user()->canManageFinance())
+    @if (auth()->user()->isDeveloperAdmin())
         <a href="{{ route('s3.edit', $license) }}" class="btn btn-primary">
             <i class="bi bi-pencil me-1"></i> Editar
         </a>
@@ -142,7 +142,7 @@
             <div class="card">
                 <div class="card-header">Ações</div>
                 <div class="card-body d-grid gap-2">
-                    @if (auth()->user()->canManageFinance())
+                    @if (auth()->user()->isDeveloperAdmin())
                         @if ($license->status === \App\Models\LicenseService::STATUS_ACTIVE)
                             <form method="POST" action="{{ route('s3.invoice', $license) }}" data-confirm="Gerar fatura de {{ $license->name }} no valor de {{ $billing($license->totalOriginal()) }}? O próximo vencimento avançará um ciclo." data-confirm-button="Gerar fatura">
                                 @csrf
@@ -161,6 +161,8 @@
                                 <i class="bi bi-trash3 me-1"></i> Remover serviço S3
                             </button>
                         </form>
+                    @else
+                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta dos serviços S3. Gerenciamento e faturamento são restritos ao administrador.</div>
                     @endif
                 </div>
             </div>
@@ -211,7 +213,7 @@
                     @endif
                 </div>
                 <div class="card-body" style="font-size:.8rem;">
-                    @if ($auth = auth()->user()->canManageFinance())
+                    @if (auth()->user()->isDeveloperAdmin())
                         <form method="POST" action="{{ route('s3.panel.sync') }}" data-idrivee2-sync-form>
                             @csrf
                             <input type="hidden" name="otp_code" value="">
@@ -219,6 +221,8 @@
                                 <i class="bi bi-arrow-repeat me-1"></i> Sincronizar com IDrive e2
                             </button>
                         </form>
+                    @else
+                        <div class="text-muted-soft">Sincronização disponível para desenvolvedores e administradores.</div>
                     @endif
                 </div>
             </div>

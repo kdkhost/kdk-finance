@@ -5,6 +5,20 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.14.2] - 2026-11-18
+
+### Segurança e Controle de Acesso
+
+- **Endurecimento de Permissões e Segregação Rigorosa do Perfil Gestor Financeiro (`FINANCIAL_MANAGER`)**:
+  - **Bloqueio total de acesso à tela de Configurações**: as rotas `/configuracoes` e suas atualizações de tributos, conversão, OVHcloud, LicenseBoy e IDrive e2 foram restritas com exclusividade ao perfil `DEVELOPER_ADMIN`. Qualquer tentativa direta de acesso pelo perfil financeiro é interceptada com HTTP 403 Forbidden.
+  - **Bloqueio de alteração de valores de faturas e catálogo**: rotas de criação (`invoices.create`, `invoices.store`), edição (`invoices.edit`, `invoices.update`), exclusão, cancelamento, reabertura, recálculo e trava de câmbio de faturas migradas exclusivamente para `DEVELOPER_ADMIN`.
+  - **Bloqueio de criação e edição de licenças e armazenamento S3**: rotas de cadastro (`licenses.create`, `s3.create`), edição (`licenses.edit`, `s3.edit`), exclusão (`licenses.destroy`, `s3.destroy`), sincronização com lojas/consoles e emissão avulsa de faturas atribuídas estritamente ao desenvolvedor/administrador.
+  - **Bloqueio de criação e parametrização de conversões de câmbio**: cadastro de conversões e reajuste de fórmulas agora são restritos ao administrador. O gestor financeiro mantém a ferramenta de conciliação com o extrato real do cartão de crédito (`conversions.calibrate`).
+  - **Ocultação de botões e links na interface**:
+    - No menu lateral (`sidebar.blade.php`), no cabeçalho (`navbar.blade.php`) e na dashboard (`dashboard.blade.php`), removidos os links e botões de "Configurações", "Nova fatura", "Nova conversão", "Nova licença", "Novo serviço S3" e "Credenciais S3" para o perfil financeiro.
+    - Nas telas de listagem e detalhe de Faturas, Licenças, S3 e Conversões, botões de edição, recálculo, exclusão e alteração de parâmetros foram ocultados, mantendo para o financeiro apenas as ações operacionais legítimas: "Marcar como paga", "Verificar pagamento na OVHcloud", "Exportar CSV" e "Conferir fatura no cartão".
+    - Adicionadas mensagens descritivas amigáveis explicando que o perfil permite consulta e conciliação, reservando alterações estruturais de valores ao administrador.
+
 ## [1.14.1] - 2026-11-18
 
 ### Corrigido

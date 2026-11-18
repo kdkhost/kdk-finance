@@ -42,12 +42,13 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/painel/ao-vivo', LiveSnapshotController::class)->name('live.snapshot');
 
     // ---------------------------------------------------------------------
-    // Faturas — leitura para todos, escrita para gestores/desenvolvedores
+    // Faturas — leitura para todos, baixa/exportação para financeiro,
+    // criação e alteração de valores exclusiva para desenvolvedor/admin
     // ---------------------------------------------------------------------
     Route::get('/faturas', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/servicos', InfrastructureController::class)->name('infrastructure.index');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         // Antes da rota com parâmetro para não capturar "nova" como id.
         Route::get('/faturas/nova', [InvoiceController::class, 'create'])->name('invoices.create');
         Route::post('/faturas', [InvoiceController::class, 'store'])->name('invoices.store');
@@ -55,25 +56,30 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/faturas/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    // Alteração de valores, cálculo e status da fatura: exclusivo desenvolvedor
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/faturas/{invoice}/editar', [InvoiceController::class, 'edit'])->name('invoices.edit');
         Route::put('/faturas/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
-        Route::post('/faturas/{invoice}/pagar', [InvoiceController::class, 'pay'])->name('invoices.pay');
-        Route::post('/faturas/{invoice}/verificar-pagamento', [InvoiceController::class, 'syncPayment'])->name('invoices.sync-payment');
         Route::post('/faturas/{invoice}/cancelar', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::post('/faturas/{invoice}/reabrir', [InvoiceController::class, 'reopen'])->name('invoices.reopen');
         Route::post('/faturas/{invoice}/recalcular', [InvoiceController::class, 'recalculate'])->name('invoices.recalculate');
         Route::post('/faturas/{invoice}/travar-cambio', [InvoiceController::class, 'toggleLock'])->name('invoices.lock');
+    });
+
+    // Baixa de faturas, verificação de pagamento e exportação: financeiro e desenvolvedor
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+        Route::post('/faturas/{invoice}/pagar', [InvoiceController::class, 'pay'])->name('invoices.pay');
+        Route::post('/faturas/{invoice}/verificar-pagamento', [InvoiceController::class, 'syncPayment'])->name('invoices.sync-payment');
         Route::get('/faturas-exportar', [InvoiceController::class, 'export'])->name('invoices.export');
     });
 
     // ---------------------------------------------------------------------
-    // Licenças (LicenseBoy) — leitura para todos, escrita para gestores
+    // Licenças (LicenseBoy) — leitura para todos, alteração exclusiva de desenvolvedor
     // ---------------------------------------------------------------------
     Route::get('/licencas', [LicenseController::class, 'index'])->name('licenses.index');
     Route::get('/licencas/precos', [LicenseController::class, 'prices'])->name('licenses.prices');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/licencas/nova', [LicenseController::class, 'create'])->name('licenses.create');
         Route::post('/licencas', [LicenseController::class, 'store'])->name('licenses.store');
         Route::post('/licencas/precos/atualizar', [LicenseController::class, 'syncPrices'])->name('licenses.prices.sync');
@@ -82,7 +88,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/licencas/{license}', [LicenseController::class, 'show'])->name('licenses.show');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/licencas/{license}/editar', [LicenseController::class, 'edit'])->name('licenses.edit');
         Route::put('/licencas/{license}', [LicenseController::class, 'update'])->name('licenses.update');
         Route::delete('/licencas/{license}', [LicenseController::class, 'destroy'])->name('licenses.destroy');
@@ -90,12 +96,12 @@ Route::middleware('auth')->group(function (): void {
     });
 
     // ---------------------------------------------------------------------
-    // Armazenamento S3 (IDrive e2) — mesmo padrão de gestão do LicenseBoy
+    // Armazenamento S3 (IDrive e2) — leitura para todos, alteração exclusiva de desenvolvedor
     // ---------------------------------------------------------------------
     Route::get('/s3', [S3StorageController::class, 'index'])->name('s3.index');
     Route::get('/s3/precos', [S3StorageController::class, 'prices'])->name('s3.prices');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/s3/novo', [S3StorageController::class, 'create'])->name('s3.create');
         Route::post('/s3', [S3StorageController::class, 'store'])->name('s3.store');
         Route::post('/s3/precos/atualizar', [S3StorageController::class, 'syncPrices'])->name('s3.prices.sync');
@@ -104,7 +110,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/s3/{s3}', [S3StorageController::class, 'show'])->name('s3.show');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/s3/{s3}/editar', [S3StorageController::class, 'edit'])->name('s3.edit');
         Route::put('/s3/{s3}', [S3StorageController::class, 'update'])->name('s3.update');
         Route::delete('/s3/{s3}', [S3StorageController::class, 'destroy'])->name('s3.destroy');
@@ -112,23 +118,29 @@ Route::middleware('auth')->group(function (): void {
     });
 
     // ---------------------------------------------------------------------
-    // Conversões EUR ↔ USD com tarifas de cartão internacional
+    // Conversões EUR ↔ USD — leitura para todos, criação/alteração de valores exclusiva desenvolvedor
     // ---------------------------------------------------------------------
     Route::get('/conversoes', [CurrencyConversionController::class, 'index'])->name('conversions.index');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/conversoes/nova', [CurrencyConversionController::class, 'create'])->name('conversions.create');
         Route::post('/conversoes', [CurrencyConversionController::class, 'store'])->name('conversions.store');
+    });
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
         Route::get('/conversoes/cotacao', [CurrencyConversionController::class, 'quote'])->name('conversions.quote');
     });
 
     Route::get('/conversoes/{conversion}', [CurrencyConversionController::class, 'show'])->name('conversions.show');
 
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/conversoes/{conversion}/editar', [CurrencyConversionController::class, 'edit'])->name('conversions.edit');
         Route::put('/conversoes/{conversion}', [CurrencyConversionController::class, 'update'])->name('conversions.update');
         Route::delete('/conversoes/{conversion}', [CurrencyConversionController::class, 'destroy'])->name('conversions.destroy');
         Route::post('/conversoes/{conversion}/recalcular', [CurrencyConversionController::class, 'recalculate'])->name('conversions.recalculate');
+    });
+
+    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
         Route::post('/conversoes/{conversion}/conferir', [CurrencyConversionController::class, 'calibrate'])->name('conversions.calibrate');
     });
 
@@ -164,15 +176,12 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/perfil/senha', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     // ---------------------------------------------------------------------
-    // Configurações — gestor financeiro vê impostos; desenvolvedor vê tudo
+    // Configurações — exclusivo desenvolvedor/administrador
     // ---------------------------------------------------------------------
-    Route::middleware('role:DEVELOPER_ADMIN,FINANCIAL_MANAGER')->group(function (): void {
+    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::get('/configuracoes', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('/configuracoes/tributos', [SettingsController::class, 'updateTaxes'])->name('settings.taxes');
         Route::put('/configuracoes/conversao', [SettingsController::class, 'updateConversion'])->name('settings.conversion');
-    });
-
-    Route::middleware('role:DEVELOPER_ADMIN')->group(function (): void {
         Route::put('/configuracoes/ovh', [SettingsController::class, 'updateOvh'])->name('settings.ovh');
         Route::post('/configuracoes/ovh/testar', [SettingsController::class, 'testOvh'])->name('settings.ovh.test');
         Route::put('/configuracoes/licenseboy', [SettingsController::class, 'updateLicenseBoy'])->name('settings.licenseboy');

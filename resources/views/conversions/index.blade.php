@@ -15,7 +15,7 @@
 @section('subtitle', 'Quanto de euro, dólar ou real é necessário para pagar cada compromisso, incluindo spread, IOF e tarifas do cartão.')
 
 @section('actions')
-    @if (auth()->user()->canManageFinance())
+    @if (auth()->user()->isDeveloperAdmin())
         <a href="{{ route('settings.index', ['tab' => 'conversion']) }}" class="btn btn-outline-secondary">
             <i class="bi bi-sliders me-1"></i> Tarifas
         </a>
@@ -55,9 +55,11 @@
                         <span class="currency-chip"><span data-live="conversion-inverse">1 USD = {{ number_format($inverse, 6, ',', '.') }} EUR</span></span>
                         <span class="currency-chip">{{ $quote['source'] ?? '—' }} · {{ $quoteAt }}</span>
                     </div>
-                    @if (auth()->user()->canManageFinance())
+                    @if (auth()->user()->isDeveloperAdmin())
                         <a href="{{ route('conversions.create') }}" class="btn btn-primary btn-sm">Criar primeira conversão</a>
                     @else
+                        <div class="text-muted-soft" style="font-size:.82rem;">Nenhuma conversão registrada ainda.</div>
+                    @endif
                         <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consultar as conversões salvas.</div>
                     @endif
                 </div>
@@ -222,7 +224,7 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li><a class="dropdown-item" href="{{ route('conversions.show', $conversion) }}"><i class="bi bi-eye me-2"></i> Detalhes</a></li>
-                                            @if (auth()->user()->canManageFinance())
+                                            @if (auth()->user()->isDeveloperAdmin())
                                                 <li><a class="dropdown-item" href="{{ route('conversions.edit', $conversion) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
                                                 <li>
                                                     <form method="POST" action="{{ route('conversions.recalculate', $conversion) }}" data-confirm="Recalcular esta conversão com a cotação atual?" data-confirm-button="Recalcular">

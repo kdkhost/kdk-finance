@@ -16,7 +16,7 @@
 
 @section('actions')
     <div class="d-flex flex-wrap gap-2">
-        @if (auth()->user()->canManageFinance())
+        @if (auth()->user()->isDeveloperAdmin())
             <form method="POST" action="{{ route('s3.panel.sync') }}" data-idrivee2-sync-form>
                 @csrf
                 <input type="hidden" name="otp_code" value="">
@@ -32,8 +32,6 @@
             <a href="{{ route('settings.index', ['tab' => 'idrivee2']) }}" class="btn btn-outline-secondary">
                 <i class="bi bi-sliders2 me-1"></i> Credenciais S3
             </a>
-        @endif
-        @if (auth()->user()->canManageFinance())
             <a href="{{ route('s3.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i> Novo serviço S3
             </a>
@@ -73,7 +71,7 @@
                         Conecte sua conta do <strong>IDrive e2</strong> (<span class="mono">{{ $panel['email'] ?: 'console.idrivee2.com' }}</span>) clicando em “Sincronizar painel S3” (com suporte a 2FA) ou cadastre um plano de armazenamento S3 manualmente.
                     </p>
                     <div class="d-flex flex-wrap justify-content-center gap-2">
-                        @if (auth()->user()->canManageFinance())
+                        @if (auth()->user()->isDeveloperAdmin())
                             <form method="POST" action="{{ route('s3.panel.sync') }}" data-idrivee2-sync-form>
                                 @csrf
                                 <input type="hidden" name="otp_code" value="">
@@ -239,7 +237,7 @@
                                         <a href="{{ route('s3.show', $license) }}" class="btn btn-ghost btn-sm" title="Detalhes">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        @if (auth()->user()->canManageFinance())
+                                        @if (auth()->user()->isDeveloperAdmin())
                                             <a href="{{ route('s3.edit', $license) }}" class="btn btn-ghost btn-sm" title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </a>

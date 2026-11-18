@@ -28,6 +28,8 @@
             <a href="{{ route('invoices.export') }}" class="btn btn-outline-secondary" title="Exportar faturas em CSV/XLSX">
                 <i class="bi bi-download me-1"></i> Exportar
             </a>
+        @endif
+        @if (auth()->user()->isDeveloperAdmin())
             <a href="{{ route('invoices.create') }}" class="btn btn-primary" title="Cadastrar nova fatura">
                 <i class="bi bi-plus-lg me-1"></i> Nova Fatura
             </a>
@@ -389,7 +391,7 @@
                                                             <div class="icon fs-3 text-muted-soft mb-2"><i class="bi bi-receipt"></i></div>
                                                             <h5 class="h6 fw-semibold">Nenhuma fatura cadastrada</h5>
                                                             <p class="text-muted-soft mb-2" style="font-size: .8rem;">Importe da OVHcloud ou cadastre a primeira manualmente.</p>
-                                                            @if (auth()->user()->canManageFinance())
+                                                            @if (auth()->user()->isDeveloperAdmin())
                                                                 <a href="{{ route('invoices.create') }}" class="btn btn-primary btn-sm">Cadastrar fatura</a>
                                                             @endif
                                                         </div>
@@ -566,7 +568,7 @@
                                                 <div class="icon fs-3 text-muted-soft mb-2"><i class="bi bi-key"></i></div>
                                                 <h5 class="h6 fw-semibold">Nenhuma licença ou armazenamento S3 cadastrado</h5>
                                                 <p class="text-muted-soft mb-2" style="font-size: .8rem;">Cadastre licenças cPanel/WHM ou conecte o console IDrive e2 S3.</p>
-                                                @if (auth()->user()->canManageFinance())
+                                                @if (auth()->user()->isDeveloperAdmin())
                                                     <div class="d-flex justify-content-center gap-2">
                                                         <a href="{{ route('s3.create') }}" class="btn btn-primary btn-sm">Novo S3 Storage</a>
                                                         <a href="{{ route('licenses.create') }}" class="btn btn-outline-secondary btn-sm">Nova Licença</a>

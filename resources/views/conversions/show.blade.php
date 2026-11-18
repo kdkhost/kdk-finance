@@ -18,7 +18,7 @@
     <a href="{{ route('conversions.index') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
-    @if (auth()->user()->canManageFinance())
+    @if (auth()->user()->isDeveloperAdmin())
         <a href="{{ route('conversions.edit', $conversion) }}" class="btn btn-primary">
             <i class="bi bi-pencil me-1"></i> Editar
         </a>
@@ -243,7 +243,7 @@
             <div class="card">
                 <div class="card-header">Ações</div>
                 <div class="card-body d-grid gap-2">
-                    @if (auth()->user()->canManageFinance())
+                    @if (auth()->user()->isDeveloperAdmin())
                         <form method="POST" action="{{ route('conversions.recalculate', $conversion) }}" data-confirm="Recalcular com a cotação atual? O valor gravado será atualizado." data-confirm-button="Recalcular">
                             @csrf
                             <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-calculator me-1"></i> Recalcular com a cotação atual</button>
@@ -255,7 +255,7 @@
                             <button type="submit" class="btn btn-outline-secondary w-100 text-danger"><i class="bi bi-trash me-1"></i> Excluir conversão</button>
                         </form>
                     @else
-                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta das conversões.</div>
+                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta e conciliação com a fatura do cartão. Edição e recálculos são restritos ao administrador.</div>
                     @endif
                 </div>
             </div>

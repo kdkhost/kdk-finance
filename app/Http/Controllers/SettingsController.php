@@ -36,19 +36,16 @@ use Throwable;
 
 class SettingsController extends Controller
 {
-    public function index(ExchangeRateService $exchange, OvhService $ovh, FeeSyncService $fees): View|RedirectResponse
+    public function index(ExchangeRateService $exchange, OvhService $ovh, FeeSyncService $fees): View
     {
-        $settings = AppSetting::query()->orderBy('group')->orderBy('key')->get();
         $user = request()->user();
 
-        // Se o usuário for gestor financeiro, restringe abas exclusivamente às financeiras (tributos e conversão)
-        if ($user && ! $user->isDeveloperAdmin()) {
-            $allowedTabs = ['taxes', 'conversion'];
-            $requestedTab = (string) request('tab', 'taxes');
-            if (! in_array($requestedTab, $allowedTabs, true)) {
-                return redirect()->route('settings.index', ['tab' => 'taxes']);
-            }
+        // Configurações gerais e regras do sistema são exclusivas de Desenvolvedor / Administrador
+        if (! $user || ! $user->isDeveloperAdmin()) {
+            abort(403, 'Seu perfil não possui permissão para acessar as configurações do sistema.');
         }
+
+        $settings = AppSetting::query()->orderBy('group')->orderBy('key')->get();
 
         $mailSettings = MailSettings::all();
         unset($mailSettings['mail_password']);

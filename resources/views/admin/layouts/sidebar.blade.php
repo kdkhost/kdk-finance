@@ -41,7 +41,7 @@
                             'url' => route('invoices.index'),
                             'active' => request()->routeIs('invoices.index', 'invoices.show', 'invoices.edit'),
                         ],
-                        $canManage ? [
+                        $isDeveloper ? [
                             'key' => 'faturas-nova',
                             'label' => 'Nova fatura',
                             'icon' => 'bi-plus-square',
@@ -62,7 +62,7 @@
                             'url' => route('conversions.index'),
                             'active' => request()->routeIs('conversions.index', 'conversions.show', 'conversions.edit'),
                         ],
-                        $canManage ? [
+                        $isDeveloper ? [
                             'key' => 'conversoes-nova',
                             'label' => 'Nova conversão',
                             'icon' => 'bi-arrow-left-right',
@@ -113,7 +113,7 @@
                             'url' => route('licenses.prices'),
                             'active' => request()->routeIs('licenses.prices'),
                         ],
-                        $canManage ? [
+                        $isDeveloper ? [
                             'key' => 'licencas-nova',
                             'label' => 'Nova licença',
                             'icon' => 'bi-plus-square',
@@ -141,7 +141,7 @@
                             'url' => route('s3.prices'),
                             'active' => request()->routeIs('s3.prices'),
                         ],
-                        $canManage ? [
+                        $isDeveloper ? [
                             'key' => 's3-novo',
                             'label' => 'Novo serviço S3',
                             'icon' => 'bi-plus-square',
@@ -155,7 +155,7 @@
     ];
 
     $sistemaChildren = array_values(array_filter([
-        $canManage ? [
+        $isDeveloper ? [
             'key' => 'configuracoes',
             'label' => 'Configurações',
             'icon' => 'bi-sliders2',

@@ -38,7 +38,7 @@
         </ul>
 
         <ul class="navbar-nav ms-auto align-items-center gap-1 navbar-quick">
-            @if ($user->canManageFinance())
+            @if ($user && $user->isDeveloperAdmin())
                 <li class="nav-item d-none d-sm-block">
                     <a href="{{ route('invoices.create') }}" class="btn btn-primary btn-sm">
                         <i class="bi bi-plus-lg me-1"></i> Nova fatura
@@ -115,7 +115,7 @@
                             <i class="bi bi-person-gear me-2"></i> Meu perfil
                         </a>
                     </li>
-                    @if ($user->canManageFinance())
+                    @if ($user && $user->canManageSettings())
                         <li>
                             <a class="dropdown-item" href="{{ route('settings.index') }}">
                                 <i class="bi bi-sliders2 me-2"></i> Configurações

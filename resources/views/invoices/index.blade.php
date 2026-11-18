@@ -19,6 +19,8 @@
         <a href="{{ route('invoices.export', request()->only(['q', 'status', 'currency', 'overdue'])) }}" class="btn btn-outline-secondary">
             <i class="bi bi-download me-1"></i> Exportar CSV
         </a>
+    @endif
+    @if (auth()->user()->isDeveloperAdmin())
         <a href="{{ route('invoices.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Nova fatura
         </a>
@@ -134,7 +136,7 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li><a class="dropdown-item" href="{{ route('invoices.show', $invoice) }}"><i class="bi bi-eye me-2"></i> Detalhes</a></li>
-                                        @if (auth()->user()->canManageFinance())
+                                        @if (auth()->user()->isDeveloperAdmin())
                                             <li><a class="dropdown-item" href="{{ route('invoices.edit', $invoice) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
                                             @if ($invoice->status === \App\Models\Invoice::STATUS_PENDING)
                                                 <li>
@@ -143,13 +145,15 @@
                                                         <button type="submit" class="dropdown-item"><i class="bi bi-calculator me-2"></i> Recalcular</button>
                                                     </form>
                                                 </li>
-                                                <li>
-                                                    <form method="POST" action="{{ route('invoices.pay', $invoice) }}" data-confirm="Confirmar o pagamento e travar a cotação desta fatura?" data-confirm-button="Marcar como paga">
-                                                        @csrf
-                                                        <button type="submit" class="dropdown-item"><i class="bi bi-check2-circle me-2"></i> Marcar como paga</button>
-                                                    </form>
-                                                </li>
                                             @endif
+                                        @endif
+                                        @if (auth()->user()->canManageFinance() && $invoice->status === \App\Models\Invoice::STATUS_PENDING)
+                                            <li>
+                                                <form method="POST" action="{{ route('invoices.pay', $invoice) }}" data-confirm="Confirmar o pagamento e travar a cotação desta fatura?" data-confirm-button="Marcar como paga">
+                                                    @csrf
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-check2-circle me-2"></i> Marcar como paga</button>
+                                                </form>
+                                            </li>
                                         @endif
                                     </ul>
                                 </div>
@@ -162,7 +166,7 @@
                                     <div class="icon"><i class="bi bi-receipt"></i></div>
                                     <h3>Nenhuma fatura encontrada</h3>
                                     <p>Ajuste os filtros ou cadastre uma nova fatura para começar a conciliação.</p>
-                                    @if (auth()->user()->canManageFinance())
+                                    @if (auth()->user()->isDeveloperAdmin())
                                         <a href="{{ route('invoices.create') }}" class="btn btn-primary btn-sm">Nova fatura</a>
                                     @endif
                                 </div>

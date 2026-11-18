@@ -16,7 +16,7 @@
 
 @section('actions')
     <div class="d-flex flex-wrap gap-2">
-        @if (auth()->user()->canManageFinance())
+        @if (auth()->user()->isDeveloperAdmin())
             <form method="POST" action="{{ route('licenses.panel.sync') }}">
                 @csrf
                 <button type="submit" class="btn btn-outline-secondary">
@@ -27,7 +27,7 @@
         <a href="{{ route('licenses.prices') }}" class="btn btn-outline-secondary">
             <i class="bi bi-tags me-1"></i> Preços da loja
         </a>
-        @if (auth()->user()->canManageFinance())
+        @if (auth()->user()->isDeveloperAdmin())
             <a href="{{ route('licenses.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i> Nova licença
             </a>
@@ -48,7 +48,7 @@
                     <div class="icon"><i class="bi bi-key"></i></div>
                     <h3>Nenhuma licença cadastrada</h3>
                     <p>Cadastre cada serviço contratado para controlar valores e gerar as faturas aqui no sistema. O catálogo com os preços atuais da loja está disponível em “Preços da loja”.</p>
-                    @if (auth()->user()->canManageFinance())
+                    @if (auth()->user()->isDeveloperAdmin())
                         <a href="{{ route('licenses.create') }}" class="btn btn-primary btn-sm">Cadastrar primeira licença</a>
                     @endif
                 </div>
@@ -209,7 +209,7 @@
                                         <a href="{{ route('licenses.show', $license) }}" class="btn btn-ghost btn-sm" title="Detalhes">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        @if (auth()->user()->canManageFinance())
+                                        @if (auth()->user()->isDeveloperAdmin())
                                             <a href="{{ route('licenses.edit', $license) }}" class="btn btn-ghost btn-sm" title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </a>

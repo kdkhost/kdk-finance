@@ -18,7 +18,7 @@
     <a href="{{ route('invoices.index') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
-    @if (auth()->user()->canManageFinance())
+    @if (auth()->user()->isDeveloperAdmin())
         <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-primary">
             <i class="bi bi-pencil me-1"></i> Editar
         </a>
@@ -281,21 +281,21 @@
             <div class="card">
                 <div class="card-header">Ações</div>
                 <div class="card-body d-grid gap-2">
-                    @if (auth()->user()->canManageFinance())
-                        @if ($invoice->status === \App\Models\Invoice::STATUS_PENDING)
-                            <form method="POST" action="{{ route('invoices.pay', $invoice) }}" data-confirm="Confirmar o pagamento e travar a cotação desta fatura?" data-confirm-button="Marcar como paga">
+                    @if (auth()->user()->canManageFinance() && $invoice->status === \App\Models\Invoice::STATUS_PENDING)
+                        <form method="POST" action="{{ route('invoices.pay', $invoice) }}" data-confirm="Confirmar o pagamento e travar a cotação desta fatura?" data-confirm-button="Marcar como paga">
+                            @csrf
+                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2-circle me-1"></i> Marcar como paga</button>
+                        </form>
+
+                        @if ($invoice->external_reference)
+                            <form method="POST" action="{{ route('invoices.sync-payment', $invoice) }}">
                                 @csrf
-                                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2-circle me-1"></i> Marcar como paga</button>
+                                <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-cloud-check me-1"></i> Verificar pagamento na OVHcloud</button>
                             </form>
-
-                            @if ($invoice->external_reference)
-                                <form method="POST" action="{{ route('invoices.sync-payment', $invoice) }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-cloud-check me-1"></i> Verificar pagamento na OVHcloud</button>
-                                </form>
-                            @endif
                         @endif
+                    @endif
 
+                    @if (auth()->user()->isDeveloperAdmin())
                         @if (! $invoice->rate_locked)
                             <form method="POST" action="{{ route('invoices.recalculate', $invoice) }}">
                                 @csrf
@@ -322,8 +322,8 @@
                                 <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-counterclockwise me-1"></i> Reabrir como pendente</button>
                             </form>
                         @endif
-                    @else
-                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta. Ações de conciliação estão disponíveis para gestores financeiros.</div>
+                    @elseif (!auth()->user()->canManageFinance())
+                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta. Ações operacionais estão disponíveis para gestores e administradores.</div>
                     @endif
                 </div>
             </div>

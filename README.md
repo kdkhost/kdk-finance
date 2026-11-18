@@ -5,7 +5,7 @@ Sistema financeiro para conciliação de faturas internacionais (EUR/USD → BRL
 - **Desenvolvedor:** Marcelo Brad - RJ
 - **Empresa:** KDKHost Soluções — CNPJ 33.986.975/0001-90
 - **Contato:** contato@kdkhost.com.br · https://kdkhost.com.br
-- **Versão:** 1.14.1 · Laravel 12.71.0 · PHP 8.3 / 8.5
+- **Versão:** 1.14.2 · Laravel 12.71.0 · PHP 8.3 / 8.5
 
 ---
 
@@ -55,7 +55,10 @@ marca o resultado como desatualizado.
 - SMTP completo no painel, com envio de teste e diagnóstico, e tema de e-mail responsivo editável com prévia.
 - Exportação CSV organizada (BOM UTF-8, separador `;`, colunas em ordem alfabética e fórmulas neutralizadas).
 - URLs sempre limpas: a pasta `public/` nunca aparece no endereço, com redirecionamento permanente (301) e preservação da query string em Apache, NGINX e proxies.
-- Perfis de acesso: desenvolvedor/administrador, gestor financeiro e consulta.
+- Perfis de acesso com segregação estrita:
+  - **Desenvolvedor / Administrador (`DEVELOPER_ADMIN`)**: controle total do sistema, configurações de infraestrutura/tributos/spread/tokens, e gestão cadastral (criação, edição e exclusão de faturas, licenças, S3 e conversões).
+  - **Gestor Financeiro (`FINANCIAL_MANAGER`)**: focado na conciliação operacional — consulta relatórios e faturas, registra pagamentos, verifica status na OVHcloud, confere a fatura do cartão e exporta dados, sem acesso a configurações e sem permissão para alterar valores ou cadastros de serviços.
+  - **Consulta (`VIEWER`)**: visualização em modo somente leitura dos dados e faturas.
 - PWA instalável no Windows e Android, com página offline.
 - Tema claro e escuro, interface integralmente em português do Brasil.
 

@@ -101,6 +101,11 @@ class User extends Authenticatable
         return $this->isDeveloperAdmin();
     }
 
+    public function canEditValues(): bool
+    {
+        return $this->isDeveloperAdmin();
+    }
+
     public function initials(): string
     {
         $parts = preg_split('/\s+/', trim((string) $this->name)) ?: [];

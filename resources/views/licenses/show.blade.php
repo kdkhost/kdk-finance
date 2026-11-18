@@ -18,7 +18,7 @@
     <a href="{{ route('licenses.index') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
-    @if (auth()->user()->canManageFinance())
+    @if (auth()->user()->isDeveloperAdmin())
         <a href="{{ route('licenses.edit', $license) }}" class="btn btn-primary">
             <i class="bi bi-pencil me-1"></i> Editar
         </a>
@@ -142,7 +142,7 @@
             <div class="card">
                 <div class="card-header">Ações</div>
                 <div class="card-body d-grid gap-2">
-                    @if (auth()->user()->canManageFinance())
+                    @if (auth()->user()->isDeveloperAdmin())
                         @if ($license->status === \App\Models\LicenseService::STATUS_ACTIVE)
                             <form method="POST" action="{{ route('licenses.invoice', $license) }}" data-confirm="Gerar fatura de {{ $license->product }} no valor de {{ $billing($license->totalOriginal()) }}? O próximo vencimento avançará um ciclo." data-confirm-button="Gerar fatura">
                                 @csrf
@@ -158,6 +158,13 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-outline-secondary w-100 text-danger">
+                                <i class="bi bi-trash me-1"></i> Remover licença
+                            </button>
+                        </form>
+                    @else
+                        <div class="text-muted-soft" style="font-size:.82rem;">Seu perfil permite apenas consulta dos serviços e valores. Gerenciamento e faturamento são restritos ao administrador.</div>
+                    @endif
+                </div>
                                 <i class="bi bi-trash3 me-1"></i> Remover licença
                             </button>
                         </form>
@@ -265,7 +272,7 @@
                             Nenhum valor do painel registrado. A cobrança usa o preço da loja. Sincronize com a conta da LicenseBoy
                             ou informe o valor manualmente.
                         </p>
-                        @if (auth()->user()->canManageFinance())
+                        @if (auth()->user()->isDeveloperAdmin())
                             <form method="POST" action="{{ route('licenses.panel.sync') }}">
                                 @csrf
                                 <button type="submit" class="btn btn-outline-secondary w-100">
@@ -280,7 +287,7 @@
                         Este sistema registra o valor real cobrado e o usa nas faturas.
                     </p>
 
-                    @if (auth()->user()->canManageFinance())
+                    @if (auth()->user()->isDeveloperAdmin())
                         <a href="{{ route('licenses.edit', $license) }}" class="btn btn-outline-secondary w-100 mt-2">
                             <i class="bi bi-pencil me-1"></i> Ajustar valor do painel
                         </a>
@@ -330,7 +337,7 @@
                         </a>
                     @else
                         <p class="text-muted-soft mb-2">Esta licença usa um preço manual e não acompanha a loja.</p>
-                        @if (auth()->user()->canManageFinance())
+                        @if (auth()->user()->isDeveloperAdmin())
                             <a href="{{ route('licenses.edit', $license) }}" class="btn btn-outline-secondary w-100">
                                 <i class="bi bi-link-45deg me-1"></i> Vincular ao catálogo
                             </a>
