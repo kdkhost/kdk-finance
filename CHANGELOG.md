@@ -5,6 +5,18 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.14.0] - 2026-11-18
+
+### Adicionado
+
+- **Refatoração completa e modernização da Dashboard Executiva (`dashboard.blade.php`)**:
+  - **Novo Hero Card Executivo**: Saudação personalizada com perfil do usuário, data por extenso em português, status de faturas e relógio ao vivo com atalhos rápidos (*Atualizar Cotações*, *Exportar*, *Nova Fatura*).
+  - **Cards KPI Redesenhados**: Indicadores chave de alta visibilidade com suporte a temas claro/escuro, ícones translúcidos, tipografia tabular e alertas dinâmicos de faturas em atraso.
+  - **Barra de Resumo de Nuvem Consolidada (TCO Mensal)**: Visão unificada do custo total da nuvem (OVHcloud + Licenças LicenseBoy + IDrive e2 S3) em BRL, detalhando o somatório de instâncias ativas e tributos pendentes retidos (IOF, Spread, ICMS, PIS/COFINS).
+  - **Navegação em Abas Executivas Inteligentes (`kdk-dashboard-tabs`)**: As tabelas foram reorganizadas em abas ágeis com badges de contagem dinâmica (Faturas & Vencimentos, Licenças & S3 Storage, e Infraestrutura OVHcloud), evitando rolagem vertical excessiva e permitindo alternância instantânea com memorização automática da aba ativa no `localStorage`.
+  - **Responsividade Total Mobile & Desktop**: Otimização completa para telas pequenas com cabeçalhos com rolagem horizontal oculta (`overflow-x-auto flex-nowrap`), cartões compactos de dados e alinhamento ergonômico.
+  - **Preservação de Todos os Hooks em Tempo Real**: Total compatibilidade mantida com `live.js`, `dashboard.js` e Chart.js sem quebra de seletores dinâmicos (`data-live`, `data-ajax-refresh-rates`).
+
 ## [1.13.3] - 2026-11-18
 
 ### Alterado
