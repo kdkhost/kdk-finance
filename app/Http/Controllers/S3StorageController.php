@@ -53,6 +53,48 @@ class S3StorageController extends Controller
             }
         }
 
+        // Corrige automaticamente serviços existentes gravados anteriormente como anuais ou com valor 60.00
+        try {
+            $outdatedAnnualServices = LicenseService::query()
+                ->where('provider', IDriveE2PanelService::PROVIDER)
+                ->where(function ($q): void {
+                    $q->where('billing_cycle', LicenseService::CYCLE_ANNUAL)
+                        ->orWhere('unit_price', '>=', 60.00);
+                })
+                ->get();
+
+            if ($outdatedAnnualServices->isNotEmpty()) {
+                $monthlyCatalog = LicenseCatalogItem::query()
+                    ->where('provider', IDriveE2PanelService::PROVIDER)
+                    ->where('billing_cycle', LicenseService::CYCLE_MONTHLY)
+                    ->orderBy('price')
+                    ->first();
+
+                foreach ($outdatedAnnualServices as $outdated) {
+                    $outdated->unit_price = '5.00';
+                    $outdated->billing_cycle = LicenseService::CYCLE_MONTHLY;
+                    $outdated->panel_price = '5.00';
+                    $outdated->panel_billing_cycle = LicenseService::CYCLE_MONTHLY;
+                    if ($monthlyCatalog) {
+                        $outdated->license_catalog_item_id = $monthlyCatalog->id;
+                    }
+                    if ($outdated->next_due_date && $outdated->next_due_date->greaterThan(now()->addMonths(2))) {
+                        $outdated->next_due_date = now()->addMonthNoOverflow()->startOfDay();
+                        $outdated->panel_next_due_date = $outdated->next_due_date;
+                    }
+                    $outdated->save();
+                }
+
+                if (AppSetting::get('idrivee2_default_cycle') === 'annual') {
+                    AppSetting::set('idrivee2_default_cycle', 'monthly', 'idrivee2');
+                }
+                if ((float) AppSetting::get('idrivee2_default_price') >= 60.00) {
+                    AppSetting::set('idrivee2_default_price', '5.00', 'idrivee2');
+                }
+            }
+        } catch (Throwable) {
+        }
+
         $rates = $exchange->rates();
 
         $services = LicenseService::query()
@@ -166,11 +208,12 @@ class S3StorageController extends Controller
         $service = new LicenseService([
             'provider' => IDriveE2PanelService::PROVIDER,
             'currency' => 'USD',
-            'billing_cycle' => LicenseService::CYCLE_ANNUAL,
+            'billing_cycle' => LicenseService::CYCLE_MONTHLY,
             'status' => LicenseService::STATUS_ACTIVE,
             'quantity' => 1,
+            'unit_price' => 5.00,
             'auto_renew' => true,
-            'next_due_date' => now()->addYear(),
+            'next_due_date' => now()->addMonthNoOverflow(),
             'server_name' => (string) AppSetting::get('idrivee2_s3_endpoint', 'console.idrivee2.com'),
         ]);
 

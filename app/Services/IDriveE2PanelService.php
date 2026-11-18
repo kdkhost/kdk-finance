@@ -793,16 +793,16 @@ class IDriveE2PanelService
             if ($verified2faAt === '' && $totpSecret === '') {
                 $requires2fa = true;
             } else {
-                $defaultPlanPrice = (float) AppSetting::get('idrivee2_default_price', 60.00);
+                $defaultPlanPrice = (float) AppSetting::get('idrivee2_default_price', 5.00);
                 $services[] = [
                     'service_id' => 'e2-'.substr(md5($email), 0, 12),
                     'product' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)'),
                     'name' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)').' · '.$email,
                     'server_name' => (string) (AppSetting::get('idrivee2_s3_endpoint') ?: 'console.idrivee2.com'),
-                    'price' => $defaultPlanPrice > 0 ? $defaultPlanPrice : 60.00,
+                    'price' => $defaultPlanPrice > 0 ? $defaultPlanPrice : 5.00,
                     'currency' => (string) AppSetting::get('idrivee2_default_currency', 'USD'),
-                    'cycle' => (string) AppSetting::get('idrivee2_default_cycle', LicenseService::CYCLE_ANNUAL),
-                    'next_due' => AppSetting::get('idrivee2_default_next_due') ?: now()->addYear()->toDateString(),
+                    'cycle' => (string) AppSetting::get('idrivee2_default_cycle', LicenseService::CYCLE_MONTHLY),
+                    'next_due' => AppSetting::get('idrivee2_default_next_due') ?: now()->addMonthNoOverflow()->toDateString(),
                     'status' => LicenseService::STATUS_ACTIVE,
                 ];
             }
@@ -812,19 +812,19 @@ class IDriveE2PanelService
         // Garantimos que a conta principal seja registrada/sincronizada com os parâmetros configurados
         if ($services === [] && $otpCode !== '') {
             $planName = (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)');
-            $planPrice = (float) AppSetting::get('idrivee2_default_price', 60.00);
+            $planPrice = (float) AppSetting::get('idrivee2_default_price', 5.00);
             $planCurrency = (string) AppSetting::get('idrivee2_default_currency', 'USD');
-            $planCycle = (string) AppSetting::get('idrivee2_default_cycle', LicenseService::CYCLE_ANNUAL);
-            $planDue = AppSetting::get('idrivee2_default_next_due') ?: now()->addYear()->toDateString();
+            $planCycle = (string) AppSetting::get('idrivee2_default_cycle', LicenseService::CYCLE_MONTHLY);
+            $planDue = AppSetting::get('idrivee2_default_next_due') ?: now()->addMonthNoOverflow()->toDateString();
 
             $services[] = [
                 'service_id' => 'e2-'.substr(md5($email), 0, 12),
                 'product' => $planName,
                 'name' => $planName.' · '.$email,
                 'server_name' => (string) (AppSetting::get('idrivee2_s3_endpoint') ?: 'console.idrivee2.com'),
-                'price' => $planPrice > 0 ? $planPrice : 60.00,
+                'price' => $planPrice > 0 ? $planPrice : 5.00,
                 'currency' => in_array($planCurrency, ['USD', 'EUR'], true) ? $planCurrency : 'USD',
-                'cycle' => array_key_exists($planCycle, LicenseService::cycles()) ? $planCycle : LicenseService::CYCLE_ANNUAL,
+                'cycle' => array_key_exists($planCycle, LicenseService::cycles()) ? $planCycle : LicenseService::CYCLE_MONTHLY,
                 'next_due' => $planDue,
                 'status' => LicenseService::STATUS_ACTIVE,
             ];
@@ -1011,6 +1011,12 @@ class IDriveE2PanelService
                 ->first();
 
             if ($existing) {
+                $catalogMatch = LicenseCatalogItem::query()
+                    ->where('provider', self::PROVIDER)
+                    ->where('billing_cycle', $cycle)
+                    ->orderByRaw('ABS(price - ?)', [$price > 0 ? $price : 5])
+                    ->first();
+
                 $existing->fill([
                     'panel_service_id' => $serviceId ?: $existing->panel_service_id,
                     'panel_price' => $price > 0 ? number_format($price, 2, '.', '') : $existing->panel_price,
@@ -1019,15 +1025,24 @@ class IDriveE2PanelService
                     'panel_next_due_date' => $nextDue ?? $existing->panel_next_due_date,
                     'panel_status' => $status,
                     'panel_synced_at' => now(),
+                    'billing_cycle' => $cycle,
                     'status' => $status,
                 ]);
 
-                if ($nextDue) {
-                    $existing->next_due_date = $nextDue;
+                if ($price > 0) {
+                    $existing->unit_price = number_format($price, 2, '.', '');
                 }
 
-                if ((float) $existing->unit_price <= 0 && $price > 0) {
-                    $existing->unit_price = number_format($price, 2, '.', '');
+                if ($currency) {
+                    $existing->currency = $currency;
+                }
+
+                if ($catalogMatch) {
+                    $existing->license_catalog_item_id = $catalogMatch->id;
+                }
+
+                if ($nextDue) {
+                    $existing->next_due_date = $nextDue;
                 }
 
                 $existing->save();

@@ -5,6 +5,17 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.2] - 2026-11-18
+
+### Corrigido
+
+- **Ciclo de cobrança e valor padrão do IDrive e2 ajustados para Mensal (US$ 5,00/mês)**:
+  - Ajustado o padrão da conta IDrive e2 em `app/Services/IDriveE2PanelService.php`, `app/Http/Controllers/SettingsController.php` e `app/Http/Controllers/S3StorageController.php` de anual (US$ 60,00/ano) para mensal (US$ 5,00/mês para 1 TB).
+  - Atualizada a sincronização (`applyServicesAndInvoices`): agora os serviços já existentes têm seu ciclo (`billing_cycle`), valor unitário (`unit_price`), valor de painel (`panel_price`, `panel_billing_cycle`) e plano do catálogo vinculados e atualizados corretamente para a modalidade mensal na sincronização com o console.
+  - Criada rotina automática em `S3StorageController::index()` e `SettingsController::index()` para migrar e corrigir serviços e configurações gravadas anteriormente como anuais, ajustando para US$ 5,00/mês com vencimento mensal.
+  - Ajustados os formulários em `resources/views/settings/index.blade.php` e `resources/views/s3/form.blade.php` para selecionar "Mensal" por padrão.
+  - Adicionada a migração `2026_11_18_143000_update_idrivee2_services_to_monthly.php`.
+
 ## [1.13.1] - 2026-11-18
 
 ### Corrigido

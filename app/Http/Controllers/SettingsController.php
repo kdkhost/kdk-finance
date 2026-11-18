@@ -43,15 +43,29 @@ class SettingsController extends Controller
         $mailSettings = MailSettings::all();
         unset($mailSettings['mail_password']);
 
-        // Preenche automaticamente o login/senha iniciais do IDrive e2 caso ainda não estejam no banco
+        // Preenche automaticamente o login/senha iniciais do IDrive e2 e padrões mensais caso ainda não estejam no banco
         if (trim((string) AppSetting::get('idrivee2_panel_email', '')) === '') {
             try {
                 AppSetting::set('idrivee2_panel_email', 'site.kdkhost@gmail.com', 'idrivee2');
                 AppSetting::set('idrivee2_panel_password', '83388601Mm...', 'idrivee2', true);
-                $settings = AppSetting::query()->orderBy('group')->orderBy('key')->get();
             } catch (Throwable) {
             }
         }
+
+        // Garante que o padrão seja plano mensal ($5.00/mês)
+        if (AppSetting::get('idrivee2_default_cycle') === 'annual' || ! AppSetting::has('idrivee2_default_cycle')) {
+            try {
+                AppSetting::set('idrivee2_default_cycle', 'monthly', 'idrivee2');
+            } catch (Throwable) {
+            }
+        }
+        if ((float) AppSetting::get('idrivee2_default_price', 0) >= 60.00 || ! AppSetting::has('idrivee2_default_price')) {
+            try {
+                AppSetting::set('idrivee2_default_price', '5.00', 'idrivee2');
+            } catch (Throwable) {
+            }
+        }
+        $settings = AppSetting::query()->orderBy('group')->orderBy('key')->get();
 
         return view('settings.index', [
             'settings' => $settings,
@@ -85,9 +99,9 @@ class SettingsController extends Controller
             'idrivee2Region' => (string) AppSetting::get('idrivee2_s3_region', 'us-east-1'),
             'idrivee2AccessKey' => (string) AppSetting::get('idrivee2_s3_access_key', ''),
             'idrivee2DefaultPlan' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)'),
-            'idrivee2DefaultPrice' => (string) AppSetting::get('idrivee2_default_price', '60.00'),
+            'idrivee2DefaultPrice' => (string) AppSetting::get('idrivee2_default_price', '5.00'),
             'idrivee2DefaultCurrency' => (string) AppSetting::get('idrivee2_default_currency', 'USD'),
-            'idrivee2DefaultCycle' => (string) AppSetting::get('idrivee2_default_cycle', 'annual'),
+            'idrivee2DefaultCycle' => (string) AppSetting::get('idrivee2_default_cycle', 'monthly'),
             'idrivee2DefaultNextDue' => (string) AppSetting::get('idrivee2_default_next_due', ''),
             'mailSettings' => $mailSettings,
             'mailConfigured' => MailSettings::configured(),
@@ -369,6 +383,28 @@ class SettingsController extends Controller
 
         if (isset($data['idrivee2_default_price']) && $data['idrivee2_default_price'] !== null && $data['idrivee2_default_price'] !== '') {
             AppSetting::set('idrivee2_default_price', number_format((float) $data['idrivee2_default_price'], 2, '.', ''), 'idrivee2');
+        }
+
+        // Se o ciclo ou preço padrão foram salvos, sincroniza com os serviços IDrive e2 cadastrados
+        $newCycle = $data['idrivee2_default_cycle'] ?? null;
+        $newPrice = isset($data['idrivee2_default_price']) && $data['idrivee2_default_price'] !== '' ? (float) $data['idrivee2_default_price'] : null;
+        if ($newCycle || $newPrice !== null) {
+            try {
+                LicenseService::query()
+                    ->where('provider', IDriveE2PanelService::PROVIDER)
+                    ->each(function (LicenseService $svc) use ($newCycle, $newPrice): void {
+                        if ($newCycle && array_key_exists($newCycle, LicenseService::cycles())) {
+                            $svc->billing_cycle = $newCycle;
+                            $svc->panel_billing_cycle = $newCycle;
+                        }
+                        if ($newPrice !== null && $newPrice > 0) {
+                            $svc->unit_price = number_format($newPrice, 2, '.', '');
+                            $svc->panel_price = number_format($newPrice, 2, '.', '');
+                        }
+                        $svc->save();
+                    });
+            } catch (Throwable) {
+            }
         }
 
         $secretsUpdated = 0;

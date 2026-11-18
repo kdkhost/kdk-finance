@@ -882,7 +882,7 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label" for="idrivee2_default_price">Valor recorrente</label>
-                                        <input type="number" step="0.01" min="0" class="form-control tabular" id="idrivee2_default_price" name="idrivee2_default_price" value="{{ old('idrivee2_default_price', $idrivee2DefaultPrice ?? '60.00') }}">
+                                        <input type="number" step="0.01" min="0" class="form-control tabular" id="idrivee2_default_price" name="idrivee2_default_price" value="{{ old('idrivee2_default_price', $idrivee2DefaultPrice ?? '5.00') }}">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label" for="idrivee2_default_currency">Moeda</label>
@@ -896,7 +896,7 @@
                                         <label class="form-label" for="idrivee2_default_cycle">Ciclo de cobrança</label>
                                         <select class="form-select" id="idrivee2_default_cycle" name="idrivee2_default_cycle">
                                             @foreach (\App\Models\LicenseService::cycles() as $cycleKey => $cycleLabel)
-                                                <option value="{{ $cycleKey }}" @selected(($idrivee2DefaultCycle ?? 'annual') === $cycleKey)>{{ $cycleLabel }}</option>
+                                                <option value="{{ $cycleKey }}" @selected(($idrivee2DefaultCycle ?? 'monthly') === $cycleKey)>{{ $cycleLabel }}</option>
                                             @endforeach
                                         </select>
                                     </div>

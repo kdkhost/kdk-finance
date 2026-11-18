@@ -121,7 +121,7 @@
                                 <label class="form-label" for="billing_cycle">Ciclo</label>
                                 <select class="form-select @error('billing_cycle') is-invalid @enderror" id="billing_cycle" name="billing_cycle" required>
                                     @foreach (\App\Models\LicenseService::cycles() as $key => $label)
-                                        <option value="{{ $key }}" @selected(old('billing_cycle', $license->billing_cycle ?? 'annual') === $key)>{{ $label }}</option>
+                                        <option value="{{ $key }}" @selected(old('billing_cycle', $license->billing_cycle ?? 'monthly') === $key)>{{ $label }}</option>
                                     @endforeach
                                 </select>
                                 @error('billing_cycle')<div class="invalid-feedback">{{ $message }}</div>@enderror
