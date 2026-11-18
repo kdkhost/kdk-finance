@@ -16,9 +16,9 @@
 
 @section('actions')
     @if (auth()->user()->isDeveloperAdmin())
-        <form method="POST" action="{{ route('settings.rates.refresh') }}">
+        <form method="POST" action="{{ route('settings.rates.refresh') }}" data-ajax-refresh-rates>
             @csrf
-            <button type="submit" class="btn btn-outline-secondary">
+            <button type="submit" class="btn btn-outline-secondary" data-refresh-rates-btn>
                 <i class="bi bi-arrow-repeat me-1"></i> Atualizar cotações
             </button>
         </form>
@@ -387,4 +387,106 @@
         'totals' => $totals,
         'rates' => $rates,
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) !!}</script>
+
+    @push('scripts')
+        <script nonce="{{ $cspNonce ?? '' }}">
+            (function () {
+                const form = document.querySelector('form[data-ajax-refresh-rates]');
+                if (!form) {
+                    return;
+                }
+
+                const decimal = (value, digits = 2) => Number(value || 0).toLocaleString('pt-BR', {
+                    minimumFractionDigits: digits,
+                    maximumFractionDigits: digits,
+                });
+
+                const shortTime = new Intl.DateTimeFormat('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                });
+
+                form.addEventListener('submit', async (event) => {
+                    if (event.defaultPrevented) {
+                        return;
+                    }
+                    event.preventDefault();
+
+                    const button = form.querySelector('[data-refresh-rates-btn]') || form.querySelector('button[type="submit"]');
+                    const originalHtml = button ? button.innerHTML : '';
+                    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+                    if (button) {
+                        button.disabled = true;
+                        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Atualizando...';
+                    }
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': token,
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            credentials: 'same-origin',
+                        });
+
+                        const data = await response.json();
+
+                        if (data && data.rates) {
+                            Object.entries(data.rates).forEach(([currency, rate]) => {
+                                document.querySelectorAll(`[data-live="rate-${currency}"]`).forEach((el) => {
+                                    el.textContent = decimal(rate.rate, 4);
+                                });
+                                document.querySelectorAll(`[data-live="rate-${currency}-pct"]`).forEach((el) => {
+                                    el.textContent = `${decimal(Math.abs(rate.pct_change || 0), 2)}%`;
+                                });
+                                document.querySelectorAll(`[data-live="rate-${currency}-change"]`).forEach((el) => {
+                                    const up = Number(rate.pct_change || 0) >= 0;
+                                    el.classList.toggle('is-up', up);
+                                    el.classList.toggle('is-down', !up);
+                                    const icon = el.querySelector('i');
+                                    if (icon) {
+                                        icon.className = up ? 'bi bi-arrow-up-right' : 'bi bi-arrow-down-right';
+                                    }
+                                });
+                            });
+
+                            const latest = Object.values(data.rates).find((r) => r.updated_at);
+                            if (latest && latest.updated_at) {
+                                document.querySelectorAll('[data-live="rates-at"]').forEach((el) => {
+                                    el.textContent = shortTime.format(new Date(latest.updated_at));
+                                });
+                            }
+                        }
+
+                        // Dispara o evento para o live.js atualizar todos os totais e faturas sem refresh
+                        document.dispatchEvent(new CustomEvent('finance:refresh-snapshot'));
+
+                        if (window.toastr) {
+                            if (data.stale) {
+                                window.toastr.warning(data.message || 'API indisponível: mantidas as últimas cotações conhecidas.', 'Atenção');
+                            } else if (response.ok) {
+                                window.toastr.success(data.message || 'Cotações atualizadas com sucesso.', 'Tudo certo');
+                            } else {
+                                window.toastr.error(data.message || 'Não foi possível atualizar as cotações.', 'Erro');
+                            }
+                        }
+                    } catch (error) {
+                        if (window.toastr) {
+                            window.toastr.error('Não foi possível contatar o servidor para atualizar as cotações.', 'Falha na atualização');
+                        }
+                    } finally {
+                        if (button) {
+                            button.disabled = false;
+                            button.innerHTML = originalHtml;
+                        }
+                    }
+                });
+            })();
+        </script>
+    @endpush
 @endsection

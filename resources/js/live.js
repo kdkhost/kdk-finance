@@ -252,5 +252,75 @@ if (liveUrl) {
         }
     });
 
+    document.addEventListener('finance:refresh-snapshot', () => {
+        refreshSnapshot();
+    });
+
     window.setTimeout(refreshSnapshot, 1200);
 }
+
+/* ---------------------------------------------------------------------------
+ * Atualização manual de cotações via AJAX (sem recarregar nem sair da página)
+ * ------------------------------------------------------------------------- */
+document.addEventListener('submit', async (event) => {
+    if (event.defaultPrevented) {
+        return;
+    }
+
+    const form = event.target.closest('form[data-ajax-refresh-rates]');
+    if (!form) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const button = form.querySelector('button[type="submit"]');
+    const originalHtml = button ? button.innerHTML : '';
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Atualizando...';
+    }
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        });
+
+        const data = await response.json();
+
+        if (data?.rates) {
+            paintRates(data.rates);
+        }
+
+        if (data?.server_time) {
+            paintIndicator(data.server_time);
+        }
+
+        await refreshSnapshot();
+
+        if (window.toastr) {
+            if (data?.stale) {
+                window.toastr.warning(data.message, 'Atenção');
+            } else if (response.ok) {
+                window.toastr.success(data?.message || 'Cotações atualizadas.', 'Tudo certo');
+            } else {
+                window.toastr.error(data?.message || 'Não foi possível atualizar as cotações.', 'Erro');
+            }
+        }
+    } catch (error) {
+        window.toastr?.error('Não foi possível contatar o servidor.', 'Falha na atualização');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
+});

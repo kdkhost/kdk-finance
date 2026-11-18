@@ -24,3 +24,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+*_probe.php
+probe*.php
+public/deploy_exec.php

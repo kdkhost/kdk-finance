@@ -5,6 +5,12 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.12.1] - 2026-11-18
+
+### Alterado
+
+- **Atualização de cotações no Dashboard via AJAX sem redirecionamento**: o botão *Atualizar cotações* na Dashboard (e em Configurações) agora faz a requisição em segundo plano (`fetch`), exibe indicador de carregamento no próprio botão, atualiza os valores de USD, EUR, variação percentual, horário da leitura e totais na tela em tempo real e notifica via Toastr — permanecendo na Dashboard sem recarregar nem redirecionar para a página de configurações.
+
 ## [1.11.0] - 2026-11-05
 
 ### Adicionado

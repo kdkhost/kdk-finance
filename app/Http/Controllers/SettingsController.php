@@ -293,16 +293,27 @@ class SettingsController extends Controller
         }
     }
 
-    public function refreshRates(ExchangeRateService $exchange): RedirectResponse
+    public function refreshRates(Request $request, ExchangeRateService $exchange): RedirectResponse|JsonResponse
     {
         $rates = $exchange->rates(true);
         $stale = collect($rates)->contains(fn (array $rate): bool => $rate['stale'] ?? false);
+        $message = $stale
+            ? 'API indisponível: mantidas as últimas cotações conhecidas.'
+            : 'Cotações atualizadas: USD R$ '.number_format($rates['USD']['rate'], 4, ',', '.').' · EUR R$ '.number_format($rates['EUR']['rate'], 4, ',', '.');
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok' => ! $stale,
+                'stale' => $stale,
+                'message' => $message,
+                'rates' => $rates,
+                'server_time' => now()->toIso8601String(),
+            ]);
+        }
 
         return redirect()
             ->route('settings.index', ['tab' => 'taxes'])
-            ->with($stale ? 'warning' : 'success', $stale
-                ? 'API indisponível: mantidas as últimas cotações conhecidas.'
-                : 'Cotações atualizadas: USD R$ '.number_format($rates['USD']['rate'], 4, ',', '.').' · EUR R$ '.number_format($rates['EUR']['rate'], 4, ',', '.'));
+            ->with($stale ? 'warning' : 'success', $message);
     }
 
     public function updateOperational(Request $request): RedirectResponse

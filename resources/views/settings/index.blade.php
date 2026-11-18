@@ -364,7 +364,7 @@
                             @endif
                         </div>
                         @if ($user->isDeveloperAdmin())
-                            <form method="POST" action="{{ route('settings.rates.refresh') }}" class="mt-3">
+                            <form method="POST" action="{{ route('settings.rates.refresh') }}" class="mt-3" data-ajax-refresh-rates>
                                 @csrf
                                 <button type="submit" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-arrow-repeat me-1"></i> Atualizar cotações</button>
                             </form>
