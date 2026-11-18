@@ -22,14 +22,10 @@ return new class extends Migration
 
             LicenseService::query()
                 ->where('provider', IDriveE2PanelService::PROVIDER)
-                ->where(function ($q): void {
-                    $q->where('billing_cycle', LicenseService::CYCLE_ANNUAL)
-                        ->orWhere('unit_price', '>=', 60.00);
-                })
                 ->each(function (LicenseService $svc) use ($monthlyCatalog): void {
                     $svc->unit_price = '5.00';
+                    $svc->panel_price = '6.00';
                     $svc->billing_cycle = LicenseService::CYCLE_MONTHLY;
-                    $svc->panel_price = '5.00';
                     $svc->panel_billing_cycle = LicenseService::CYCLE_MONTHLY;
                     if ($monthlyCatalog) {
                         $svc->license_catalog_item_id = $monthlyCatalog->id;
@@ -42,7 +38,7 @@ return new class extends Migration
                 });
 
             AppSetting::set('idrivee2_default_cycle', 'monthly', 'idrivee2');
-            AppSetting::set('idrivee2_default_price', '5.00', 'idrivee2');
+            AppSetting::set('idrivee2_default_price', '6.00', 'idrivee2');
         } catch (\Throwable) {
             // Se tabela ainda não existir, prossegue sem travar migrações
         }

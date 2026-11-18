@@ -882,7 +882,7 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label" for="idrivee2_default_price">Valor recorrente</label>
-                                        <input type="number" step="0.01" min="0" class="form-control tabular" id="idrivee2_default_price" name="idrivee2_default_price" value="{{ old('idrivee2_default_price', $idrivee2DefaultPrice ?? '5.00') }}">
+                                        <input type="number" step="0.01" min="0" class="form-control tabular" id="idrivee2_default_price" name="idrivee2_default_price" value="{{ old('idrivee2_default_price', $idrivee2DefaultPrice ?? '6.00') }}">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label" for="idrivee2_default_currency">Moeda</label>
@@ -965,6 +965,12 @@
                             <div class="fw-semibold mb-1"><i class="bi bi-hdd-stack me-1 text-primary"></i> Gestão idêntica ao LicenseBoy</div>
                             <p class="text-muted-soft mb-0" style="font-size:.82rem;">
                                 Todos os planos e buckets adquiridos ficam listados em <strong>Infraestrutura → IDrive e2 (S3)</strong>, comparando o valor de tabela com o valor real cobrado no console e permitindo gerar e conciliar faturas em USD/EUR convertidas para BRL com impostos.
+                            </p>
+                        </div>
+                        <div class="settings-section">
+                            <div class="fw-semibold mb-1"><i class="bi bi-tags me-1 text-primary"></i> Tabela (US$ 5,00) vs. Console (US$ 6,00)</div>
+                            <p class="text-muted-soft mb-0" style="font-size:.82rem;">
+                                O plano oficial de 1 TB está listado na tabela pública por <strong>US$ 5,00/mês</strong>, mas o console IDrive e2 debita o valor contratado de <strong>US$ 6,00/mês</strong>. O sistema calcula suas faturas e projeções financeiras pelo valor efetivamente debitado no cartão (US$ 6,00) e destaca a diferença de +US$ 1,00/mês (+20%), exatamente como funciona no LicenseBoy.
                             </p>
                         </div>
                         <div class="settings-section">

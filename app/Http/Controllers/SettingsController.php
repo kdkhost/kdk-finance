@@ -52,16 +52,16 @@ class SettingsController extends Controller
             }
         }
 
-        // Garante que o padrão seja plano mensal ($5.00/mês)
+        // Garante que o padrão do IDrive e2 seja US$ 6.00/mês cobrado no console (plano de tabela US$ 5.00)
         if (AppSetting::get('idrivee2_default_cycle') === 'annual' || ! AppSetting::has('idrivee2_default_cycle')) {
             try {
                 AppSetting::set('idrivee2_default_cycle', 'monthly', 'idrivee2');
             } catch (Throwable) {
             }
         }
-        if ((float) AppSetting::get('idrivee2_default_price', 0) >= 60.00 || ! AppSetting::has('idrivee2_default_price')) {
+        if ((float) AppSetting::get('idrivee2_default_price', 0) !== 6.00 || ! AppSetting::has('idrivee2_default_price')) {
             try {
-                AppSetting::set('idrivee2_default_price', '5.00', 'idrivee2');
+                AppSetting::set('idrivee2_default_price', '6.00', 'idrivee2');
             } catch (Throwable) {
             }
         }
@@ -99,7 +99,7 @@ class SettingsController extends Controller
             'idrivee2Region' => (string) AppSetting::get('idrivee2_s3_region', 'us-east-1'),
             'idrivee2AccessKey' => (string) AppSetting::get('idrivee2_s3_access_key', ''),
             'idrivee2DefaultPlan' => (string) AppSetting::get('idrivee2_default_plan', 'IDrive e2 Cloud Storage S3 (1 TB)'),
-            'idrivee2DefaultPrice' => (string) AppSetting::get('idrivee2_default_price', '5.00'),
+            'idrivee2DefaultPrice' => (string) AppSetting::get('idrivee2_default_price', '6.00'),
             'idrivee2DefaultCurrency' => (string) AppSetting::get('idrivee2_default_currency', 'USD'),
             'idrivee2DefaultCycle' => (string) AppSetting::get('idrivee2_default_cycle', 'monthly'),
             'idrivee2DefaultNextDue' => (string) AppSetting::get('idrivee2_default_next_due', ''),
@@ -398,7 +398,6 @@ class SettingsController extends Controller
                             $svc->panel_billing_cycle = $newCycle;
                         }
                         if ($newPrice !== null && $newPrice > 0) {
-                            $svc->unit_price = number_format($newPrice, 2, '.', '');
                             $svc->panel_price = number_format($newPrice, 2, '.', '');
                         }
                         $svc->save();

@@ -5,6 +5,15 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.3] - 2026-11-18
+
+### Alterado
+
+- **Divergência entre Preço de Tabela (US$ 5,00) e Cobrado no Console (US$ 6,00) no IDrive e2 S3**:
+  - Implementada a gestão financeira idêntica ao LicenseBoy: o valor de tabela oficial do plano contratado permanece em **US$ 5,00/mês** para 1 TB (`unit_price`), enquanto o valor real cobrado na assinatura do console é fixado em **US$ 6,00/mês** (`panel_price` e `idrivee2_default_price`).
+  - As faturas geradas e os cálculos financeiros de custos mensais em BRL utilizam o valor real debitado do cartão (**US$ 6,00**), destacando visualmente nos cards de resumo e na listagem a divergência de **+US$ 1,00/mês (+20%)** acima da tabela oficial.
+  - Atualizada a rotina automática em `S3StorageController::index()` e `SettingsController::index()` para sincronizar os registros existentes com essa estrutura (`unit_price` = 5.00, `panel_price` = 6.00).
+
 ## [1.13.2] - 2026-11-18
 
 ### Corrigido

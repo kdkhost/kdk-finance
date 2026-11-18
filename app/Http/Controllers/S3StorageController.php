@@ -53,44 +53,60 @@ class S3StorageController extends Controller
             }
         }
 
-        // Corrige automaticamente serviços existentes gravados anteriormente como anuais ou com valor 60.00
+        // Ajusta serviços do IDrive e2 para o padrão com divergência (tabela oficial US$ 5,00 vs cobrado no console US$ 6,00)
         try {
-            $outdatedAnnualServices = LicenseService::query()
+            $monthlyCatalog = LicenseCatalogItem::query()
                 ->where('provider', IDriveE2PanelService::PROVIDER)
-                ->where(function ($q): void {
-                    $q->where('billing_cycle', LicenseService::CYCLE_ANNUAL)
-                        ->orWhere('unit_price', '>=', 60.00);
-                })
-                ->get();
+                ->where('billing_cycle', LicenseService::CYCLE_MONTHLY)
+                ->orderBy('price')
+                ->first();
 
-            if ($outdatedAnnualServices->isNotEmpty()) {
-                $monthlyCatalog = LicenseCatalogItem::query()
-                    ->where('provider', IDriveE2PanelService::PROVIDER)
-                    ->where('billing_cycle', LicenseService::CYCLE_MONTHLY)
-                    ->orderBy('price')
-                    ->first();
+            LicenseService::query()
+                ->where('provider', IDriveE2PanelService::PROVIDER)
+                ->each(function (LicenseService $svc) use ($monthlyCatalog): void {
+                    $changed = false;
 
-                foreach ($outdatedAnnualServices as $outdated) {
-                    $outdated->unit_price = '5.00';
-                    $outdated->billing_cycle = LicenseService::CYCLE_MONTHLY;
-                    $outdated->panel_price = '5.00';
-                    $outdated->panel_billing_cycle = LicenseService::CYCLE_MONTHLY;
-                    if ($monthlyCatalog) {
-                        $outdated->license_catalog_item_id = $monthlyCatalog->id;
+                    if ((float) $svc->unit_price !== 5.00) {
+                        $svc->unit_price = '5.00';
+                        $changed = true;
                     }
-                    if ($outdated->next_due_date && $outdated->next_due_date->greaterThan(now()->addMonths(2))) {
-                        $outdated->next_due_date = now()->addMonthNoOverflow()->startOfDay();
-                        $outdated->panel_next_due_date = $outdated->next_due_date;
-                    }
-                    $outdated->save();
-                }
 
-                if (AppSetting::get('idrivee2_default_cycle') === 'annual') {
-                    AppSetting::set('idrivee2_default_cycle', 'monthly', 'idrivee2');
-                }
-                if ((float) AppSetting::get('idrivee2_default_price') >= 60.00) {
-                    AppSetting::set('idrivee2_default_price', '5.00', 'idrivee2');
-                }
+                    if ((float) $svc->panel_price !== 6.00) {
+                        $svc->panel_price = '6.00';
+                        $changed = true;
+                    }
+
+                    if ($svc->billing_cycle !== LicenseService::CYCLE_MONTHLY) {
+                        $svc->billing_cycle = LicenseService::CYCLE_MONTHLY;
+                        $changed = true;
+                    }
+
+                    if ($svc->panel_billing_cycle !== LicenseService::CYCLE_MONTHLY) {
+                        $svc->panel_billing_cycle = LicenseService::CYCLE_MONTHLY;
+                        $changed = true;
+                    }
+
+                    if ($monthlyCatalog && $svc->license_catalog_item_id !== $monthlyCatalog->id) {
+                        $svc->license_catalog_item_id = $monthlyCatalog->id;
+                        $changed = true;
+                    }
+
+                    if ($svc->next_due_date && $svc->next_due_date->greaterThan(now()->addMonths(2))) {
+                        $svc->next_due_date = now()->addMonthNoOverflow()->startOfDay();
+                        $svc->panel_next_due_date = $svc->next_due_date;
+                        $changed = true;
+                    }
+
+                    if ($changed) {
+                        $svc->save();
+                    }
+                });
+
+            if ((float) AppSetting::get('idrivee2_default_price') !== 6.00) {
+                AppSetting::set('idrivee2_default_price', '6.00', 'idrivee2');
+            }
+            if (AppSetting::get('idrivee2_default_cycle') !== 'monthly') {
+                AppSetting::set('idrivee2_default_cycle', 'monthly', 'idrivee2');
             }
         } catch (Throwable) {
         }
@@ -209,9 +225,12 @@ class S3StorageController extends Controller
             'provider' => IDriveE2PanelService::PROVIDER,
             'currency' => 'USD',
             'billing_cycle' => LicenseService::CYCLE_MONTHLY,
+            'panel_billing_cycle' => LicenseService::CYCLE_MONTHLY,
             'status' => LicenseService::STATUS_ACTIVE,
             'quantity' => 1,
             'unit_price' => 5.00,
+            'panel_price' => (float) AppSetting::get('idrivee2_default_price', 6.00),
+            'panel_currency' => 'USD',
             'auto_renew' => true,
             'next_due_date' => now()->addMonthNoOverflow(),
             'server_name' => (string) AppSetting::get('idrivee2_s3_endpoint', 'console.idrivee2.com'),
@@ -221,6 +240,7 @@ class S3StorageController extends Controller
 
         if ($selected) {
             $service->fill($this->catalogAttributes($selected));
+            $service->panel_price = (float) AppSetting::get('idrivee2_default_price', 6.00);
         }
 
         return view('s3.form', [
