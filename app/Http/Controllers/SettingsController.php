@@ -36,10 +36,20 @@ use Throwable;
 
 class SettingsController extends Controller
 {
-    public function index(ExchangeRateService $exchange, OvhService $ovh, FeeSyncService $fees): View
+    public function index(ExchangeRateService $exchange, OvhService $ovh, FeeSyncService $fees): View|RedirectResponse
     {
         $settings = AppSetting::query()->orderBy('group')->orderBy('key')->get();
         $user = request()->user();
+
+        // Se o usuário for gestor financeiro, restringe abas exclusivamente às financeiras (tributos e conversão)
+        if ($user && ! $user->isDeveloperAdmin()) {
+            $allowedTabs = ['taxes', 'conversion'];
+            $requestedTab = (string) request('tab', 'taxes');
+            if (! in_array($requestedTab, $allowedTabs, true)) {
+                return redirect()->route('settings.index', ['tab' => 'taxes']);
+            }
+        }
+
         $mailSettings = MailSettings::all();
         unset($mailSettings['mail_password']);
 

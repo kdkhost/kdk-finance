@@ -31,8 +31,25 @@ class EnsureUserRole
             abort(403, 'Acesso não autorizado.');
         }
 
-        if (! empty($roles) && ! in_array($user->role, $roles, true)) {
-            abort(403, 'Seu perfil não possui permissão para esta operação.');
+        if (! empty($roles)) {
+            $userRole = mb_strtoupper((string) $user->role);
+            $normalizedRoles = array_map('mb_strtoupper', $roles);
+
+            $isAuthorized = in_array($userRole, $normalizedRoles, true);
+
+            // Desenvolvedor/Administrador tem acesso a todas as rotas operacionais e administrativas
+            if (! $isAuthorized && $user->isDeveloperAdmin()) {
+                $isAuthorized = true;
+            }
+
+            // Gestor financeiro tem acesso às rotas financeiras
+            if (! $isAuthorized && in_array(\App\Models\User::ROLE_FINANCIAL, $normalizedRoles, true) && $user->canManageFinance()) {
+                $isAuthorized = true;
+            }
+
+            if (! $isAuthorized) {
+                abort(403, 'Seu perfil não possui permissão para esta operação.');
+            }
         }
 
         return $next($request);

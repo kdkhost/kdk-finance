@@ -566,10 +566,12 @@
                                                 <div class="icon fs-3 text-muted-soft mb-2"><i class="bi bi-key"></i></div>
                                                 <h5 class="h6 fw-semibold">Nenhuma licença ou armazenamento S3 cadastrado</h5>
                                                 <p class="text-muted-soft mb-2" style="font-size: .8rem;">Cadastre licenças cPanel/WHM ou conecte o console IDrive e2 S3.</p>
-                                                <div class="d-flex justify-content-center gap-2">
-                                                    <a href="{{ route('s3.create') }}" class="btn btn-primary btn-sm">Novo S3 Storage</a>
-                                                    <a href="{{ route('licenses.create') }}" class="btn btn-outline-secondary btn-sm">Nova Licença</a>
-                                                </div>
+                                                @if (auth()->user()->canManageFinance())
+                                                    <div class="d-flex justify-content-center gap-2">
+                                                        <a href="{{ route('s3.create') }}" class="btn btn-primary btn-sm">Novo S3 Storage</a>
+                                                        <a href="{{ route('licenses.create') }}" class="btn btn-outline-secondary btn-sm">Nova Licença</a>
+                                                    </div>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>

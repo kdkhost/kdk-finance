@@ -68,22 +68,37 @@ class User extends Authenticatable
 
     public function roleLabel(): string
     {
-        return self::roles()[$this->role] ?? $this->role;
+        $role = mb_strtoupper((string) $this->role);
+        return self::roles()[$role] ?? self::roles()[$this->role] ?? ($this->role ?: 'Usuário');
     }
 
     public function isDeveloperAdmin(): bool
     {
-        return $this->role === self::ROLE_DEVELOPER;
+        $role = mb_strtoupper((string) $this->role);
+        return in_array($role, [
+            self::ROLE_DEVELOPER,
+            'DEVELOPER',
+            'ADMIN',
+        ], true);
     }
 
     public function canManageFinance(): bool
     {
-        return in_array($this->role, [self::ROLE_DEVELOPER, self::ROLE_FINANCIAL], true);
+        $role = mb_strtoupper((string) $this->role);
+        return in_array($role, [
+            self::ROLE_DEVELOPER,
+            'DEVELOPER',
+            'ADMIN',
+            self::ROLE_FINANCIAL,
+            'FINANCIAL',
+            'GESTOR',
+            'GESTOR_FINANCEIRO',
+        ], true);
     }
 
     public function canManageSettings(): bool
     {
-        return $this->role === self::ROLE_DEVELOPER;
+        return $this->isDeveloperAdmin();
     }
 
     public function initials(): string

@@ -20,8 +20,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('role', 30)->default('VIEWER')->after('email')->index();
-            $table->boolean('is_active')->default(true)->after('role');
+            if (! Schema::hasColumn('users', 'role')) {
+                $table->string('role', 30)->default('VIEWER')->after('email')->index();
+            }
+            if (! Schema::hasColumn('users', 'is_active')) {
+                $table->boolean('is_active')->default(true)->after('role');
+            }
         });
     }
 

@@ -5,6 +5,18 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o
 versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.14.1] - 2026-11-18
+
+### Corrigido
+
+- **Correção de erro 500 no acesso com perfis de usuários com diferentes permissões**:
+  - **Implementação de `AppSetting::has(string $key): bool`**: corrigida exceção fatal `BadMethodCallException: Call to undefined method App\Models\AppSetting::idrivee2_default_cycle()` que ocorria no `SettingsController::index` ao acessar configurações com contas de perfis autorizados (ex: `FINANCIAL_MANAGER`), já que o Query Builder do Eloquent tentava resolver `has()` como relação de modelo inexistente.
+  - **Tratamento robusto e tolerância de perfis no model `User`**: normalização com `mb_strtoupper` e suporte flexível a sinônimos em `roleLabel()`, `isDeveloperAdmin()`, `canManageFinance()` e `canManageSettings()`, garantindo compatibilidade com roles maiúsculas, minúsculas ou derivadas (`ADMIN`, `DEVELOPER`, `GESTOR`, `GESTOR_FINANCEIRO`, `VIEWER`).
+  - **Ajuste fino no middleware `EnsureUserRole`**: normalização para caixa alta ao comparar perfis e verificação hierárquica automática para evitar bloqueios ou respostas 500 indevidas ao transitar entre rotas.
+  - **Restrição de abas seguras no `SettingsController`**: usuários com perfil `FINANCIAL_MANAGER` agora são redirecionados automaticamente para a aba permitida (`taxes`) caso tentem abrir ou tenham memorizado no navegador abas administrativas exclusivas do desenvolvedor (`ovh`, `security`, `mail`).
+  - **Proteção nas views do layout global (`navbar.blade.php`, `sidebar.blade.php`, `dashboard.blade.php`)**: inseridas validações de nulidade e checagens seguras para `$user->unreadNotifications()` e botões de criação de serviços para perfis somente leitura (`VIEWER`), prevenindo exceções não tratadas.
+  - **Idempotência na migração de usuários**: adicionada verificação `Schema::hasColumn` para `role` e `is_active` na migration `2026_11_03_000003_add_role_to_users_table.php`.
+
 ## [1.14.0] - 2026-11-18
 
 ### Adicionado

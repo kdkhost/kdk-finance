@@ -76,7 +76,7 @@ class DashboardController extends Controller
                 ->limit(8)
                 ->get(),
             'overdueInvoices' => Invoice::query()->overdue()->orderBy('due_date')->limit(5)->get(),
-            'unreadNotifications' => auth()->user()->unreadNotifications()->limit(6)->get(),
+            'unreadNotifications' => auth()->user()?->unreadNotifications()->limit(6)->get() ?? collect(),
         ]);
     }
 }

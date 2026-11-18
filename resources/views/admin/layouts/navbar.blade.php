@@ -10,8 +10,8 @@
 --}}
 @php
     $user = auth()->user();
-    $unreadCount = $user->unreadNotifications()->count();
-    $latestNotifications = $user->unreadNotifications()->limit(4)->get();
+    $unreadCount = $user ? $user->unreadNotifications()->count() : 0;
+    $latestNotifications = $user ? $user->unreadNotifications()->limit(4)->get() : collect();
 @endphp
 <nav class="app-header navbar navbar-expand">
     <div class="container-fluid">

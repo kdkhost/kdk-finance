@@ -10,9 +10,9 @@
 --}}
 @php
     $user = auth()->user();
-    $unread = $user->unreadNotifications()->count();
-    $canManage = $user->canManageFinance();
-    $isDeveloper = $user->isDeveloperAdmin();
+    $unread = $user ? $user->unreadNotifications()->count() : 0;
+    $canManage = $user ? $user->canManageFinance() : false;
+    $isDeveloper = $user ? $user->isDeveloperAdmin() : false;
 
     $operacao = [
         [
@@ -254,6 +254,6 @@
         <div class="fw-semibold text-white-50">KDKHost Soluções</div>
         <div>CNPJ {{ config('finance.developer.cnpj') }}</div>
         <div class="mt-2">Desenvolvido por Marcelo Brad - RJ</div>
-        <div class="mt-1 opacity-75">v1.13.0 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
+        <div class="mt-1 opacity-75">v1.14.1 · Laravel {{ Illuminate\Foundation\Application::VERSION }}</div>
     </div>
 </aside>

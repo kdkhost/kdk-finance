@@ -166,6 +166,11 @@ class AppSetting extends Model
         Cache::forget(self::cacheKey($key));
     }
 
+    public static function has(string $key): bool
+    {
+        return static::query()->where('key', $key)->exists();
+    }
+
     public static function isSecret(string $key): bool
     {
         return (bool) static::query()->where('key', $key)->value('is_secret');

@@ -26,4 +26,6 @@ Homestead.yaml
 Thumbs.db
 *_probe.php
 probe*.php
+runner.php
+clean_lock.php
 public/deploy_exec.php
